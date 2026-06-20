@@ -221,7 +221,6 @@ export default function Home() {
 
             {isEditing ? (
               <div className="space-y-4 transition-all duration-300 scale-100">
-                {/* Кастомная панель форматирования в стиле Телеграф */}
                 <div className="bg-[#14171c] p-2 rounded-xl border border-white/5 sticky top-16 z-40 flex flex-wrap gap-1 items-center justify-between shadow-xl backdrop-blur-md bg-opacity-95">
                   <div className="flex gap-1">
                     <button onClick={() => execEditorCommand('bold')} className="p-2 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90" title="Жирный"><Bold size={16}/></button>
@@ -243,14 +242,13 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Интерактивная WYSIWYG зона редактирования без HTML кодов */}
                 <div 
                   ref={editorRef}
                   contentEditable
                   suppressContentEditableWarning
                   className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-2xl p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none font-sans"
                   dangerouslySetInnerHTML={{ __html: constitution }}
-                  placeholder="Начните писать законы здесь..."
+                  data-placeholder="Начните писать законы здесь..."
                 />
 
                 <button 
@@ -325,7 +323,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Инжектим кастомные стили анимаций для плавности */}
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(6px); }
@@ -335,7 +332,7 @@ export default function Home() {
           animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         [contenteditable]:empty:before {
-          content: attr(placeholder);
+          content: attr(data-placeholder);
           color: #4b5563;
           cursor: text;
         }
