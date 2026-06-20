@@ -37,13 +37,11 @@ export default function Home() {
   const [constitution, setConstitution] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   
-  // Единые состояния для модалки/окна профиля
   const [newRpName, setNewRpName] = useState('');
   const [newAvatarUrl, setNewAvatarUrl] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
-  // Состояния для админ-панели
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
@@ -52,7 +50,6 @@ export default function Home() {
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
 
-  // Управление кастомными ролями
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([
     { name: 'admin', color: '#ef4444', canEditConstitution: true },
     { name: 'president', color: '#f59e0b', canEditConstitution: true },
@@ -265,7 +262,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
       
-      {/* Плавный задний оверлей затемнения при открытии профиля */}
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); }} />
 
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
@@ -288,7 +284,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Профиль скрывается полностью при редактировании конституции */}
         {dbUser && !selectedPlayer && !isEditing && (
           <button 
             onClick={() => {
@@ -308,17 +303,15 @@ export default function Home() {
 
       </div>
 
-      {/* Окно / Модальный Блок детального просмотра и разворачивания профиля */}
+      {/* Окно детального просмотра профиля */}
       {selectedPlayer && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 bg-[#14171c] rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none" />
           
-          {/* Кнопка закрытия */}
           <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all">
             <X size={14} />
           </button>
 
-          {/* Иконка Карандаша справа сверху от контента */}
           {selectedPlayer.id === dbUser?.id && !isEditingProfile && (
             <button onClick={() => setIsEditingProfile(true)} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
               <Edit2 size={14} />
@@ -356,7 +349,6 @@ export default function Home() {
               </div>
             ) : (
               <div className="w-full space-y-1">
-                {/* Абсолютно центрированное имя */}
                 <h2 className="text-2xl font-black tracking-wide text-white break-all px-6">{selectedPlayer.rp_name}</h2>
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-[#c0ff00] font-medium mt-1">
@@ -387,230 +379,219 @@ export default function Home() {
       )}
 
       <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full overflow-x-hidden break-words">
-        
-          <>
-            {activeTab === 'profile' && (
-              <div className="flex flex-col items-center justify-center min-h-[45vh] animate-fade-in text-center space-y-3 w-full">
-                <div className="text-2xl font-black tracking-widest text-[#c0ff00] bg-[#c0ff00]/5 px-6 py-3.5 rounded-2xl border border-[#c0ff00]/10 shadow-lg shadow-[#c0ff00]/5">
-                  В РАЗРАБОТКЕ
-                </div>
-                <p className="text-xs text-gray-500 max-w-[220px]">Этот раздел наполнится контентом в ближайших обновлениях</p>
+        {activeTab === 'profile' && (
+          <div className="flex flex-col items-center justify-center min-h-[45vh] animate-fade-in text-center space-y-3 w-full">
+            <div className="text-2xl font-black tracking-widest text-[#c0ff00] bg-[#c0ff00]/5 px-6 py-3.5 rounded-2xl border border-[#c0ff00]/10 shadow-lg shadow-[#c0ff00]/5">
+              В РАЗРАБОТКЕ
+            </div>
+            <p className="text-xs text-gray-500 max-w-[220px]">Этот раздел наполнится контентом в ближайших обновлениях</p>
+          </div>
+        )}
+
+        {activeTab === 'constitution' && (
+          <div className="space-y-4 animate-fade-in w-full overflow-x-hidden">
+            <div className="flex items-center justify-between w-full">
+              <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">Конституция Дома</h2>
+              {canEditConstitution && !isEditing && (
+                <button 
+                  onClick={() => setIsEditing(true)} 
+                  className="ui-pill-btn"
+                >
+                  <Edit2 size={12} />
+                  <span>Редактировать</span>
+                </button>
+              )}
+            </div>
+
+            {isEditing ? (
+              <div className="space-y-4 scale-100 w-full overflow-x-hidden pt-2">
+                <div 
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words overflow-x-hidden"
+                  dangerouslySetInnerHTML={{ __html: constitution }}
+                  data-placeholder="Начните писать законы здесь..."
+                />
+
+                <button 
+                  onClick={saveConstitution} 
+                  className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3.5"
+                >
+                  <Save size={14} />
+                  <span>Сохранить изменения</span>
+                </button>
               </div>
+            ) : (
+              <div 
+                className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full"
+                dangerouslySetInnerHTML={{ __html: constitution }}
+              />
             )}
+          </div>
+        )}
 
-            {activeTab === 'constitution' && (
-              <div className="space-y-4 animate-fade-in w-full overflow-x-hidden">
-                <div className="flex items-center justify-between w-full">
-                  <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">Конституция Дома</h2>
-                  {canEditConstitution && !isEditing && (
-                    <button 
-                      onClick={() => setIsEditing(true)} 
-                      className="ui-pill-btn"
-                    >
-                      <Edit2 size={12} />
-                      <span>Редактировать</span>
-                    </button>
-                  )}
-                </div>
-
-                {isEditing ? (
-                  <div className="space-y-4 scale-100 w-full overflow-x-hidden pt-2">
-                    <div 
-                      ref={editorRef}
-                      contentEditable
-                      suppressContentEditableWarning
-                      className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words overflow-x-hidden"
-                      dangerouslySetInnerHTML={{ __html: constitution }}
-                      data-placeholder="Начните писать законы здесь..."
-                    />
-
-                    <button 
-                      onClick={saveConstitution} 
-                      className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3.5"
-                    >
-                      <Save size={14} />
-                      <span>Сохранить изменения</span>
-                    </button>
+        {activeTab === 'players' && (
+          <div className="space-y-6 animate-fade-in w-full">
+            {dbUser && (
+              <div className="space-y-2 w-full">
+                <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
+                <div 
+                  onClick={() => {
+                    setIsEditingProfile(false);
+                    setSelectedPlayer(dbUser);
+                  }}
+                  className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-[28px] border border-[#c0ff00]/40 flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60 active:scale-95 w-full"
+                >
+                  <div className="w-14 h-14 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] flex-shrink-0">
+                    <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                   </div>
-                ) : (
-                  <div 
-                    className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full"
-                    dangerouslySetInnerHTML={{ __html: constitution }}
-                  />
-                )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-black truncate text-[#c0ff00] tracking-wide flex items-center gap-2">
+                      <span className="truncate">{dbUser.rp_name}</span>
+                    </div>
+                    <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
+                    <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
+                  </div>
+                  <div className="flex-shrink-0 text-gray-500">
+                    <Edit2 size={16} className="text-[#c0ff00]/80" />
+                  </div>
+                </div>
               </div>
             )}
 
-            {activeTab === 'players' && (
-              <div className="space-y-6 animate-fade-in w-full">
-                
-                {/* Личный профиль текущего пользователя: без плашки "Вы", имя подсвечено неоново-зеленым */}
-                {dbUser && (
-                  <div className="space-y-2 w-full">
-                    <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
+            <div className="space-y-3 w-full">
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">
+                Жители сервера ({players.filter(p => p.tg_id !== dbUser?.tg_id).length})
+              </div>
+              <div className="grid grid-cols-1 gap-3 w-full">
+                {players
+                  .filter((player) => player.tg_id !== dbUser?.tg_id)
+                  .map((player) => (
                     <div 
+                      key={player.id} 
                       onClick={() => {
                         setIsEditingProfile(false);
-                        setSelectedPlayer(dbUser);
+                        setSelectedPlayer(player);
                       }}
-                      className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-[28px] border border-[#c0ff00]/40 flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60 active:scale-95 w-full"
+                      className="bg-[#14171c] p-4 rounded-[28px] border border-white/5 flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:bg-[#1a1e24] cursor-pointer shadow-md active:scale-[0.99] w-full"
                     >
-                      <div className="w-14 h-14 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] flex-shrink-0">
-                        <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
+                        <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-base font-black truncate text-[#c0ff00] tracking-wide flex items-center gap-2">
-                          <span className="truncate">{dbUser.rp_name}</span>
-                        </div>
-                        <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
-                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
+                        <div className="text-sm font-black truncate text-white tracking-wide">{player.rp_name}</div>
+                        <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
+                        <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                       </div>
-                      <div className="flex-shrink-0 text-gray-500">
-                        <Edit2 size={16} className="text-[#c0ff00]/80" />
+                      <div className="flex gap-1 flex-shrink-0">
+                        {player.roles.slice(0, 1).map((r, i) => (
+                          <span 
+                            key={i} 
+                            className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full border"
+                            style={{ backgroundColor: `${getRoleColor(r)}10`, color: getRoleColor(r), borderColor: `${getRoleColor(r)}25` }}
+                          >
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'admin' && isAdmin && (
+          <div className="space-y-6 animate-fade-in w-full">
+            <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                <UserPlus size={16} />
+                <span>Добавить жителя</span>
+              </div>
+              
+              <div className="space-y-3">
+                <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
+                <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
+                <input type="text" placeholder="Minecraft Никнейм" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
+                <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
+                <input type="text" placeholder="URL Аватарки" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
+                <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
+              </div>
+
+              <button onClick={handleAddPlayer} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3">
+                <Check size={16} />
+                <span>Создать аккаунт</span>
+              </button>
+            </div>
+
+            <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                <ShieldCheck size={16} />
+                <span>Управление ролями</span>
+              </div>
+
+              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
+                <input type="text" placeholder="Название новой роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input"/>
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center space-x-2 text-xs text-gray-400">
+                    <Palette size={14} />
+                    <span>Цвет роли:</span>
+                    <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer" />
+                  </div>
+                  <label className="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer">
+                    <input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"/>
+                    <span>Ред. законов</span>
+                  </label>
+                </div>
+                <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-2">
+                  <UserPlus size={14} />
+                  <span>Создать роль</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {customRoles.map((role, idx) => (
+                  <div key={idx} className="flex flex-col gap-2 p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 flex-1 mr-2">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }} />
+                        <input 
+                          type="text" 
+                          value={role.name.toUpperCase()} 
+                          onChange={e => handleRenameRole(idx, e.target.value)} 
+                          className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full"
+                          style={{ color: role.color }}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3 flex-shrink-0">
+                        <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={role.canEditConstitution} 
+                            onChange={() => handleToggleRolePerm(idx)} 
+                            className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
+                          />
+                          <span>Законы</span>
+                        </label>
+                        <input 
+                          type="color" 
+                          value={role.color} 
+                          onChange={e => handleUpdateRoleColor(idx, e.target.value)} 
+                          className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"
+                        />
                       </div>
                     </div>
                   </div>
-                )}
-
-                <div className="space-y-3 w-full">
-                  <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">
-                    Жители сервера ({players.filter(p => p.tg_id !== dbUser?.tg_id).length})
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 w-full">
-                    {players
-                      .filter((player) => player.tg_id !== dbUser?.tg_id)
-                      .map((player) => (
-                        <div 
-                          key={player.id} 
-                          onClick={() => {
-                            setIsEditingProfile(false);
-                            setSelectedPlayer(player);
-                          }}
-                          className="bg-[#14171c] p-4 rounded-[28px] border border-white/5 flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:bg-[#1a1e24] cursor-pointer shadow-md active:scale-[0.99] w-full"
-                        >
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
-                            <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-black truncate text-white tracking-wide">{player.rp_name}</div>
-                            <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
-                            <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
-                          </div>
-                          <div className="flex gap-1 flex-shrink-0">
-                            {player.roles.slice(0, 1).map((r, i) => (
-                              <span 
-                                key={i} 
-                                className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full border"
-                                style={{ backgroundColor: `${getRoleColor(r)}10`, color: getRoleColor(r), borderColor: `${getRoleColor(r)}25` }}
-                              >
-                                {r}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+                ))}
               </div>
-            )}
-
-            {activeTab === 'admin' && isAdmin && (
-              <div className="space-y-6 animate-fade-in w-full">
-                
-                <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
-                    <UserPlus size={16} />
-                    <span>Добавить жителя</span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="Minecraft Никнейм" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="URL Аватарки" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
-                  </div>
-
-                  <button onClick={handleAddPlayer} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3">
-                    <Check size={16} />
-                    <span>Создать аккаунт</span>
-                  </button>
-                </div>
-
-                <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
-                    <ShieldCheck size={16} />
-                    <span>Управление ролями</span>
-                  </div>
-
-                  <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
-                    <input type="text" placeholder="Название новой роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input"/>
-                    <div className="flex items-center justify-between px-1">
-                      <div className="flex items-center space-x-2 text-xs text-gray-400">
-                        <Palette size={14} />
-                        <span>Цвет роли:</span>
-                        <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer" />
-                      </div>
-                      <label className="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer">
-                        <input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"/>
-                        <span>Ред. законов</span>
-                      </label>
-                    </div>
-                    <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-2">
-                      <UserPlus size={14} />
-                      <span>Создать роль</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {customRoles.map((role, idx) => (
-                      <div key={idx} className="flex flex-col gap-2 p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2 flex-1 mr-2">
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }} />
-                            {/* Поле динамического переименования существующей роли */}
-                            <input 
-                              type="text" 
-                              value={role.name.toUpperCase()} 
-                              onChange={e => handleRenameRole(idx, e.target.value)} 
-                              className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full"
-                              style={{ color: role.color }}
-                            />
-                          </div>
-                          <div className="flex items-center space-x-3 flex-shrink-0">
-                            <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
-                              <input 
-                                type="checkbox" 
-                                checked={role.canEditConstitution} 
-                                onChange={() => handleToggleRolePerm(idx)} 
-                                className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
-                              />
-                              <span>Законы</span>
-                            </label>
-                            <input 
-                              type="color" 
-                              value={role.color} 
-                              onChange={e => handleUpdateRoleColor(idx, e.target.value)} 
-                              className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                </div>
-
-              </div>
-            )}
-          </>
+            </div>
+          </div>
         )}
       </main>
 
       <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all">
         <div className={`grid w-full items-center justify-items-center ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          
           <button 
             onClick={() => handleTabChange('profile')} 
             className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
@@ -647,7 +628,6 @@ export default function Home() {
               <span className="text-[10px] font-medium tracking-wide mt-1">Админ</span>
             </button>
           )}
-
         </div>
       </nav>
 
@@ -670,8 +650,8 @@ export default function Home() {
           to { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
         @keyframes profileGrow {
-          from { opacity: 0; transform: translate(-1/2, -40%) scale(0.85); filter: blur(8px); }
-          to { opacity: 1; transform: translate(-1/2, -1/2) scale(1); filter: blur(0); }
+          from { opacity: 0; transform: translate(-50%, -40%) scale(0.85); filter: blur(8px); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
         }
         .animate-fade-in {
           animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
