@@ -36,8 +36,11 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [constitution, setConstitution] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Единые состояния для модалки/окна профиля
   const [newRpName, setNewRpName] = useState('');
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [newAvatarUrl, setNewAvatarUrl] = useState('');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Состояния для админ-панели
@@ -104,6 +107,7 @@ export default function Home() {
       } else {
         setDbUser(user);
         setNewRpName(user.rp_name);
+        setNewAvatarUrl(user.avatar_url);
         loadPlayers();
         loadConstitution();
       }
@@ -124,12 +128,20 @@ export default function Home() {
     if (data) setConstitution(data.content);
   };
 
-  const saveRpName = async () => {
+  const saveProfileData = async () => {
     if (!dbUser || !newRpName.trim()) return;
-    const { error } = await supabase.from('users').update({ rp_name: newRpName }).eq('id', dbUser.id);
+    const { error } = await supabase
+      .from('users')
+      .update({ rp_name: newRpName, avatar_url: newAvatarUrl })
+      .eq('id', dbUser.id);
+      
     if (!error) {
-      setDbUser({ ...dbUser, rp_name: newRpName });
-      setIsEditingName(false);
+      const updatedUser = { ...dbUser, rp_name: newRpName, avatar_url: newAvatarUrl };
+      setDbUser(updatedUser);
+      if (selectedPlayer?.id === dbUser.id) {
+        setSelectedPlayer(updatedUser);
+      }
+      setIsEditingProfile(false);
       loadPlayers();
     }
   };
@@ -180,6 +192,13 @@ export default function Home() {
     localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
   };
 
+  const handleRenameRole = (index: number, name: string) => {
+    const updated = [...customRoles];
+    updated[index].name = name.toLowerCase();
+    setCustomRoles(updated);
+    localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
+  };
+
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
       document.execCommand(command, false, value);
@@ -201,6 +220,7 @@ export default function Home() {
 
   const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
     setSelectedPlayer(null);
+    setIsEditingProfile(false);
     setActiveTab(tab);
   };
 
@@ -245,8 +265,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
       
+      {/* Плавный задний оверлей затемнения при открытии профиля */}
+      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); }} />
+
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
+      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-between gap-2 pointer-events-none">
         
         <div className={`p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 transition-all duration-300 ease-in-out pointer-events-auto origin-left ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'absolute opacity-0 scale-95 -translate-x-4 pointer-events-none'}`}>
@@ -264,18 +288,19 @@ export default function Home() {
           </div>
         </div>
 
-        {dbUser && !selectedPlayer && (
+        {/* Профиль скрывается полностью при редактировании конституции */}
+        {dbUser && !selectedPlayer && !isEditing && (
           <button 
             onClick={() => {
-              setIsEditingName(false);
+              setIsEditingProfile(false);
               setSelectedPlayer(dbUser);
             }}
-            className={`ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto ${showToolbar ? 'max-w-0 opacity-0 ml-0 invisible' : 'max-w-[100px] opacity-100 ml-2'}`}
+            className="ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto pr-3.5"
           >
             <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
               <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
             </div>
-            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap inline-block ${showToolbar ? 'max-w-0 opacity-0 ml-0' : 'max-w-[60px] opacity-100 ml-2'}`}>
+            <span className="text-[11px] font-bold text-gray-200 tracking-wide ml-2">
               Профиль
             </span>
           </button>
@@ -283,87 +308,86 @@ export default function Home() {
 
       </div>
 
-      <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full overflow-x-hidden break-words">
-        
-        {selectedPlayer ? (
-          <div className="space-y-6 animate-fade-in w-full">
-            <button 
-              onClick={() => setSelectedPlayer(null)}
-              className="ui-pill-btn"
-            >
-              <ArrowLeft size={14} />
-              <span>Назад</span>
+      {/* Окно / Модальный Блок детального просмотра и разворачивания профиля */}
+      {selectedPlayer && (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 bg-[#14171c] rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none" />
+          
+          {/* Кнопка закрытия */}
+          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all">
+            <X size={14} />
+          </button>
+
+          {/* Иконка Карандаша справа сверху от контента */}
+          {selectedPlayer.id === dbUser?.id && !isEditingProfile && (
+            <button onClick={() => setIsEditingProfile(true)} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
+              <Edit2 size={14} />
             </button>
+          )}
 
-            <div className="bg-[#14171c] p-6 rounded-[28px] border border-white/5 text-center space-y-4 shadow-2xl relative overflow-hidden w-full transition-all duration-300">
-              <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#c0ff00]/10 to-transparent" />
-              
-              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg transform transition-transform duration-500 hover:scale-105">
-                <img src={selectedPlayer.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
+          <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg">
+            <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
+          </div>
+
+          <div className="space-y-2 w-full">
+            {isEditingProfile ? (
+              <div className="space-y-3 max-w-xs mx-auto w-full animate-fade-in">
+                <input 
+                  type="text" 
+                  placeholder="Имя профиля"
+                  value={newRpName} 
+                  onChange={(e) => setNewRpName(e.target.value)}
+                  className="ui-input text-center font-bold"
+                />
+                <input 
+                  type="text" 
+                  placeholder="Ссылка на аватарку"
+                  value={newAvatarUrl} 
+                  onChange={(e) => setNewAvatarUrl(e.target.value)}
+                  className="ui-input text-center text-xs text-gray-400 font-mono"
+                />
+                <button 
+                  onClick={saveProfileData} 
+                  className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2"
+                >
+                  <Save size={14} />
+                  <span>Сохранить всё</span>
+                </button>
               </div>
-
-              <div className="relative space-y-2 w-full">
-                {selectedPlayer.id === dbUser?.id ? (
-                  <div className="space-y-3 max-w-xs mx-auto w-full">
-                    {isEditingName ? (
-                      <div className="flex items-center space-x-2 justify-center mt-2 w-full">
-                        <input 
-                          type="text" 
-                          value={newRpName} 
-                          onChange={(e) => setNewRpName(e.target.value)}
-                          className="bg-[#1c2026] text-white text-center text-lg font-bold px-3 py-1.5 rounded-xl border border-[#c0ff00] w-full focus:outline-none transition-colors"
-                        />
-                        <button 
-                          onClick={async () => {
-                            await saveRpName();
-                            setSelectedPlayer({ ...selectedPlayer, rp_name: newRpName });
-                          }} 
-                          className="p-2.5 text-black bg-[#c0ff00] rounded-full active:scale-90 transition-all flex-shrink-0"
-                        >
-                          <Check size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2 justify-center w-full">
-                        <h2 className="text-2xl font-black tracking-wide text-white break-all">{selectedPlayer.rp_name}</h2>
-                        <button onClick={() => setIsEditingName(true)} className="p-1.5 text-gray-400 bg-white/5 border border-white/5 rounded-full hover:text-white transition-all flex-shrink-0 active:scale-75">
-                          <Edit2 size={12} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full">
-                    <h2 className="text-2xl font-black tracking-wide text-white break-all">{selectedPlayer.rp_name}</h2>
-                  </div>
-                )}
-                <p className="text-sm text-gray-500 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
-                
+            ) : (
+              <div className="w-full space-y-1">
+                {/* Абсолютно центрированное имя */}
+                <h2 className="text-2xl font-black tracking-wide text-white break-all px-6">{selectedPlayer.rp_name}</h2>
+                <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-[#c0ff00] font-medium mt-1">
                   <span>🏛️ Партия:</span>
                   <span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="w-full h-[1px] bg-white/5 my-4" />
+          <div className="w-full h-[1px] bg-white/5 my-2" />
 
-              <div className="text-left space-y-2 w-full">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Установленные роли</div>
-                <div className="flex flex-wrap gap-2">
-                  {selectedPlayer.roles.map((role, idx) => (
-                    <span 
-                      key={idx} 
-                      className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
-                      style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}
-                    >
-                      • {role.toUpperCase()}
-                    </span>
-                  ))}
-                </div>
-              </div>
+          <div className="text-left space-y-2 w-full">
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
+            <div className="flex flex-wrap gap-2">
+              {selectedPlayer.roles.map((role, idx) => (
+                <span 
+                  key={idx} 
+                  className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
+                  style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}
+                >
+                  • {role.toUpperCase()}
+                </span>
+              ))}
             </div>
           </div>
-        ) : (
+        </div>
+      )}
+
+      <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full overflow-x-hidden break-words">
+        
           <>
             {activeTab === 'profile' && (
               <div className="flex flex-col items-center justify-center min-h-[45vh] animate-fade-in text-center space-y-3 w-full">
@@ -420,23 +444,23 @@ export default function Home() {
             {activeTab === 'players' && (
               <div className="space-y-6 animate-fade-in w-full">
                 
+                {/* Личный профиль текущего пользователя: без плашки "Вы", имя подсвечено неоново-зеленым */}
                 {dbUser && (
                   <div className="space-y-2 w-full">
                     <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
                     <div 
                       onClick={() => {
-                        setIsEditingName(false);
+                        setIsEditingProfile(false);
                         setSelectedPlayer(dbUser);
                       }}
-                      className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-[28px] border border-[#c0ff00]/30 flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-lg shadow-[#c0ff00]/5 hover:border-[#c0ff00]/50 active:scale-95 w-full"
+                      className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-[28px] border border-[#c0ff00]/40 flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60 active:scale-95 w-full"
                     >
                       <div className="w-14 h-14 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] flex-shrink-0">
                         <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-base font-black truncate text-white tracking-wide flex items-center gap-2">
+                        <div className="text-base font-black truncate text-[#c0ff00] tracking-wide flex items-center gap-2">
                           <span className="truncate">{dbUser.rp_name}</span>
-                          <span className="text-[9px] bg-[#c0ff00] text-black font-black px-1.5 py-0.5 rounded uppercase tracking-tight flex-shrink-0">Вы</span>
                         </div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
                         <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
@@ -458,7 +482,10 @@ export default function Home() {
                       .map((player) => (
                         <div 
                           key={player.id} 
-                          onClick={() => setSelectedPlayer(player)}
+                          onClick={() => {
+                            setIsEditingProfile(false);
+                            setSelectedPlayer(player);
+                          }}
                           className="bg-[#14171c] p-4 rounded-[28px] border border-white/5 flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:bg-[#1a1e24] cursor-pointer shadow-md active:scale-[0.99] w-full"
                         >
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
@@ -536,29 +563,38 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {customRoles.map((role, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
-                        <div className="flex items-center space-x-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: role.color }} />
-                          <span className="text-sm font-bold uppercase tracking-wide" style={{ color: role.color }}>{role.name}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
+                      <div key={idx} className="flex flex-col gap-2 p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 flex-1 mr-2">
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }} />
+                            {/* Поле динамического переименования существующей роли */}
                             <input 
-                              type="checkbox" 
-                              checked={role.canEditConstitution} 
-                              onChange={() => handleToggleRolePerm(idx)} 
-                              className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
+                              type="text" 
+                              value={role.name.toUpperCase()} 
+                              onChange={e => handleRenameRole(idx, e.target.value)} 
+                              className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full"
+                              style={{ color: role.color }}
                             />
-                            <span>Законы</span>
-                          </label>
-                          <input 
-                            type="color" 
-                            value={role.color} 
-                            onChange={e => handleUpdateRoleColor(idx, e.target.value)} 
-                            className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"
-                          />
+                          </div>
+                          <div className="flex items-center space-x-3 flex-shrink-0">
+                            <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={role.canEditConstitution} 
+                                onChange={() => handleToggleRolePerm(idx)} 
+                                className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
+                              />
+                              <span>Законы</span>
+                            </label>
+                            <input 
+                              type="color" 
+                              value={role.color} 
+                              onChange={e => handleUpdateRoleColor(idx, e.target.value)} 
+                              className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -633,8 +669,15 @@ export default function Home() {
           from { opacity: 0; transform: translateY(12px); filter: blur(6px); }
           to { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
+        @keyframes profileGrow {
+          from { opacity: 0; transform: translate(-1/2, -40%) scale(0.85); filter: blur(8px); }
+          to { opacity: 1; transform: translate(-1/2, -1/2) scale(1); filter: blur(0); }
+        }
         .animate-fade-in {
           animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-profile-grow {
+          animation: profileGrow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
