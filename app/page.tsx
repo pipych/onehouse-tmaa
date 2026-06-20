@@ -148,11 +148,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300">
       
-      {/* Прозрачная шапка с радиально-линейным затемнением */}
       <header className="px-4 pt-4 pb-8 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/80 to-transparent backdrop-blur-md sticky top-0 z-50 flex items-center justify-between border-b border-white/5">
         <span className="text-xl font-black tracking-wider text-[#c0ff00] active:scale-95 transition-transform duration-200">ONEHOUSE</span>
         
-        {/* Кнопка личного профиля, открывающая меню редактирования */}
         {dbUser && (
           <button 
             onClick={() => {
@@ -250,7 +248,6 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* Пустая главная страница в разработке */}
             {activeTab === 'profile' && (
               <div className="flex flex-col items-center justify-center min-h-[55vh] animate-fade-in text-center space-y-3">
                 <div className="text-2xl font-black tracking-widest text-[#c0ff00] bg-[#c0ff00]/5 px-6 py-3.5 rounded-2xl border border-[#c0ff00]/10 shadow-lg shadow-[#c0ff00]/5">
@@ -321,7 +318,6 @@ export default function Home() {
             {activeTab === 'players' && (
               <div className="space-y-6 animate-fade-in">
                 
-                {/* Отдельный обособленный блок профиля текущего пользователя */}
                 {dbUser && (
                   <div className="space-y-2">
                     <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
@@ -349,7 +345,6 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Список остальных жителей сервера */}
                 <div className="space-y-3">
                   <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">
                     Жители сервера ({players.filter(p => p.tg_id !== dbUser?.tg_id).length})
@@ -387,39 +382,40 @@ export default function Home() {
         )}
       </main>
 
-      {/* Плавающая док-панель Apple в форме округлой пилюли (Pill Shape) */}
-      <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 px-5 py-2.5 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all transform translate-y-0">
-        <div className="flex items-center justify-between mx-auto">
+      {/* Симметричная нижняя док-панель на базе CSS Grid */}
+      <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all">
+        <div className="grid grid-cols-3 w-full items-center justify-items-center">
+          
           <button 
             onClick={() => handleTabChange('profile')} 
-            className={`flex flex-col items-center space-y-1 py-1 px-4 rounded-xl transition-all duration-300 transform active:scale-90 relative ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
           >
             <User size={22} />
-            <span className="text-[10px] font-medium tracking-wide flex items-center">
+            <span className="text-[10px] font-medium tracking-wide relative inline-block mt-1">
               Главная
-              <span className="text-[8px] font-extrabold uppercase bg-[#c0ff00]/10 text-[#c0ff00] px-1 rounded ml-1 tracking-tight scale-90 border border-[#c0ff00]/20">soon</span>
+              <span className="absolute -top-1 left-full ml-1 text-[7px] font-extrabold uppercase bg-[#c0ff00]/10 text-[#c0ff00] px-1 py-0.5 rounded tracking-tight border border-[#c0ff00]/25 scale-90 whitespace-nowrap">soon</span>
             </span>
           </button>
 
           <button 
             onClick={() => handleTabChange('constitution')} 
-            className={`flex flex-col items-center space-y-1 py-1 px-4 rounded-xl transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
           >
             <BookOpen size={22} />
-            <span className="text-[10px] font-medium tracking-wide">Законы</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1">Законы</span>
           </button>
 
           <button 
             onClick={() => handleTabChange('players')} 
-            className={`flex flex-col items-center space-y-1 py-1 px-4 rounded-xl transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
           >
             <Users size={22} />
-            <span className="text-[10px] font-medium tracking-wide">Игроки</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1">Игроки</span>
           </button>
+
         </div>
       </nav>
 
-      {/* Шрифты и кастомный рендеринг */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
