@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { User, BookOpen, Users, Edit2, Check, Heading1, Heading2, Bold, Italic, Strikethrough } from 'lucide-react';
 
 interface Player {
