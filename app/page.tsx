@@ -53,7 +53,7 @@ export default function Home() {
     }
   }, []);
 
-  const checkUserInDb = async (tgId: number) => {
+const checkUserInDb = async (tgId: number) => {
     try {
       const { data: user, error: dbError } = await supabase
         .from('users')
@@ -61,8 +61,10 @@ export default function Home() {
         .eq('tg_id', tgId)
         .single();
 
-      if (dbError || !user) {
-        setError(`Пользователь с TG ID ${tgId} не найден в базе Supabase.`);
+      if (dbError) {
+        setError(`Ошибка Supabase: ${dbError.message} (Код: ${dbError.code}). Проверь правильность URL и Anon Key в Vercel.`);
+      } else if (!user) {
+        setError(`Связь с базой есть, но пользователь с TG ID ${tgId} физически отсутствует в таблице users.`);
       } else {
         setDbUser(user);
         setNewRpName(user.rp_name);
@@ -70,7 +72,7 @@ export default function Home() {
         loadConstitution();
       }
     } catch (e: any) {
-      setError(`Ошибка базы данных: ${e.message}`);
+      setError(`Критическая ошибка: ${e.message}`);
     } finally {
       setLoading(false);
     }
