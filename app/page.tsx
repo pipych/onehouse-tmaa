@@ -2,8 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
-import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { User, BookOpen, Users, Edit2, Check, Heading1, Heading2, Bold, Italic, Strikethrough } from 'lucide-react';
+
+// Прямая инициализация без локальных файлов-зависимостей
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Player {
   id: string;
@@ -22,14 +28,12 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players'>('profile');
   
-  // Переменные для разделов
   const [players, setPlayers] = useState<Player[]>([]);
   const [constitution, setConstitution] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [newRpName, setNewRpName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
-  // Инициализация Telegram WebApp и авторизация
   useEffect(() => {
     const initTMA = async () => {
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
@@ -39,7 +43,7 @@ export default function Home() {
 
         const initData = tg.initData;
         if (!initData && process.env.NODE_ENV === 'development') {
-          fetchUserData(tg.initDataUnsafe?.user || { id: dbUser?.tg_id }); 
+          setLoading(false);
           return;
         }
 
@@ -72,10 +76,6 @@ export default function Home() {
 
     initTMA();
   }, []);
-
-  const fetchUserData = async (user: any) => {
-    setLoading(false);
-  };
 
   const loadPlayers = async () => {
     const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
@@ -145,7 +145,7 @@ export default function Home() {
           <div className="space-y-6">
             <div className="bg-[#14171c] p-5 rounded-2xl border border-white/5 flex items-center space-x-4">
               <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00]">
-                <img src={dbUser.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 {isEditingName ? (
@@ -248,7 +248,7 @@ export default function Home() {
               {players.map((player) => (
                 <div key={player.id} className="bg-[#14171c] p-3 rounded-xl border border-white/5 flex items-center space-x-3">
                   <div className="w-11 h-11 rounded-full overflow-hidden bg-[#1c2026] border border-white/10">
-                    <img src={player.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold truncate">{player.rp_name}</div>
