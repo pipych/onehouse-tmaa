@@ -55,7 +55,8 @@ export default function Home() {
     { name: 'admin', color: '#ef4444', canEditConstitution: true },
     { name: 'president', color: '#f59e0b', canEditConstitution: true },
     { name: 'editor', color: '#3b82f6', canEditConstitution: true },
-    { name: 'citizen', color: '#10b981', canEditConstitution: false }
+    { name: 'citizen', color: '#10b981', canEditConstitution: false },
+    { name: 'мёртв', color: '#6b7280', canEditConstitution: false } // Роль "мертв" по умолчанию серенькая
   ]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
@@ -150,8 +151,6 @@ export default function Home() {
       return;
     }
 
-    console.log("Попытка добавления игрока:", { tgIdNum, addRpName, addMcNickname });
-
     const { data, error } = await supabase.from('users').insert([{
       tg_id: tgIdNum,
       tg_username: addTgUsername || 'unknown',
@@ -166,7 +165,6 @@ export default function Home() {
       console.error("Ошибка Supabase:", error);
       alert(`Ошибка: ${error.message}`);
     } else {
-      console.log("Успешно добавлено:", data);
       setAddTgId('');
       setAddTgUsername('');
       setAddMcNickname('');
@@ -281,7 +279,20 @@ export default function Home() {
     return found ? found.color : '#888888';
   };
 
+  const isDead = (roles: string[]) => roles.some(r => r.toLowerCase() === 'мёртв');
+
   const showToolbar = isEditing && activeTab === 'constitution' && !selectedPlayer;
+
+  // Сортировка: сначала живые (по алфавиту), в конце мертвые
+  const sortedPlayers = players
+    .filter((player) => player.tg_id !== dbUser?.tg_id)
+    .sort((a, b) => {
+      const aDead = isDead(a.roles);
+      const bDead = isDead(b.roles);
+      if (aDead && !bDead) return 1;
+      if (!aDead && bDead) return -1;
+      return a.rp_name.localeCompare(b.rp_name);
+    });
 
   if (loading) {
     return (
@@ -306,6 +317,8 @@ export default function Home() {
       </div>
     );
   }
+
+  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
 
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
@@ -353,20 +366,20 @@ export default function Home() {
 
       {/* Окно детального просмотра профиля */}
       {selectedPlayer && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 bg-[#14171c] rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible">
+        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedIsDead ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
           
           <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10">
             <X size={14} />
           </button>
 
-          {selectedPlayer.id === dbUser?.id && !isEditingProfile && (
+          {selectedPlayer.id === dbUser?.id && !isEditingProfile && !selectedIsDead && (
             <button onClick={() => setIsEditingProfile(true)} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10">
               <Edit2 size={14} />
             </button>
           )}
 
-          <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg">
+          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${selectedIsDead ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
             <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
           </div>
 
@@ -397,9 +410,9 @@ export default function Home() {
               </div>
             ) : (
               <div className="w-full space-y-1">
-                <h2 className="text-2xl font-black tracking-wide text-white break-all px-6">{selectedPlayer.rp_name}</h2>
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${selectedIsDead ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-[#c0ff00] font-medium mt-1">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 ${selectedIsDead ? 'text-gray-500' : 'text-[#c0ff00]'}`}>
                   <span>🏛️ Партия:</span>
                   <span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
                 </div>
@@ -416,7 +429,7 @@ export default function Home() {
               {selectedPlayer.roles.map((role, idx) => (
                 <span 
                   key={idx} 
-                  className={`text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 ${isAdmin ? 'pl-3 pr-1' : 'px-3'}`}
+                  className={`text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 ${isAdmin ? 'pl-3 pr-1' : 'px-3'} ${selectedIsDead && role.toLowerCase() !== 'мёртв' ? 'opacity-50 grayscale' : ''}`}
                   style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}
                 >
                   <span>• {role.toUpperCase()}</span>
@@ -435,7 +448,7 @@ export default function Home() {
                 <div className="relative inline-block">
                   <button 
                     onClick={() => setShowRoleSelector(!showRoleSelector)} 
-                    className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-[#c0ff00] hover:border-[#c0ff00]/40 transition-all active:scale-90 shadow-sm"
+                    className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all active:scale-90 shadow-sm"
                   >
                     <Plus size={14} />
                   </button>
@@ -533,20 +546,20 @@ export default function Home() {
                     setIsEditingProfile(false);
                     setSelectedPlayer(dbUser);
                   }}
-                  className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-[28px] border border-[#c0ff00]/40 flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60 active:scale-95 w-full"
+                  className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c] to-[#1c2026] border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}
                 >
-                  <div className="w-14 h-14 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] flex-shrink-0">
+                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}>
                     <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-base font-black truncate text-[#c0ff00] tracking-wide flex items-center gap-2">
-                      <span className="truncate">{dbUser.rp_name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
                     </div>
                     <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
                     <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                   </div>
                   <div className="flex-shrink-0 text-gray-500">
-                    <Edit2 size={16} className="text-[#c0ff00]/80" />
+                    <Edit2 size={16} className={isDead(dbUser.roles) ? "text-gray-600" : "text-[#c0ff00]/80"} />
                   </div>
                 </div>
               </div>
@@ -554,25 +567,25 @@ export default function Home() {
 
             <div className="space-y-3 w-full">
               <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">
-                Жители сервера ({players.filter(p => p.tg_id !== dbUser?.tg_id).length})
+                Жители сервера
               </div>
               <div className="grid grid-cols-1 gap-3 w-full">
-                {players
-                  .filter((player) => player.tg_id !== dbUser?.tg_id)
-                  .map((player) => (
+                {sortedPlayers.map((player) => {
+                  const dead = isDead(player.roles);
+                  return (
                     <div 
                       key={player.id} 
                       onClick={() => {
                         setIsEditingProfile(false);
                         setSelectedPlayer(player);
                       }}
-                      className="bg-[#14171c] p-4 rounded-[28px] border border-white/5 flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:bg-[#1a1e24] cursor-pointer shadow-md active:scale-[0.99] w-full"
+                      className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}
                     >
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
                         <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-black truncate text-white tracking-wide">{player.rp_name}</div>
+                        <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
                         <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                       </div>
@@ -588,7 +601,8 @@ export default function Home() {
                         ))}
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -738,18 +752,18 @@ export default function Home() {
           scrollbar-width: none;
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(12px); filter: blur(6px); }
-          to { opacity: 1; transform: translateY(0); filter: blur(0); }
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         @keyframes profileGrow {
-          from { opacity: 0; transform: translate(-50%, -40%) scale(0.85); filter: blur(8px); }
-          to { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+          from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
         .animate-fade-in {
-          animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: fadeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         .animate-profile-grow {
-          animation: profileGrow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          animation: profileGrow 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
