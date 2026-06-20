@@ -40,42 +40,34 @@ export default function Home() {
         tg.ready();
         tg.expand();
 
-        const initData = tg.initData;
-        if (!initData) {
-          setError('Данные initData пусты. Открой приложение строго внутри Telegram бота.');
+        const userFromTg = tg.initDataUnsafe?.user;
+
+        if (!userFromTg || !userFromTg.id) {
+          setError('Приложение запущено вне Telegram или данные пользователя недоступны.');
           setLoading(false);
           return;
         }
 
+        setTgUser(userFromTg);
+
         try {
-          const res = await fetch('/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData })
-          });
+          // Прямой запрос в Supabase минуя собственный API
+          const { data: user, error: dbError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('tg_id', userFromTg.id)
+            .single();
 
-          let result: any = {};
-          const textResponse = await res.text();
-          
-          try {
-            result = JSON.parse(textResponse);
-          } catch (e) {
-            setError(`Сервер вернул HTML вместо JSON. Статус: ${res.status}. Ответ: ${textResponse.slice(0, 100)}`);
-            setLoading(false);
-            return;
-          }
-
-          if (res.ok) {
-            setDbUser(result.user);
-            setNewRpName(result.user.rp_name);
-            setTgUser(tg.initDataUnsafe.user);
+          if (dbError || !user) {
+            setError(`Пользователь с TG ID ${userFromTg.id} не найден в базе данных Supabase.`);
+          } else {
+            setDbUser(user);
+            setNewRpName(user.rp_name);
             loadPlayers();
             loadConstitution();
-          } else {
-            setError(`Ошибка бэкенда (Статус ${res.status}): ${result.error || JSON.stringify(result)}`);
           }
         } catch (e: any) {
-          setError(`Критическая ошибка сети: ${e.message}`);
+          setError(`Ошибка подключения к базе: ${e.message}`);
         } finally {
           setLoading(false);
         }
@@ -119,7 +111,7 @@ export default function Home() {
       <div className="flex h-screen items-center justify-center bg-[#090b0e] text-[#c0ff00]">
         <div className="text-center animate-pulse">
           <div className="text-3xl font-black tracking-widest">ONEHOUSE</div>
-          <div className="text-xs text-gray-400 mt-2">Загрузка данных сервера...</div>
+          <div className="text-xs text-gray-400 mt-2">Загрузка профиля...</div>
         </div>
       </div>
     );
@@ -129,7 +121,7 @@ export default function Home() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white">
         <div className="bg-[#14171c] p-6 rounded-2xl border border-red-500/30 max-w-md w-full break-words">
-          <div className="text-red-500 font-bold text-lg mb-2">Доступ ограничен</div>
+          <div className="text-red-500 font-bold text-lg mb-2">Авторизация не удалась</div>
           <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">
             {error}
           </div>
