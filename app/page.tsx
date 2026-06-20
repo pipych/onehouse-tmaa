@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  User, BookOpen, Users, Edit2, Check, X, ArrowLeft, ShieldAlert, UserPlus, ShieldCheck, Palette, Save
+  User, BookOpen, Users, Edit2, Check, X, ArrowLeft, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
+  Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter
 } from 'lucide-react';
 
 interface Player {
@@ -244,10 +245,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
       
-      {/* Мягкий невидимый щит сверху */}
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-between gap-2 pointer-events-none">
         
         <div className={`p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 transition-all duration-300 ease-in-out pointer-events-auto origin-left ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'absolute opacity-0 scale-95 -translate-x-4 pointer-events-none'}`}>
@@ -573,7 +572,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* Нижняя навигация */}
       <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all">
         <div className={`grid w-full items-center justify-items-center ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           
@@ -644,7 +642,6 @@ export default function Home() {
           cursor: text;
         }
 
-        /* Премиальный, чистый стиль кнопок-пилюль нативного Mini App */
         .ui-pill-btn {
           background-color: rgba(20, 23, 28, 0.85);
           border: 1px solid rgba(255, 255, 255, 0.08);
@@ -671,7 +668,6 @@ export default function Home() {
           transform: scale(0.94);
         }
 
-        /* Нативные скругленные поля ввода */
         .ui-input {
           width: 100%;
           background-color: rgba(0, 0, 0, 0.25);
