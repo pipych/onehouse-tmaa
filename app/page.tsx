@@ -54,6 +54,8 @@ export default function Home() {
   }, []);
 
 const checkUserInDb = async (tgId: number) => {
+    const currentUrl = (supabase as any).supabaseUrl || 'Не определен';
+    
     try {
       const { data: user, error: dbError } = await supabase
         .from('users')
@@ -62,7 +64,7 @@ const checkUserInDb = async (tgId: number) => {
         .single();
 
       if (dbError) {
-        setError(`Ошибка Supabase: ${dbError.message} (Код: ${dbError.code}).`);
+        setError(`Ошибка Supabase: ${dbError.message}. \nПроверяемый URL: ${currentUrl}`);
       } else if (!user) {
         setError(`Пользователь с TG ID ${tgId} отсутствует в таблице.`);
       } else {
@@ -72,9 +74,7 @@ const checkUserInDb = async (tgId: number) => {
         loadConstitution();
       }
     } catch (e: any) {
-      // Выводим URL на экран для диагностики
-      const currentUrl = (supabase as any).supabaseUrl || 'Не определен';
-      setError(`Сетевая ошибка базы. Ссылка: ${currentUrl}. Текст: ${e.message}`);
+      setError(`Критическая ошибка: ${e.message}. URL: ${currentUrl}`);
     } finally {
       setLoading(false);
     }
