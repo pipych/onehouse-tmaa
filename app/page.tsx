@@ -155,17 +155,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300">
       
-      {/* Невидимый градиентный щит для скрытия контента под нативной панелью ТГ */}
-      <div className="fixed top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/90 to-transparent pointer-events-none z-30" />
+      {/* Невидимый щит увеличен до h-28 для защиты от наложения */}
+      <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30" />
 
-      {/* Кнопка профиля: опущена ниже кнопок ТГ, но зафиксирована строго НАД основным контентом */}
+      {/* Кнопка смещена ниже безопасной зоны кнопок Telegram на top-[96px] */}
       {dbUser && !selectedPlayer && (
         <button 
           onClick={() => {
             setIsEditingName(false);
             setSelectedPlayer(dbUser);
           }}
-          className="fixed top-[74px] right-4 z-40 flex items-center space-x-2 bg-[#14171c]/90 border border-white/10 p-1.5 pr-3.5 rounded-full transition-all active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md"
+          className="fixed top-[96px] right-4 z-40 flex items-center space-x-2 bg-[#14171c]/90 border border-white/10 p-1.5 pr-3.5 rounded-full transition-all active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md"
         >
           <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
             <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
@@ -174,8 +174,8 @@ export default function Home() {
         </button>
       )}
 
-      {/* Увеличенный до pt-28 (112px) невидимый отступ, полностью исключающий наложение на кнопки ТГ */}
-      <main className="p-4 pt-28 max-w-md mx-auto transition-all duration-300">
+      {/* Верхний отступ увеличен до pt-36, чтобы контент начинался строго под кнопкой */}
+      <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300">
         
         {selectedPlayer ? (
           <div className="space-y-6 animate-fade-in">
@@ -257,7 +257,7 @@ export default function Home() {
         ) : (
           <>
             {activeTab === 'profile' && (
-              <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in text-center space-y-3">
+              <div className="flex flex-col items-center justify-center min-h-[45vh] animate-fade-in text-center space-y-3">
                 <div className="text-2xl font-black tracking-widest text-[#c0ff00] bg-[#c0ff00]/5 px-6 py-3.5 rounded-2xl border border-[#c0ff00]/10 shadow-lg shadow-[#c0ff00]/5">
                   В РАЗРАБОТКЕ
                 </div>
@@ -282,7 +282,7 @@ export default function Home() {
 
                 {isEditing ? (
                   <div className="space-y-4 transition-all duration-300 scale-100">
-                    <div className="bg-[#14171c] p-2 rounded-xl border border-white/5 sticky top-[74px] z-40 flex flex-wrap gap-1 items-center justify-between shadow-xl backdrop-blur-md bg-opacity-95">
+                    <div className="bg-[#14171c] p-2 rounded-xl border border-white/5 sticky top-[96px] z-40 flex flex-wrap gap-1 items-center justify-between shadow-xl backdrop-blur-md bg-opacity-95">
                       <div className="flex gap-1">
                         <button onClick={() => execEditorCommand('bold')} className="p-2 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Bold size={16}/></button>
                         <button onClick={() => execEditorCommand('italic')} className="p-2 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Italic size={16}/></button>
