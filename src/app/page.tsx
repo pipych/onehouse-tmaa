@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { User, BookOpen, Users, Edit2, Check, Heading1, Heading2, Bold, Italic, Strikethrough } from 'lucide-react';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Player {
   id: string;
@@ -22,25 +27,22 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players'>('profile');
   
-  // Переменные для разделов
   const [players, setPlayers] = useState<Player[]>([]);
   const [constitution, setConstitution] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [newRpName, setNewRpName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
-  // Инициализация Telegram WebApp и авторизация
   useEffect(() => {
     const initTMA = async () => {
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
         const tg = (window as any).Telegram.WebApp;
         tg.ready();
-        tg.expand(); // Расширяем приложение на весь экран телефона
+        tg.expand();
 
         const initData = tg.initData;
         if (!initData && process.env.NODE_ENV === 'development') {
-          // Заглушка для локальных тестов, если запускаешь не в ТГ
-          fetchUserData(tg.initDataUnsafe?.user || { id: dbUser?.tg_id }); 
+          setLoading(false);
           return;
         }
 
@@ -56,7 +58,6 @@ export default function Home() {
             setDbUser(result.user);
             setNewRpName(result.user.rp_name);
             setTgUser(tg.initDataUnsafe.user);
-            // Подгружаем остальные данные
             loadPlayers();
             loadConstitution();
           } else {
@@ -68,18 +69,12 @@ export default function Home() {
           setLoading(false);
         }
       } else {
-        // Ожидание загрузки скрипта Telegram
         setTimeout(initTMA, 500);
       }
     };
 
     initTMA();
   }, []);
-
-  const fetchUserData = async (user: any) => {
-    // Вспомогательный метод для разработки
-    setLoading(false);
-  };
 
   const loadPlayers = async () => {
     const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
@@ -106,7 +101,6 @@ export default function Home() {
     if (!error) setIsEditing(false);
   };
 
-  // Проверка прав на редактирование конституции
   const canEditConstitution = dbUser?.roles.some(r => ['admin', 'president', 'editor'].includes(r));
 
   if (loading) {
@@ -135,7 +129,6 @@ export default function Home() {
     <div className="min-h-screen bg-[#090b0e] text-white pb-24 font-sans antialiased selection:bg-[#c0ff00] selection:text-black">
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
 
-      {/* ШАПКА ПРИЛОЖЕНИЯ */}
       <header className="px-4 pt-4 pb-2 bg-[#090b0e] sticky top-0 z-50 border-b border-[#14171c]">
         <div className="flex items-center justify-between">
           <span className="text-xl font-black tracking-wider text-[#c0ff00]">ONEHOUSE</span>
@@ -145,15 +138,13 @@ export default function Home() {
         </div>
       </header>
 
-      {/* КОНТЕНТ ВКЛАДОК */}
       <main className="p-4 animate-fadeIn">
         
-        {/* 1. ВКЛАДКА ПРОФИЛЯ (ГЛАВНАЯ) */}
         {activeTab === 'profile' && dbUser && (
           <div className="space-y-6">
             <div className="bg-[#14171c] p-5 rounded-2xl border border-white/5 flex items-center space-x-4">
               <div className="relative w-16 h-16 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00]">
-                <img src={dbUser.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 {isEditingName ? (
@@ -180,7 +171,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Роли как в Дискорде */}
             <div className="space-y-2">
               <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Твои Роли</div>
               <div className="flex flex-wrap gap-2">
@@ -202,7 +192,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 2. ВКЛАДКА КОНСТИТУЦИИ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -220,7 +209,6 @@ export default function Home() {
 
             {isEditing ? (
               <div className="space-y-2">
-                {/* Панель дефолтного форматирования HTML-текста */}
                 <div className="bg-[#14171c] p-2 rounded-xl border border-white/5 flex flex-wrap gap-2 text-gray-400">
                   <button onClick={() => setConstitution(c => c + '<b></b>')} className="p-1 hover:text-white"><Bold size={16}/></button>
                   <button onClick={() => setConstitution(c => c + '<i></i>')} className="p-1 hover:text-white"><Italic size={16}/></button>
@@ -252,7 +240,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 3. ВКЛАДКА ИГРОКОВ */}
         {activeTab === 'players' && (
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-[#c0ff00]">Жители сервера ({players.length})</h2>
@@ -260,7 +247,7 @@ export default function Home() {
               {players.map((player) => (
                 <div key={player.id} className="bg-[#14171c] p-3 rounded-xl border border-white/5 flex items-center space-x-3">
                   <div className="w-11 h-11 rounded-full overflow-hidden bg-[#1c2026] border border-white/10">
-                    <img src={player.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold truncate">{player.rp_name}</div>
@@ -281,11 +268,9 @@ export default function Home() {
 
       </main>
 
-      {/* НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ (BLUM STYLE) */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[#090b0e]/90 backdrop-blur-lg border-t border-[#14171c] px-6 py-2 z-50">
         <div className="flex items-center justify-between max-w-md mx-auto">
           
-          {/* Кнопка Профиль */}
           <button 
             onClick={() => setActiveTab('profile')} 
             className={`flex flex-col items-center space-y-1 py-1 px-3 rounded-xl transition ${activeTab === 'profile' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
@@ -294,7 +279,6 @@ export default function Home() {
             <span className="text-[10px] font-medium tracking-wide">Главная</span>
           </button>
 
-          {/* Кнопка Конституция */}
           <button 
             onClick={() => setActiveTab('constitution')} 
             className={`flex flex-col items-center space-y-1 py-1 px-3 rounded-xl transition ${activeTab === 'constitution' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
@@ -303,7 +287,6 @@ export default function Home() {
             <span className="text-[10px] font-medium tracking-wide">Законы</span>
           </button>
 
-          {/* Кнопка Игроки */}
           <button 
             onClick={() => setActiveTab('players')} 
             className={`flex flex-col items-center space-y-1 py-1 px-3 rounded-xl transition ${activeTab === 'players' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
