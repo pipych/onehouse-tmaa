@@ -5,7 +5,6 @@ import Script from 'next/script';
 import { createClient } from '@supabase/supabase-js';
 import { User, BookOpen, Users, Edit2, Check, Heading1, Heading2, Bold, Italic, Strikethrough } from 'lucide-react';
 
-// Прямая инициализация без локальных файлов-зависимостей
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
