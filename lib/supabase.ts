@@ -1,10 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Вставь сюда свои данные прямо текстом в кавычках:
+const supabaseUrl = "https://supabase.com/dashboard/project/sxdswqgoqgvkmdknqzir"; 
+const supabaseAnonKey = "sb_publishable_7_PN5q0F5n9wdnnSm4xiLQ_vHEftQL9";
 
-// Если переменных нет (например, при сборке), используем валидный URL-заглушку, чтобы сборщик не падал
-export const supabase = createClient(
-  supabaseUrl && supabaseUrl.startsWith('http') ? supabaseUrl : 'https://placeholder-project.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
