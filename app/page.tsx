@@ -148,23 +148,26 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300">
       
-      <header className="px-4 pt-4 pb-8 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/80 to-transparent backdrop-blur-md sticky top-0 z-50 flex items-center justify-between border-b border-white/5">
-        <span className="text-xl font-black tracking-wider text-[#c0ff00] active:scale-95 transition-transform duration-200">ONEHOUSE</span>
-        
-        {dbUser && (
-          <button 
-            onClick={() => {
-              setIsEditingName(false);
-              setSelectedPlayer(dbUser);
-            }}
-            className={`flex items-center space-x-2 bg-[#14171c]/80 hover:bg-[#14171c] border p-1 pr-3 rounded-full transition-all active:scale-95 shadow-md ${selectedPlayer?.id === dbUser.id ? 'border-[#c0ff00]' : 'border-white/5'}`}
-          >
-            <div className="w-7 h-7 rounded-full overflow-hidden border border-white/10">
-              <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
-            </div>
-            <span className="text-xs font-bold truncate max-w-[80px] text-gray-200">Профиль</span>
-          </button>
-        )}
+      {/* Компактная, симметричная шапка с размытием и плавным градиентом */}
+      <header className="sticky top-0 z-50 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent backdrop-blur-md border-b border-white/5 px-4 py-3.5">
+        <div className="max-w-md mx-auto flex items-center justify-between w-full">
+          <span className="text-lg font-black tracking-wider text-[#c0ff00] active:scale-95 transition-transform duration-200">ONEHOUSE</span>
+          
+          {dbUser && (
+            <button 
+              onClick={() => {
+                setIsEditingName(false);
+                setSelectedPlayer(dbUser);
+              }}
+              className={`flex items-center space-x-2 bg-[#14171c]/80 hover:bg-[#14171c] border p-1 pr-3 rounded-full transition-all active:scale-95 shadow-md ${selectedPlayer?.id === dbUser.id ? 'border-[#c0ff00]' : 'border-white/5'}`}
+            >
+              <div className="w-6 h-6 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
+                <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-xs font-bold text-gray-200">Профиль</span>
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="p-4 max-w-md mx-auto transition-all duration-300">
@@ -274,7 +277,7 @@ export default function Home() {
 
                 {isEditing ? (
                   <div className="space-y-4 transition-all duration-300 scale-100">
-                    <div className="bg-[#14171c] p-2 rounded-xl border border-white/5 sticky top-24 z-40 flex flex-wrap gap-1 items-center justify-between shadow-xl backdrop-blur-md bg-opacity-95">
+                    <div className="bg-[#14171c] p-2 rounded-xl border border-white/5 sticky top-20 z-40 flex flex-wrap gap-1 items-center justify-between shadow-xl backdrop-blur-md bg-opacity-95">
                       <div className="flex gap-1">
                         <button onClick={() => execEditorCommand('bold')} className="p-2 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Bold size={16}/></button>
                         <button onClick={() => execEditorCommand('italic')} className="p-2 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Italic size={16}/></button>
@@ -382,7 +385,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* Симметричная нижняя док-панель на базе CSS Grid */}
       <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all">
         <div className="grid grid-cols-3 w-full items-center justify-items-center">
           
