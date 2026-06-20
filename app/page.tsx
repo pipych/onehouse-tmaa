@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ArrowLeft, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
-  Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus
+  Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload
 } from 'lucide-react';
 
 interface Player {
@@ -43,6 +43,10 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
+  // Состояния для статуса загрузки файлов
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+  const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
+
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
@@ -56,7 +60,7 @@ export default function Home() {
     { name: 'president', color: '#f59e0b', canEditConstitution: true },
     { name: 'editor', color: '#3b82f6', canEditConstitution: true },
     { name: 'citizen', color: '#10b981', canEditConstitution: false },
-    { name: 'мёртв', color: '#6b7280', canEditConstitution: false } // Роль "мертв" по умолчанию серенькая
+    { name: 'мёртв', color: '#6b7280', canEditConstitution: false }
   ]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
@@ -124,6 +128,43 @@ export default function Home() {
   const loadConstitution = async () => {
     const { data } = await supabase.from('constitution').select('content').eq('id', 1).single();
     if (data) setConstitution(data.content);
+  };
+
+  // Универсальная функция загрузки файла в Storage
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>, 
+    setUrlCallback: (url: string) => void, 
+    setLoadingState: (loading: boolean) => void
+  ) => {
+    try {
+      setLoadingState(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      // Генерируем уникальное имя файла
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error("Ошибка при загрузке:", error);
+        alert(`Ошибка загрузки: ${error.message}`);
+        return;
+      }
+
+      // Получаем публичную ссылку на картинку
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      if (urlData) {
+        setUrlCallback(urlData.publicUrl);
+      }
+    } catch (e: any) {
+      alert(`Сбой при загрузке: ${e.message}`);
+    } finally {
+      setLoadingState(false);
+    }
   };
 
   const saveProfileData = async () => {
@@ -283,7 +324,6 @@ export default function Home() {
 
   const showToolbar = isEditing && activeTab === 'constitution' && !selectedPlayer;
 
-  // Сортировка: сначала живые (по алфавиту), в конце мертвые
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
     .sort((a, b) => {
@@ -393,16 +433,24 @@ export default function Home() {
                   onChange={(e) => setNewRpName(e.target.value)}
                   className="ui-input text-center font-bold"
                 />
-                <input 
-                  type="text" 
-                  placeholder="Ссылка на аватарку"
-                  value={newAvatarUrl} 
-                  onChange={(e) => setNewAvatarUrl(e.target.value)}
-                  className="ui-input text-center text-xs text-gray-400 font-mono"
-                />
+                
+                {/* Кнопка загрузки аватара в профиле */}
+                <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                    onChange={(e) => handleFileUpload(e, setNewAvatarUrl, setIsUploadingProfile)}
+                    disabled={isUploadingProfile}
+                  />
+                  <Upload size={14} className={isUploadingProfile ? "animate-bounce" : ""} />
+                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим файл...' : 'Загрузить из галереи'}</span>
+                </label>
+
                 <button 
                   onClick={saveProfileData} 
-                  className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2"
+                  disabled={isUploadingProfile}
+                  className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2 disabled:opacity-50"
                 >
                   <Save size={14} />
                   <span>Сохранить всё</span>
@@ -621,11 +669,29 @@ export default function Home() {
                 <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
                 <input type="text" placeholder="Minecraft Никнейм" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
                 <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="URL Аватарки" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
                 <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
+                
+                {/* Кнопка загрузки аватара в админке */}
+                <label className="ui-pill-btn w-full justify-center !bg-[#1c2026] !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-3 relative overflow-hidden">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                    onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingNewUser)}
+                    disabled={isUploadingNewUser}
+                  />
+                  <Upload size={16} className={isUploadingNewUser ? "animate-bounce" : (addAvatarUrl ? "text-[#c0ff00]" : "")} />
+                  <span className="font-medium">
+                    {isUploadingNewUser ? 'Загрузка фото...' : (addAvatarUrl ? 'Фото загружено ✅' : 'Загрузить аватарку из галереи')}
+                  </span>
+                </label>
               </div>
 
-              <button onClick={handleAddPlayer} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3">
+              <button 
+                onClick={handleAddPlayer} 
+                disabled={isUploadingNewUser}
+                className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3 disabled:opacity-50"
+              >
                 <Check size={16} />
                 <span>Создать аккаунт</span>
               </button>
