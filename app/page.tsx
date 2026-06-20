@@ -127,6 +127,7 @@ export default function Home() {
   };
 
   const canEditConstitution = dbUser?.roles.some(r => ['admin', 'president', 'editor'].includes(r));
+  const showToolbar = isEditing && activeTab === 'constitution' && !selectedPlayer;
 
   if (loading) {
     return (
@@ -155,22 +156,47 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
       
+      {/* Невидимый щит-затемнение */}
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {dbUser && !selectedPlayer && (
-        <button 
-          onClick={() => {
-            setIsEditingName(false);
-            setSelectedPlayer(dbUser);
-          }}
-          className="fixed top-[96px] right-4 z-40 flex items-center space-x-2 bg-[#14171c]/90 border border-white/10 p-1.5 pr-3.5 rounded-full transition-all active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md"
-        >
-          <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
-            <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
+      {/* Единая плоскость верхних фиксированных элементов управления */}
+      <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-between gap-2 pointer-events-none">
+        
+        {/* Панель форматирования: плавно появляется и занимает всё свободное место слева */}
+        <div className={`p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 transition-all duration-300 ease-in-out pointer-events-auto origin-left ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'absolute opacity-0 scale-95 -translate-x-4 pointer-events-none'}`}>
+          <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5">
+            <button onClick={() => execEditorCommand('bold')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Bold size={14}/></button>
+            <button onClick={() => execEditorCommand('italic')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Italic size={14}/></button>
+            <button onClick={() => execEditorCommand('strikeThrough')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Strikethrough size={14}/></button>
+            <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+            <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading1 size={14}/></button>
+            <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading2 size={14}/></button>
+            <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+            <button onClick={() => execEditorCommand('justifyLeft')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignLeft size={14}/></button>
+            <button onClick={() => execEditorCommand('justifyCenter')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignCenter size={14}/></button>
+            <button onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
           </div>
-          <span className="text-[11px] font-bold text-gray-200 tracking-wide">Профиль</span>
-        </button>
-      )}
+        </div>
+
+        {/* Кнопка профиля: плавно сжимается до чистого кружка аватара при активном режиме редактирования */}
+        {dbUser && !selectedPlayer && (
+          <button 
+            onClick={() => {
+              setIsEditingName(false);
+              setSelectedPlayer(dbUser);
+            }}
+            className={`ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto ${showToolbar ? 'pr-1.5 bg-[#14171c]/95' : 'pr-3.5'}`}
+          >
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0 transition-transform duration-300">
+              <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
+            </div>
+            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap inline-block ${showToolbar ? 'w-0 opacity-0 ml-0 invisible' : 'w-11 opacity-100 ml-2'}`}>
+              Профиль
+            </span>
+          </button>
+        )}
+
+      </div>
 
       <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full overflow-x-hidden break-words">
         
@@ -278,22 +304,7 @@ export default function Home() {
                 </div>
 
                 {isEditing ? (
-                  <div className="space-y-4 transition-all duration-300 scale-100 w-full overflow-x-hidden">
-                    <div className="bg-[#14171c] p-1.5 rounded-xl border border-white/5 sticky top-[96px] z-40 flex flex-wrap gap-0.5 items-center justify-between shadow-xl backdrop-blur-md bg-opacity-95 max-w-full">
-                      <div className="flex flex-wrap gap-0.5">
-                        <button onClick={() => execEditorCommand('bold')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Bold size={15}/></button>
-                        <button onClick={() => execEditorCommand('italic')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Italic size={15}/></button>
-                        <button onClick={() => execEditorCommand('strikeThrough')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Strikethrough size={15}/></button>
-                        <div className="w-[1px] h-4 bg-white/10 mx-0.5 self-center" />
-                        <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Heading1 size={15}/></button>
-                        <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><Heading2 size={15}/></button>
-                        <div className="w-[1px] h-4 bg-white/10 mx-0.5 self-center" />
-                        <button onClick={() => execEditorCommand('justifyLeft')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><AlignLeft size={15}/></button>
-                        <button onClick={() => execEditorCommand('justifyCenter')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-lg transition-all active:scale-90"><AlignCenter size={15}/></button>
-                      </div>
-                      <button onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-lg transition-colors ml-auto active:scale-90 flex-shrink-0"><X size={15} /></button>
-                    </div>
-
+                  <div className="space-y-4 scale-100 w-full overflow-x-hidden pt-2">
                     <div 
                       ref={editorRef}
                       contentEditable
@@ -305,7 +316,7 @@ export default function Home() {
 
                     <button 
                       onClick={saveConstitution} 
-                      className="w-full bg-[#c0ff00] text-black font-bold py-3.5 rounded-2xl hover:bg-[#aee600] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#c0ff00]/10 flex items-center justify-center space-x-2 w-full"
+                      className="w-full bg-[#c0ff00] text-black font-bold py-3.5 rounded-2xl hover:bg-[#aee600] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#c0ff00]/10 flex items-center justify-center space-x-2"
                     >
                       <Check size={18} />
                       <span>Сохранить законы</span>
@@ -426,6 +437,13 @@ export default function Home() {
         body, html, button, input, textarea, div, span {
           font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
           max-w-full;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(8px); }
