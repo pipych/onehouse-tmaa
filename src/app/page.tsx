@@ -41,7 +41,8 @@ export default function Home() {
         tg.expand();
 
         const initData = tg.initData;
-        if (!initData && process.env.NODE_ENV === 'development') {
+        if (!initData) {
+          setError('Данные initData пусты. Открой приложение строго внутри Telegram бота.');
           setLoading(false);
           return;
         }
@@ -52,7 +53,17 @@ export default function Home() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData })
           });
-          const result = await res.json();
+
+          let result: any = {};
+          const textResponse = await res.text();
+          
+          try {
+            result = JSON.parse(textResponse);
+          } catch (e) {
+            setError(`Сервер вернул HTML вместо JSON. Статус: ${res.status}. Ответ: ${textResponse.slice(0, 100)}`);
+            setLoading(false);
+            return;
+          }
 
           if (res.ok) {
             setDbUser(result.user);
@@ -61,10 +72,10 @@ export default function Home() {
             loadPlayers();
             loadConstitution();
           } else {
-            setError(result.error || 'Ошибка авторизации');
+            setError(`Ошибка бэкенда (Статус ${res.status}): ${result.error || JSON.stringify(result)}`);
           }
-        } catch (e) {
-          setError('Не удалось связаться с сервером авторизации');
+        } catch (e: any) {
+          setError(`Критическая ошибка сети: ${e.message}`);
         } finally {
           setLoading(false);
         }
@@ -116,10 +127,12 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white">
-        <div className="bg-[#14171c] p-6 rounded-2xl border border-red-500/30">
+      <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white">
+        <div className="bg-[#14171c] p-6 rounded-2xl border border-red-500/30 max-w-md w-full break-words">
           <div className="text-red-500 font-bold text-lg mb-2">Доступ ограничен</div>
-          <div className="text-sm text-gray-400">{error}</div>
+          <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">
+            {error}
+          </div>
         </div>
       </div>
     );
