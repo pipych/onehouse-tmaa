@@ -62,9 +62,9 @@ const checkUserInDb = async (tgId: number) => {
         .single();
 
       if (dbError) {
-        setError(`Ошибка Supabase: ${dbError.message} (Код: ${dbError.code}). Проверь правильность URL и Anon Key в Vercel.`);
+        setError(`Ошибка Supabase: ${dbError.message} (Код: ${dbError.code}).`);
       } else if (!user) {
-        setError(`Связь с базой есть, но пользователь с TG ID ${tgId} физически отсутствует в таблице users.`);
+        setError(`Пользователь с TG ID ${tgId} отсутствует в таблице.`);
       } else {
         setDbUser(user);
         setNewRpName(user.rp_name);
@@ -72,12 +72,13 @@ const checkUserInDb = async (tgId: number) => {
         loadConstitution();
       }
     } catch (e: any) {
-      setError(`Критическая ошибка: ${e.message}`);
+      // Выводим URL на экран для диагностики
+      const currentUrl = (supabase as any).supabaseUrl || 'Не определен';
+      setError(`Сетевая ошибка базы. Ссылка: ${currentUrl}. Текст: ${e.message}`);
     } finally {
       setLoading(false);
     }
   };
-
   const loadPlayers = async () => {
     const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
     if (data) setPlayers(data);
