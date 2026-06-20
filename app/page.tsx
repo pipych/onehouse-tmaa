@@ -143,28 +143,41 @@ export default function Home() {
     }
   };
 
-  const handleAddPlayer = async () => {
-    if (!addTgId || !addRpName || !addMcNickname) return;
-    const { error } = await supabase.from('users').insert([{
-      tg_id: parseInt(addTgId),
-      tg_username: addTgUsername,
+    const handleAddPlayer = async () => {
+    // 1. Простая валидация: tg_id должен быть числом
+    const tgIdNum = parseInt(addTgId);
+    if (isNaN(tgIdNum) || !addRpName.trim() || !addMcNickname.trim()) {
+      console.error("Валидация не пройдена: проверь ID и обязательные поля");
+      return;
+    }
+
+    console.log("Попытка добавления игрока:", { tgIdNum, addRpName, addMcNickname });
+
+    const { data, error } = await supabase.from('users').insert([{
+      tg_id: tgIdNum,
+      tg_username: addTgUsername || 'unknown',
       mc_nickname: addMcNickname,
       rp_name: addRpName,
-      avatar_url: addAvatarUrl,
+      avatar_url: addAvatarUrl || 'https://via.placeholder.com/150',
       roles: addRoles,
       party: addParty || 'Нет партии'
     }]);
 
-    if (!error) {
+    if (error) {
+      console.error("Ошибка Supabase:", error);
+      alert(`Ошибка: ${error.message}`); // Чтобы видеть ошибку прямо в приложении
+    } else {
+      console.log("Успешно добавлено:", data);
       setAddTgId('');
       setAddTgUsername('');
       setAddMcNickname('');
       setAddRpName('');
       setAddAvatarUrl('');
       setAddParty('');
-      loadPlayers();
+      loadPlayers(); // Обновляем список
     }
   };
+
 
   const handleCreateRole = () => {
     if (!newRoleName.trim()) return;
