@@ -1,14 +1,12 @@
 'use client';
 
+// Отключаем статический пререндеринг при сборке проекта
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { User, BookOpen, Users, Edit2, Check, Heading1, Heading2, Bold, Italic, Strikethrough } from 'lucide-react';
-
-// Безопасная инициализация с заглушками для этапа сборки
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Player {
   id: string;
@@ -254,7 +252,7 @@ export default function Home() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold truncate">{player.rp_name}</div>
-                    <div className="text-xs text-gray-500 truncate font-mono">{player.mc_nickname}</div>
+                    <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
                   </div>
                   <div className="flex gap-1">
                     {player.roles.slice(0, 1).map((r, i) => (
