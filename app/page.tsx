@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ArrowLeft, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
-  Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter
+  Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus
 } from 'lucide-react';
 
 interface Player {
@@ -41,6 +41,7 @@ export default function Home() {
   const [newAvatarUrl, setNewAvatarUrl] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
 
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
@@ -80,9 +81,8 @@ export default function Home() {
       setTgUser(userFromTg);
       checkUserInDb(userFromTg.id);
     } else {
-      const mockTgId = 654479769; 
-      setTgUser({ id: mockTgId, username: 'developer' });
-      checkUserInDb(mockTgId);
+      setError('Пожалуйста, откройте приложение внутри Telegram.');
+      setLoading(false);
     }
 
     const savedRoles = localStorage.getItem('onehouse_custom_roles');
@@ -143,8 +143,7 @@ export default function Home() {
     }
   };
 
-    const handleAddPlayer = async () => {
-    // 1. Простая валидация: tg_id должен быть числом
+  const handleAddPlayer = async () => {
     const tgIdNum = parseInt(addTgId);
     if (isNaN(tgIdNum) || !addRpName.trim() || !addMcNickname.trim()) {
       console.error("Валидация не пройдена: проверь ID и обязательные поля");
@@ -165,7 +164,7 @@ export default function Home() {
 
     if (error) {
       console.error("Ошибка Supabase:", error);
-      alert(`Ошибка: ${error.message}`); // Чтобы видеть ошибку прямо в приложении
+      alert(`Ошибка: ${error.message}`);
     } else {
       console.log("Успешно добавлено:", data);
       setAddTgId('');
@@ -174,10 +173,9 @@ export default function Home() {
       setAddRpName('');
       setAddAvatarUrl('');
       setAddParty('');
-      loadPlayers(); // Обновляем список
+      loadPlayers();
     }
   };
-
 
   const handleCreateRole = () => {
     if (!newRoleName.trim()) return;
@@ -209,6 +207,42 @@ export default function Home() {
     localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
   };
 
+  const handleAddRoleToUser = async (roleName: string) => {
+    if (!selectedPlayer) return;
+    if (selectedPlayer.roles.includes(roleName)) return;
+
+    const updatedRoles = [...selectedPlayer.roles, roleName];
+    const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
+    
+    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    
+    if (!error) {
+      setSelectedPlayer(updatedPlayer);
+      setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
+      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
+      setShowRoleSelector(false);
+    } else {
+      alert(`Ошибка при выдаче роли: ${error.message}`);
+    }
+  };
+
+  const handleRemoveRoleFromUser = async (roleName: string) => {
+    if (!selectedPlayer) return;
+    
+    const updatedRoles = selectedPlayer.roles.filter(r => r !== roleName);
+    const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
+    
+    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    
+    if (!error) {
+      setSelectedPlayer(updatedPlayer);
+      setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
+      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
+    } else {
+      alert(`Ошибка при удалении роли: ${error.message}`);
+    }
+  };
+
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
       document.execCommand(command, false, value);
@@ -231,6 +265,7 @@ export default function Home() {
   const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
     setSelectedPlayer(null);
     setIsEditingProfile(false);
+    setShowRoleSelector(false);
     setActiveTab(tab);
   };
 
@@ -275,7 +310,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
       
-      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); }} />
+      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
 
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
@@ -318,15 +353,15 @@ export default function Home() {
 
       {/* Окно детального просмотра профиля */}
       {selectedPlayer && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 bg-[#14171c] rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none" />
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 bg-[#14171c] rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible">
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
           
-          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all">
+          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10">
             <X size={14} />
           </button>
 
           {selectedPlayer.id === dbUser?.id && !isEditingProfile && (
-            <button onClick={() => setIsEditingProfile(true)} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
+            <button onClick={() => setIsEditingProfile(true)} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10">
               <Edit2 size={14} />
             </button>
           )}
@@ -376,16 +411,60 @@ export default function Home() {
 
           <div className="text-left space-y-2 w-full">
             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center relative">
+              
               {selectedPlayer.roles.map((role, idx) => (
                 <span 
                   key={idx} 
-                  className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
+                  className={`text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 ${isAdmin ? 'pl-3 pr-1' : 'px-3'}`}
                   style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}
                 >
-                  • {role.toUpperCase()}
+                  <span>• {role.toUpperCase()}</span>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => handleRemoveRoleFromUser(role)}
+                      className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all active:scale-90"
+                    >
+                      <X size={10} />
+                    </button>
+                  )}
                 </span>
               ))}
+
+              {isAdmin && (
+                <div className="relative inline-block">
+                  <button 
+                    onClick={() => setShowRoleSelector(!showRoleSelector)} 
+                    className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-[#c0ff00] hover:border-[#c0ff00]/40 transition-all active:scale-90 shadow-sm"
+                  >
+                    <Plus size={14} />
+                  </button>
+                  
+                  {showRoleSelector && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
+                      <div className="text-[10px] text-gray-500 uppercase font-bold px-2 py-1">Выдать роль:</div>
+                      
+                      {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).length === 0 && (
+                         <div className="text-xs text-gray-500 px-2 py-1">Нет доступных ролей</div>
+                      )}
+                      
+                      {customRoles
+                        .filter(cr => !selectedPlayer.roles.includes(cr.name))
+                        .map((cr, idx) => (
+                        <button 
+                          key={idx} 
+                          onClick={() => handleAddRoleToUser(cr.name)} 
+                          className="text-xs text-left px-3 py-2.5 hover:bg-white/5 rounded-xl font-bold transition-all flex items-center gap-2 active:scale-95"
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0" style={{backgroundColor: cr.color}}></span>
+                          <span className="truncate" style={{color: cr.color}}>{cr.name.toUpperCase()}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           </div>
         </div>
