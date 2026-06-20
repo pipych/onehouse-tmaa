@@ -5,8 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  User, BookOpen, Users, Edit2, Check, X, ArrowLeft,
-  Heading1, Heading2, Bold, Italic, Strikethrough, AlignCenter, AlignLeft
+  User, BookOpen, Users, Edit2, Check, X, ArrowLeft, ShieldAlert, UserPlus, ShieldCheck, Palette
 } from 'lucide-react';
 
 interface Player {
@@ -17,6 +16,13 @@ interface Player {
   rp_name: string;
   avatar_url: string;
   roles: string[];
+  party?: string;
+}
+
+interface CustomRole {
+  name: string;
+  color: string;
+  canEditConstitution: boolean;
 }
 
 export default function Home() {
@@ -24,7 +30,7 @@ export default function Home() {
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players'>('players');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin'>('players');
   
   const [players, setPlayers] = useState<Player[]>([]);
   const [constitution, setConstitution] = useState('');
@@ -32,6 +38,26 @@ export default function Home() {
   const [newRpName, setNewRpName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  // Состояния для админ-панели
+  const [addTgId, setAddTgId] = useState('');
+  const [addTgUsername, setAddTgUsername] = useState('');
+  const [addMcNickname, setAddMcNickname] = useState('');
+  const [addRpName, setAddRpName] = useState('');
+  const [addAvatarUrl, setAddAvatarUrl] = useState('');
+  const [addParty, setAddParty] = useState('');
+  const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
+
+  // Управление кастомными ролями
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([
+    { name: 'admin', color: '#ef4444', canEditConstitution: true },
+    { name: 'president', color: '#f59e0b', canEditConstitution: true },
+    { name: 'editor', color: '#3b82f6', canEditConstitution: true },
+    { name: 'citizen', color: '#10b981', canEditConstitution: false }
+  ]);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
+  const [newRolePerm, setNewRolePerm] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +82,11 @@ export default function Home() {
       const mockTgId = 654479769; 
       setTgUser({ id: mockTgId, username: 'developer' });
       checkUserInDb(mockTgId);
+    }
+
+    const savedRoles = localStorage.getItem('onehouse_custom_roles');
+    if (savedRoles) {
+      setCustomRoles(JSON.parse(savedRoles));
     }
   }, []);
 
@@ -82,8 +113,6 @@ export default function Home() {
     }
   };
 
-  const mt = () => {};
-
   const loadPlayers = async () => {
     const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
     if (data) setPlayers(data);
@@ -102,6 +131,52 @@ export default function Home() {
       setIsEditingName(false);
       loadPlayers();
     }
+  };
+
+  const handleAddPlayer = async () => {
+    if (!addTgId || !addRpName || !addMcNickname) return;
+    const { error } = await supabase.from('users').insert([{
+      tg_id: parseInt(addTgId),
+      tg_username: addTgUsername,
+      mc_nickname: addMcNickname,
+      rp_name: addRpName,
+      avatar_url: addAvatarUrl,
+      roles: addRoles,
+      party: addParty || 'Нет партии'
+    }]);
+
+    if (!error) {
+      setAddTgId('');
+      setAddTgUsername('');
+      setAddMcNickname('');
+      setAddRpName('');
+      setAddAvatarUrl('');
+      setAddParty('');
+      loadPlayers();
+    }
+  };
+
+  const handleCreateRole = () => {
+    if (!newRoleName.trim()) return;
+    const updated = [...customRoles, { name: newRoleName.toLowerCase(), color: newRoleColor, canEditConstitution: newRolePerm }];
+    setCustomRoles(updated);
+    localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
+    setNewRoleName('');
+    setNewRolePerm(false);
+  };
+
+  const handleToggleRolePerm = (index: number) => {
+    const updated = [...customRoles];
+    updated[index].canEditConstitution = !updated[index].canEditConstitution;
+    setCustomRoles(updated);
+    localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
+  };
+
+  const handleUpdateRoleColor = (index: number, color: string) => {
+    const updated = [...customRoles];
+    updated[index].color = color;
+    setCustomRoles(updated);
+    localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
   };
 
   const execEditorCommand = (command: string, value: string = '') => {
@@ -123,12 +198,23 @@ export default function Home() {
     }
   };
 
-  const handleTabChange = (tab: 'profile' | 'constitution' | 'players') => {
+  const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
     setSelectedPlayer(null);
     setActiveTab(tab);
   };
 
-  const canEditConstitution = dbUser?.roles.some(r => ['admin', 'president', 'editor'].includes(r));
+  const isAdmin = dbUser?.roles.includes('admin');
+
+  const canEditConstitution = dbUser?.roles.some(r => {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
+    return found ? found.canEditConstitution : ['admin', 'president', 'editor'].includes(r);
+  });
+
+  const getRoleColor = (roleName: string) => {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
+    return found ? found.color : '#888888';
+  };
+
   const showToolbar = isEditing && activeTab === 'constitution' && !selectedPlayer;
 
   if (loading) {
@@ -136,7 +222,7 @@ export default function Home() {
       <div className="flex h-screen items-center justify-center bg-[#090b0e] text-[#c0ff00]">
         <div className="text-center animate-pulse">
           <div className="text-3xl font-black tracking-widest">ONEHOUSE</div>
-          <div className="text-xs text-gray-400 mt-2">Загрузка профиля...</div>
+          <div className="text-xs text-gray-400 mt-2">Загрузка...</div>
         </div>
       </div>
     );
@@ -145,7 +231,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white animate-fade-in">
-        <div className="bg-[#14171c] p-6 rounded-2xl border border-red-500/30 max-w-md w-full break-words shadow-2xl scale-95 transition-all">
+        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md w-full break-words shadow-2xl scale-95 transition-all">
           <div className="text-red-500 font-bold text-lg mb-2">Авторизация не удалась</div>
           <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">
             {error}
@@ -160,6 +246,7 @@ export default function Home() {
       
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
+      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-between gap-2 pointer-events-none">
         
         <div className={`p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 transition-all duration-300 ease-in-out pointer-events-auto origin-left ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'absolute opacity-0 scale-95 -translate-x-4 pointer-events-none'}`}>
@@ -183,12 +270,12 @@ export default function Home() {
               setIsEditingName(false);
               setSelectedPlayer(dbUser);
             }}
-            className={`ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto ${showToolbar ? 'pr-1.5 bg-[#14171c]/95' : 'pr-3.5'}`}
+            className={`ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto ${showToolbar ? 'max-w-0 opacity-0 ml-0 invisible' : 'max-w-[100px] opacity-100 ml-2'}`}
           >
             <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
               <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
             </div>
-            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap inline-block ${showToolbar ? 'max-w-0 opacity-0 ml-0 invisible' : 'max-w-[60px] opacity-100 ml-2'}`}>
+            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap inline-block ${showToolbar ? 'max-w-0 opacity-0 ml-0' : 'max-w-[60px] opacity-100 ml-2'}`}>
               Профиль
             </span>
           </button>
@@ -202,13 +289,13 @@ export default function Home() {
           <div className="space-y-6 animate-fade-in w-full">
             <button 
               onClick={() => setSelectedPlayer(null)}
-              className="flex items-center space-x-2 text-xs bg-[#14171c] border border-white/5 hover:border-white/10 px-4 py-2 rounded-xl font-semibold text-gray-300 active:scale-95 transition-all shadow-md"
+              className="ui-pill-btn w-fit"
             >
               <ArrowLeft size={14} />
               <span>Назад</span>
             </button>
 
-            <div className="bg-[#14171c] p-6 rounded-3xl border border-white/5 text-center space-y-4 shadow-2xl relative overflow-hidden w-full">
+            <div className="bg-[#14171c] p-6 rounded-[28px] border border-white/5 text-center space-y-4 shadow-2xl relative overflow-hidden w-full transition-all duration-300">
               <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#c0ff00]/10 to-transparent" />
               
               <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg transform transition-transform duration-500 hover:scale-105">
@@ -231,7 +318,7 @@ export default function Home() {
                             await saveRpName();
                             setSelectedPlayer({ ...selectedPlayer, rp_name: newRpName });
                           }} 
-                          className="p-2.5 text-black bg-[#c0ff00] rounded-xl active:scale-90 transition-transform flex-shrink-0"
+                          className="p-2.5 text-black bg-[#c0ff00] rounded-full active:scale-90 transition-all flex-shrink-0"
                         >
                           <Check size={16} />
                         </button>
@@ -239,8 +326,8 @@ export default function Home() {
                     ) : (
                       <div className="flex items-center space-x-2 justify-center w-full">
                         <h2 className="text-2xl font-black tracking-wide text-white break-all">{selectedPlayer.rp_name}</h2>
-                        <button onClick={() => setIsEditingName(true)} className="text-gray-400 hover:text-white transition-colors p-1.5 bg-white/5 rounded-xl border border-white/5 flex-shrink-0">
-                          <Edit2 size={14} />
+                        <button onClick={() => setIsEditingName(true)} className="p-1.5 text-gray-400 bg-white/5 border border-white/5 rounded-full hover:text-white transition-all flex-shrink-0 active:scale-75">
+                          <Edit2 size={12} />
                         </button>
                       </div>
                     )}
@@ -250,7 +337,12 @@ export default function Home() {
                     <h2 className="text-2xl font-black tracking-wide text-white break-all">{selectedPlayer.rp_name}</h2>
                   </div>
                 )}
-                <p className="text-sm text-gray-500 font-mono mt-1 tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
+                <p className="text-sm text-gray-500 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
+                
+                {/* Партия в профиле */}
+                <div className="inline-block px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs text-[#c0ff00] font-medium mt-1">
+                  🏛️ Партия: {selectedPlayer.party || 'Нет партии'}
+                </div>
               </div>
 
               <div className="w-full h-[1px] bg-white/5 my-4" />
@@ -261,12 +353,8 @@ export default function Home() {
                   {selectedPlayer.roles.map((role, idx) => (
                     <span 
                       key={idx} 
-                      className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                        role === 'admin' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                        role === 'president' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                        role === 'editor' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                        'bg-gray-500/10 text-gray-400 border-gray-500/20'
-                      }`}
+                      className="text-xs font-bold px-3 py-1 rounded-full border transition-all"
+                      style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}
                     >
                       • {role.toUpperCase()}
                     </span>
@@ -293,7 +381,7 @@ export default function Home() {
                   {canEditConstitution && !isEditing && (
                     <button 
                       onClick={() => setIsEditing(true)} 
-                      className="flex items-center space-x-1 text-xs bg-[#14171c] border border-white/5 hover:border-[#c0ff00]/30 px-3 py-1.5 rounded-xl font-semibold text-gray-300 transition-all duration-200 active:scale-95 flex-shrink-0"
+                      className="ui-pill-btn"
                     >
                       <Edit2 size={12} />
                       <span>Редактировать</span>
@@ -307,14 +395,14 @@ export default function Home() {
                       ref={editorRef}
                       contentEditable
                       suppressContentEditableWarning
-                      className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-2xl p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words overflow-x-hidden"
+                      className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[24px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words overflow-x-hidden"
                       dangerouslySetInnerHTML={{ __html: constitution }}
                       data-placeholder="Начните писать законы здесь..."
                     />
 
                     <button 
                       onClick={saveConstitution} 
-                      className="w-full bg-[#c0ff00] text-black font-bold py-3.5 rounded-2xl hover:bg-[#aee600] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-[#c0ff00]/10 flex items-center justify-center space-x-2"
+                      className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3.5"
                     >
                       <Check size={18} />
                       <span>Сохранить законы</span>
@@ -322,7 +410,7 @@ export default function Home() {
                   </div>
                 ) : (
                   <div 
-                    className="bg-[#14171c] p-5 rounded-2xl border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full"
+                    className="bg-[#14171c] p-5 rounded-[24px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full"
                     dangerouslySetInnerHTML={{ __html: constitution }}
                   />
                 )}
@@ -340,7 +428,7 @@ export default function Home() {
                         setIsEditingName(false);
                         setSelectedPlayer(dbUser);
                       }}
-                      className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-2xl border border-[#c0ff00]/30 flex items-center space-x-4 transition-all duration-200 cursor-pointer shadow-lg shadow-[#c0ff00]/5 hover:border-[#c0ff00]/50 active:scale-95 w-full"
+                      className="bg-gradient-to-r from-[#14171c] to-[#1c2026] p-4 rounded-[24px] border border-[#c0ff00]/30 flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-lg shadow-[#c0ff00]/5 hover:border-[#c0ff00]/50 active:scale-95 w-full"
                     >
                       <div className="w-14 h-14 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] flex-shrink-0">
                         <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
@@ -351,6 +439,7 @@ export default function Home() {
                           <span className="text-[9px] bg-[#c0ff00] text-black font-black px-1.5 py-0.5 rounded uppercase tracking-tight flex-shrink-0">Вы</span>
                         </div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
+                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                       </div>
                       <div className="flex-shrink-0 text-gray-500">
                         <Edit2 size={16} className="text-[#c0ff00]/80" />
@@ -363,25 +452,30 @@ export default function Home() {
                   <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">
                     Жители сервера ({players.filter(p => p.tg_id !== dbUser?.tg_id).length})
                   </div>
-                  <div className="grid grid-cols-1 gap-2.5 w-full">
+                  <div className="grid grid-cols-1 gap-3 w-full">
                     {players
                       .filter((player) => player.tg_id !== dbUser?.tg_id)
                       .map((player) => (
                         <div 
                           key={player.id} 
                           onClick={() => setSelectedPlayer(player)}
-                          className="bg-[#14171c] p-3 rounded-xl border border-white/5 flex items-center space-x-3 transition-all duration-200 hover:scale-[1.01] hover:border-white/20 hover:bg-[#1a1e24] cursor-pointer shadow-sm active:scale-95 w-full"
+                          className="bg-[#14171c] p-4 rounded-[24px] border border-white/5 flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:bg-[#1a1e24] cursor-pointer shadow-md active:scale-[0.99] w-full"
                         >
-                          <div className="w-11 h-11 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
                             <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-bold truncate text-white">{player.rp_name}</div>
+                            <div className="text-sm font-black truncate text-white tracking-wide">{player.rp_name}</div>
                             <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
+                            <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             {player.roles.slice(0, 1).map((r, i) => (
-                              <span key={i} className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-white/5 border border-white/5 rounded text-gray-400">
+                              <span 
+                                key={i} 
+                                className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full border"
+                                style={{ backgroundColor: `${getRoleColor(r)}10`, color: getRoleColor(r), borderColor: `${getRoleColor(r)}25` }}
+                              >
                                 {r}
                               </span>
                             ))}
@@ -392,18 +486,105 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {/* Вкладка Админ Панели */}
+            {activeTab === 'admin' && isAdmin && (
+              <div className="space-y-6 animate-fade-in w-full">
+                
+                {/* Форма добавления жителя */}
+                <div className="bg-[#14171c] p-5 rounded-[24px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                    <UserPlus size={16} />
+                    <span>Добавить жителя</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="Minecraft Никнейм" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="URL Аватарки" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
+                  </div>
+
+                  <button onClick={handleAddPlayer} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3">
+                    <Check size={16} />
+                    <span>Создать аккаунт</span>
+                  </button>
+                </div>
+
+                {/* Управление ролями и разрешениями */}
+                <div className="bg-[#14171c] p-5 rounded-[24px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                    <ShieldCheck size={16} />
+                    <span>Управление ролями</span>
+                  </div>
+
+                  {/* Добавление новой роли */}
+                  <div className="p-3 bg-black/20 rounded-xl border border-white/5 space-y-3">
+                    <input type="text" placeholder="Название новой роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input"/>
+                    <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center space-x-2 text-xs text-gray-400">
+                        <Palette size={14} />
+                        <span>Цвет роли:</span>
+                        <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer" />
+                      </div>
+                      <label className="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer">
+                        <input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"/>
+                        <span>Ред. законов</span>
+                      </label>
+                    </div>
+                    <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-2">
+                      <span>Создать роль</span>
+                    </button>
+                  </div>
+
+                  {/* Список текущих ролей с переключателями */}
+                  <div className="space-y-2">
+                    {customRoles.map((role, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-black/10 rounded-xl border border-white/5 transition-all">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: role.color }} />
+                          <span className="text-sm font-bold uppercase tracking-wide" style={{ color: role.color }}>{role.name}</span>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={role.canEditConstitution} 
+                              onChange={() => handleToggleRolePerm(idx)} 
+                              className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
+                            />
+                            <span>Законы</span>
+                          </label>
+                          <input 
+                            type="color" 
+                            value={role.color} 
+                            onChange={e => handleUpdateRoleColor(idx, e.target.value)} 
+                            className="w-4 h-4 bg-transparent border-none cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                </div>
+
+              </div>
+            )}
           </>
         )}
       </main>
 
+      {/* Нижняя панель навигации (Pill-shape Grid) */}
       <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all">
-        <div className="grid grid-cols-3 w-full items-center justify-items-center">
+        <div className={`grid w-full items-center justify-items-center ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           
           <button 
             onClick={() => handleTabChange('profile')} 
             className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <User size={22} />
+            <User size={20} />
             <span className="text-[10px] font-medium tracking-wide relative inline-block mt-1">
               Главная
               <span className="absolute -top-1 left-full ml-1 text-[7px] font-extrabold uppercase bg-[#c0ff00]/10 text-[#c0ff00] px-1 py-0.5 rounded tracking-tight border border-[#c0ff00]/25 scale-90 whitespace-nowrap">soon</span>
@@ -414,7 +595,7 @@ export default function Home() {
             onClick={() => handleTabChange('constitution')} 
             className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <BookOpen size={22} />
+            <BookOpen size={20} />
             <span className="text-[10px] font-medium tracking-wide mt-1">Законы</span>
           </button>
 
@@ -422,9 +603,19 @@ export default function Home() {
             onClick={() => handleTabChange('players')} 
             className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <Users size={22} />
+            <Users size={20} />
             <span className="text-[10px] font-medium tracking-wide mt-1">Игроки</span>
           </button>
+
+          {isAdmin && (
+            <button 
+              onClick={() => handleTabChange('admin')} 
+              className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              <ShieldAlert size={20} />
+              <span className="text-[10px] font-medium tracking-wide mt-1">Админ</span>
+            </button>
+          )}
 
         </div>
       </nav>
@@ -444,17 +635,59 @@ export default function Home() {
           scrollbar-width: none;
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+          to { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
         .animate-fade-in {
-          animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          animation: fadeIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
           color: #4b5563;
           cursor: text;
         }
+
+        /* Унифицированный стиль кнопок Mini App */
+        .ui-pill-btn {
+          background-color: #14171c/90;
+          border: 1px border rgba(255, 255, 255, 0.1);
+          padding: 8px 16px;
+          border-radius: 9999px;
+          backdrop-blur: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #e5e7eb;
+          box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ui-pill-btn:hover {
+          border-color: rgba(192, 255, 0, 0.3);
+          color: #ffffff;
+        }
+        .ui-pill-btn:active {
+          transform: scale(0.95);
+        }
+
+        /* Поля ввода */
+        .ui-input {
+          width: 100%;
+          background-color: rgba(0, 0, 0, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 14px;
+          padding: 10px 14px;
+          font-size: 13px;
+          color: #ffffff;
+          outline: none;
+          transition: all 0.25s ease;
+        }
+        .ui-input:focus {
+          border-color: rgba(192, 255, 0, 0.4);
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+
         .prose, .prose * {
           word-break: break-word !important;
           overflow-wrap: break-word !important;
