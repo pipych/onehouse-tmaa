@@ -47,7 +47,7 @@ export default function Home() {
     } else {
       // Режим разработки для ПК (если открыто вне Telegram)
       // ВСТАВЬ СВОЙ РЕАЛЬНЫЙ ЦИФРОВОЙ TG ID ВМЕСТО 123456789:
-      const mockTgId = 123456789; 
+      const mockTgId = 654479769; 
       setTgUser({ id: mockTgId, username: 'developer' });
       checkUserInDb(mockTgId);
     }
