@@ -82,6 +82,8 @@ export default function Home() {
     }
   };
 
+  const mt = () => {};
+
   const loadPlayers = async () => {
     const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
     if (data) setPlayers(data);
@@ -156,13 +158,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 overflow-x-hidden w-full max-w-full">
       
-      {/* Невидимый щит-затемнение */}
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Единая плоскость верхних фиксированных элементов управления */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-between gap-2 pointer-events-none">
         
-        {/* Панель форматирования: плавно появляется и занимает всё свободное место слева */}
         <div className={`p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 transition-all duration-300 ease-in-out pointer-events-auto origin-left ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'absolute opacity-0 scale-95 -translate-x-4 pointer-events-none'}`}>
           <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5">
             <button onClick={() => execEditorCommand('bold')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Bold size={14}/></button>
@@ -178,7 +177,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Кнопка профиля: плавно сжимается до чистого кружка аватара при активном режиме редактирования */}
         {dbUser && !selectedPlayer && (
           <button 
             onClick={() => {
@@ -187,10 +185,10 @@ export default function Home() {
             }}
             className={`ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto ${showToolbar ? 'pr-1.5 bg-[#14171c]/95' : 'pr-3.5'}`}
           >
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0 transition-transform duration-300">
+            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
               <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
             </div>
-            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap inline-block ${showToolbar ? 'w-0 opacity-0 ml-0 invisible' : 'w-11 opacity-100 ml-2'}`}>
+            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap inline-block ${showToolbar ? 'max-w-0 opacity-0 ml-0 invisible' : 'max-w-[60px] opacity-100 ml-2'}`}>
               Профиль
             </span>
           </button>
