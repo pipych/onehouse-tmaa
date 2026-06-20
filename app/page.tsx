@@ -141,7 +141,6 @@ export default function Home() {
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Генерируем уникальное имя файла
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
 
@@ -155,7 +154,6 @@ export default function Home() {
         return;
       }
 
-      // Получаем публичную ссылку на картинку
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
       if (urlData) {
         setUrlCallback(urlData.publicUrl);
@@ -167,21 +165,27 @@ export default function Home() {
     }
   };
 
+  // ОБНОВЛЕНО: Сохранение профиля по ID выбранного игрока
   const saveProfileData = async () => {
-    if (!dbUser || !newRpName.trim()) return;
+    if (!selectedPlayer || !newRpName.trim()) return;
     const { error } = await supabase
       .from('users')
       .update({ rp_name: newRpName, avatar_url: newAvatarUrl })
-      .eq('id', dbUser.id);
+      .eq('id', selectedPlayer.id); // теперь сохраняем для открытого юзера
       
     if (!error) {
-      const updatedUser = { ...dbUser, rp_name: newRpName, avatar_url: newAvatarUrl };
-      setDbUser(updatedUser);
-      if (selectedPlayer?.id === dbUser.id) {
-        setSelectedPlayer(updatedUser);
+      const updatedUser = { ...selectedPlayer, rp_name: newRpName, avatar_url: newAvatarUrl };
+      setSelectedPlayer(updatedUser);
+      
+      // Если редактировали сами себя — обновляем свой личный профиль
+      if (dbUser?.id === selectedPlayer.id) {
+        setDbUser(updatedUser);
       }
+      
       setIsEditingProfile(false);
       loadPlayers();
+    } else {
+      alert(`Ошибка при сохранении: ${error.message}`);
     }
   };
 
@@ -413,8 +417,13 @@ export default function Home() {
             <X size={14} />
           </button>
 
-          {selectedPlayer.id === dbUser?.id && !isEditingProfile && !selectedIsDead && (
-            <button onClick={() => setIsEditingProfile(true)} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10">
+          {/* ОБНОВЛЕНО: Проверка на админа для кнопки редактирования. Также предзагружаем данные профиля */}
+          {((selectedPlayer.id === dbUser?.id && !selectedIsDead) || isAdmin) && !isEditingProfile && (
+            <button onClick={() => {
+              setNewRpName(selectedPlayer.rp_name);
+              setNewAvatarUrl(selectedPlayer.avatar_url || '');
+              setIsEditingProfile(true);
+            }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10">
               <Edit2 size={14} />
             </button>
           )}
@@ -434,7 +443,6 @@ export default function Home() {
                   className="ui-input text-center font-bold"
                 />
                 
-                {/* Кнопка загрузки аватара в профиле */}
                 <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
                   <input 
                     type="file" 
