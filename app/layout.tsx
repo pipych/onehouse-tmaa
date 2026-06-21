@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import "./globals.css";
-import Script from "next/script";
+import "./globals.css"; // Подключение глобальных стилей (шрифты, Tailwind)
 
 export const metadata: Metadata = {
-  title: "OneHouse App",
-  description: "Telegram Mini App",
+  title: "OneApp",
+  description: "Панель управления сервером и профилями игроков",
 };
 
 export default function RootLayout({
@@ -14,15 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
-      <head>
-        <Script 
-          src="https://telegram.org/js/telegram-web-app.js" 
-          strategy="beforeInteractive" 
-        />
-      </head>
-      <body className="bg-[#090b0e] text-white">
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
