@@ -46,12 +46,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // ИЗМЕНЕНО: Теперь стартовая вкладка по умолчанию — Главная (profile)
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin'>('profile');
-  
   const [players, setPlayers] = useState<Player[]>([]);
   
-  // Документы
   const [constitutionText, setConstitutionText] = useState('');
   const [commandmentsText, setCommandmentsText] = useState('');
   const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
@@ -63,7 +60,6 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // Справка
   const [showTooltip, setShowTooltip] = useState<'none' | 'constitution' | 'commandments'>('none');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -344,7 +340,6 @@ export default function Home() {
     if (data) setPlayers(data);
   };
 
-  // ИЗМЕНЕНО: Загружаем обе строки из БД по их реальным ID (1 и 2)
   const loadConstitution = async () => {
     const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]);
     if (data) {
@@ -449,7 +444,6 @@ export default function Home() {
     }
   };
 
-  // ИЗМЕНЕНО: Чистое сохранение в разные ячейки БД
   const saveDocument = async () => {
     if (!editorRef.current || activeDocument === 'none') return;
     
@@ -539,7 +533,26 @@ export default function Home() {
   const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full">
+    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0">
+      
+      {/* 1. ФОН ДЛЯ ТЕЛЕФОНОВ (сплошной цвет, чтобы не грузить мобилки видео) */}
+      <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
+      
+      {/* 2. ЖИВЫЕ ОБОИ ДЛЯ ПК (видео загружается только на десктопе) */}
+      <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="w-full h-full object-cover"
+        >
+          <source src="/bg-video.mp4" type="video/mp4" />
+        </video>
+        {/* Затемняющая пленка поверх видео для читаемости текста */}
+        <div className="absolute inset-0 bg-[#090b0e]/85 backdrop-blur-[2px]" />
+      </div>
+
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
@@ -1119,7 +1132,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ */}
+      {/* НАВИГАЦИОННОЕ МЕНЮ (Тонкая капсула на Десктопе) */}
       <nav className={`fixed bottom-6 left-6 right-6 md:left-8 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
