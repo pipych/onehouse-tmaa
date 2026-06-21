@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  User, BookOpen, Users, Edit2, Check, X, ArrowLeft, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
+  User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw
 } from 'lucide-react';
@@ -44,14 +44,17 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
+  // Статусы загрузки картинок
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
-  // Стейты для Exaroton API
+  // Стейты Exaroton
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
-  const staticIp = "mc.your-domain.com"; // ЗАМЕНИТЕ НА ВАШ СТАТИЧЕСКИЙ IP
+  
+  // ВАШ СТАТИЧЕСКИЙ IP - ЗАМЕНИТЕ НА СВОЙ
+  const staticIp = "mc.your-domain.com"; 
 
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
@@ -98,7 +101,7 @@ export default function Home() {
     if (savedRoles) setCustomRoles(JSON.parse(savedRoles));
   }, []);
 
-  // Функция запроса статуса сервера
+  // Exaroton API: Получение статуса
   const fetchServerStatus = async () => {
     setIsServerLoading(true);
     try {
@@ -114,14 +117,13 @@ export default function Home() {
     }
   };
 
-  // Автоматически обновлять статус при переходе на главную вкладку
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchServerStatus();
     }
   }, [activeTab]);
 
-  // Управление сервером (Старт / Стоп)
+  // Exaroton API: Управление питанием
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
     try {
@@ -132,7 +134,6 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.success) {
-        // Ждем пару секунд и обновляем статус
         setTimeout(fetchServerStatus, 3000);
       } else {
         alert('Не удалось выполнить действие: ' + (data.error || 'Неизвестная ошибка'));
@@ -182,6 +183,7 @@ export default function Home() {
     if (data) setConstitution(data.content);
   };
 
+  // Загрузка аватара в Supabase Storage
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
     try {
       setLoadingState(true);
@@ -200,6 +202,7 @@ export default function Home() {
     }
   };
 
+  // Сохранение профиля по ID редактируемого игрока
   const saveProfileData = async () => {
     if (!selectedPlayer || !newRpName.trim()) return;
     const { error } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
@@ -317,7 +320,6 @@ export default function Home() {
       return a.rp_name.localeCompare(b.rp_name);
     });
 
-  // Расшифровка статусов Exaroton API
   const getServerStatusText = (statusCode: number) => {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -358,15 +360,17 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Верхний док управления */}
+      {/* Верхний док управления (Плавные анимации) */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-end gap-2 pointer-events-none">
         
+        {/* Кнопка сохранения Конституции */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveConstitution} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
+        {/* Панель инструментов редактирования */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-90 translate-x-8 pointer-events-none'}`}>
           <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full">
             <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5 min-w-0">
@@ -384,6 +388,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Анимированная кнопка профиля */}
         {dbUser && !selectedPlayer && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
@@ -471,7 +476,7 @@ export default function Home() {
 
       <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full overflow-x-hidden break-words">
         
-        {/* Вкладка ГЛАВНАЯ - ВИДЖЕТ СЕРВЕРА */}
+        {/* ВИДЖЕТ EXAROTON */}
         {activeTab === 'profile' && (
           <div className="space-y-4 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -488,13 +493,11 @@ export default function Home() {
             </div>
 
             <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 shadow-2xl relative overflow-hidden">
-              {/* Фоновое свечение в зависимости от статуса */}
               {serverInfo && (
                 <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />
               )}
 
               <div className="space-y-5 relative z-10">
-                {/* Статус */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
@@ -510,7 +513,6 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* IP адреса */}
                 <div className="space-y-2">
                   <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                     <div className="min-w-0 flex-1">
@@ -522,20 +524,21 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {serverInfo?.address && serverInfo.status === 1 && (
-                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
+                  {serverInfo?.host && serverInfo.status === 1 && (
+                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 animate-fade-in">
                       <div className="min-w-0 flex-1">
                         <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Прямой IP (Резервный)</div>
-                        <div className="font-mono text-xs text-gray-400 truncate">{serverInfo.address}</div>
+                        <div className="font-mono text-xs text-[#c0ff00] truncate">
+                          {serverInfo.host}:{serverInfo.port}
+                        </div>
                       </div>
-                      <button onClick={() => copyToClipboard(serverInfo.address)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
+                      <button onClick={() => copyToClipboard(`${serverInfo.host}:${serverInfo.port}`)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
                         <Copy size={16} />
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Кнопки управления (только для админов или если нужно всем — уберите isAdmin) */}
                 {isAdmin && (
                   <div className="pt-2 flex gap-2">
                     <button 
@@ -567,7 +570,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Остальные вкладки остаются без изменений... */}
+        {/* ЗАКОНЫ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full overflow-x-hidden">
             <div className="flex items-center justify-between w-full">
@@ -576,6 +579,7 @@ export default function Home() {
                 <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
               )}
             </div>
+
             {isEditing ? (
               <div className="space-y-4 scale-100 w-full overflow-x-hidden pt-2">
                 <div ref={editorRef} contentEditable suppressContentEditableWarning className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words overflow-x-hidden" dangerouslySetInnerHTML={{ __html: constitution }} data-placeholder="Начните писать законы здесь..." />
@@ -586,6 +590,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ИГРОКИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             {dbUser && (
@@ -635,6 +640,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* АДМИН ПАНЕЛЬ */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
