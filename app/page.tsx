@@ -22,6 +22,7 @@ interface Player {
 }
 
 interface CustomRole {
+  id?: string;
   name: string;
   color: string;
   canEditConstitution: boolean;
@@ -44,18 +45,15 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // Статусы загрузки картинок
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
-  // Стейты Exaroton
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
-  // ОСНОВНОЙ IP
-  const staticIp = "Onehouse2.exaroton.me:15879"; 
+  const staticIp = "onehouse2.exaroton.me:15879"; 
 
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
@@ -65,13 +63,7 @@ export default function Home() {
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
 
-  const [customRoles, setCustomRoles] = useState<CustomRole[]>([
-    { name: 'admin', color: '#ef4444', canEditConstitution: true },
-    { name: 'president', color: '#f59e0b', canEditConstitution: true },
-    { name: 'editor', color: '#3b82f6', canEditConstitution: true },
-    { name: 'citizen', color: '#10b981', canEditConstitution: false },
-    { name: 'мёртв', color: '#6b7280', canEditConstitution: false }
-  ]);
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
@@ -97,19 +89,14 @@ export default function Home() {
       setError('Пожалуйста, откройте приложение внутри Telegram.');
       setLoading(false);
     }
-
-    const savedRoles = localStorage.getItem('onehouse_custom_roles');
-    if (savedRoles) setCustomRoles(JSON.parse(savedRoles));
   }, []);
 
-  // Exaroton API: Получение статуса и кредитов
   const fetchServerStatus = async () => {
     setIsServerLoading(true);
     try {
       const res = await fetch('/api/exaroton');
       const data = await res.json();
       if (data.success) {
-        // Поддержка обновленного бекенда, который возвращает { server, credits }
         setServerInfo(data.data.server || data.data);
         setCredits(data.data.credits ?? null);
       }
@@ -121,12 +108,9 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (activeTab === 'profile') {
-      fetchServerStatus();
-    }
+    if (activeTab === 'profile') fetchServerStatus();
   }, [activeTab]);
 
-  // Exaroton API: Управление питанием
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
     try {
@@ -136,11 +120,8 @@ export default function Home() {
         body: JSON.stringify({ action })
       });
       const data = await res.json();
-      if (data.success) {
-        setTimeout(fetchServerStatus, 3000);
-      } else {
-        alert('Не удалось выполнить действие: ' + (data.error || 'Неизвестная ошибка'));
-      }
+      if (data.success) setTimeout(fetchServerStatus, 3000);
+      else alert('Не удалось выполнить действие: ' + (data.error || 'Неизвестная ошибка'));
     } catch (e) {
       alert('Ошибка при отправке команды');
     } finally {
@@ -166,6 +147,7 @@ export default function Home() {
         setDbUser(user);
         setNewRpName(user.rp_name);
         setNewAvatarUrl(user.avatar_url);
+        loadRoles();
         loadPlayers();
         loadConstitution();
       }
@@ -173,6 +155,19 @@ export default function Home() {
       setError(`Ошибка базы данных: ${e.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Загружаем роли из Базы Данных (Supabase)
+  const loadRoles = async () => {
+    const { data } = await supabase.from('roles').select('*').order('name');
+    if (data) {
+      setCustomRoles(data.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        color: r.color,
+        canEditConstitution: r.can_edit_constitution
+      })));
     }
   };
 
@@ -186,7 +181,6 @@ export default function Home() {
     if (data) setConstitution(data.content);
   };
 
-  // Загрузка аватара в Supabase Storage
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
     try {
       setLoadingState(true);
@@ -205,7 +199,6 @@ export default function Home() {
     }
   };
 
-  // Сохранение профиля по ID редактируемого игрока
   const saveProfileData = async () => {
     if (!selectedPlayer || !newRpName.trim()) return;
     const { error } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
@@ -233,26 +226,33 @@ export default function Home() {
     }
   };
 
-  const handleCreateRole = () => {
+  // Сохранение новой роли в БД
+  const handleCreateRole = async () => {
     if (!newRoleName.trim()) return;
-    const updated = [...customRoles, { name: newRoleName.toLowerCase(), color: newRoleColor, canEditConstitution: newRolePerm }];
-    setCustomRoles(updated); localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
-    setNewRoleName(''); setNewRolePerm(false);
+    const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
+    const { error } = await supabase.from('roles').insert([newRole]);
+    if (!error) {
+      setNewRoleName('');
+      setNewRolePerm(false);
+      loadRoles();
+    } else {
+      alert(`Ошибка: Имя роли должно быть уникальным`);
+    }
   };
 
-  const handleToggleRolePerm = (index: number) => {
-    const updated = [...customRoles]; updated[index].canEditConstitution = !updated[index].canEditConstitution;
-    setCustomRoles(updated); localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
+  // Обновление состояния в интерфейсе (чтобы интерфейс не лагал при печати)
+  const handleRoleChange = (id: string, field: string, value: any) => {
+    setCustomRoles(roles => roles.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
-  const handleUpdateRoleColor = (index: number, color: string) => {
-    const updated = [...customRoles]; updated[index].color = color;
-    setCustomRoles(updated); localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
-  };
-
-  const handleRenameRole = (index: number, name: string) => {
-    const updated = [...customRoles]; updated[index].name = name.toLowerCase();
-    setCustomRoles(updated); localStorage.setItem('onehouse_custom_roles', JSON.stringify(updated));
+  // Отправка обновленных данных роли в БД
+  const saveRoleToDb = async (role: CustomRole) => {
+    if (!role.id) return;
+    await supabase.from('roles').update({
+      name: role.name,
+      color: role.color,
+      can_edit_constitution: role.canEditConstitution
+    }).eq('id', role.id);
   };
 
   const handleAddRoleToUser = async (roleName: string) => {
@@ -302,7 +302,7 @@ export default function Home() {
 
   const canEditConstitution = dbUser?.roles.some(r => {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
-    return found ? found.canEditConstitution : ['admin', 'president', 'editor'].includes(r);
+    return found ? found.canEditConstitution : false;
   });
 
   const getRoleColor = (roleName: string) => {
@@ -537,7 +537,6 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* БЛОК КРЕДИТОВ (Отображается только если удалось получить данные о балансе) */}
                   {credits !== null && (
                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
                       <div className="flex items-center gap-3">
@@ -689,18 +688,40 @@ export default function Home() {
                 <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-2"><UserPlus size={14} /><span>Создать роль</span></button>
               </div>
               <div className="space-y-3">
-                {customRoles.map((role, idx) => (
-                  <div key={idx} className="flex flex-col gap-2 p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
+                {customRoles.map((role) => (
+                  <div key={role.id} className="flex flex-col gap-2 p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 flex-1 mr-2">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }} />
-                        <input type="text" value={role.name.toUpperCase()} onChange={e => handleRenameRole(idx, e.target.value)} className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full" style={{ color: role.color }}/>
+                        <input 
+                          type="text" 
+                          value={role.name.toUpperCase()} 
+                          onChange={e => handleRoleChange(role.id!, 'name', e.target.value.toLowerCase())} 
+                          onBlur={() => saveRoleToDb(role)}
+                          className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full" 
+                          style={{ color: role.color }}
+                        />
                       </div>
                       <div className="flex items-center space-x-3 flex-shrink-0">
                         <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
-                          <input type="checkbox" checked={role.canEditConstitution} onChange={() => handleToggleRolePerm(idx)} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"/><span>Законы</span>
+                          <input 
+                            type="checkbox" 
+                            checked={role.canEditConstitution} 
+                            onChange={e => {
+                              handleRoleChange(role.id!, 'canEditConstitution', e.target.checked);
+                              saveRoleToDb({ ...role, canEditConstitution: e.target.checked });
+                            }} 
+                            className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
+                          />
+                          <span>Законы</span>
                         </label>
-                        <input type="color" value={role.color} onChange={e => handleUpdateRoleColor(idx, e.target.value)} className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"/>
+                        <input 
+                          type="color" 
+                          value={role.color} 
+                          onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} 
+                          onBlur={() => saveRoleToDb(role)}
+                          className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"
+                        />
                       </div>
                     </div>
                   </div>
