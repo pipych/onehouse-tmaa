@@ -55,14 +55,12 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // Состояния для поиска
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false); // Кнопка "Наверх"
+  const [showScrollTop, setShowScrollTop] = useState(false); 
 
-  // Состояние активного форматирования текста
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
@@ -93,11 +91,9 @@ export default function Home() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // Скролл-события (Прилипание + Кнопка наверх)
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 40);
-      // Показываем кнопку "наверх", если прокрутили больше 1.5 экранов
       setShowScrollTop(window.scrollY > window.innerHeight * 1.5);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -114,7 +110,7 @@ export default function Home() {
 
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
-      tg.expand(); // Максимально растягивает фрейм в Телеграме
+      tg.expand();
       
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
@@ -152,7 +148,13 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  // --- ЛОГИКА ФОРМАТИРОВАНИЯ РЕДАКТОРА ---
+  // Защита курсора: вставляем текст только при открытии редактора
+  useEffect(() => {
+    if (isEditing && editorRef.current) {
+      editorRef.current.innerHTML = constitution;
+    }
+  }, [isEditing]);
+
   const checkFormatting = () => {
     if (typeof document === 'undefined') return;
     try {
@@ -166,16 +168,13 @@ export default function Home() {
         justifyLeft: document.queryCommandState('justifyLeft'),
         justifyCenter: document.queryCommandState('justifyCenter'),
       });
-    } catch (e) {
-      // Игнорируем ошибки фокуса браузера
-    }
+    } catch (e) {}
   };
 
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
-      // Если кликнули на активный заголовок H1/H2, превращаем его обратно в обычный параграф
       if (command === 'formatBlock') {
-        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase();
+        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
         if ((value.includes('h1') && currentBlock.includes('h1')) || 
             (value.includes('h2') && currentBlock.includes('h2'))) {
           document.execCommand(command, false, '<p>');
@@ -187,17 +186,14 @@ export default function Home() {
       }
       
       if (editorRef.current) editorRef.current.focus();
-      // Обновляем подсветку кнопок сразу после применения
       setTimeout(checkFormatting, 50);
     }
   };
 
-  // --- ЛОГИКА ПОИСКА ---
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
-
     children.forEach((child) => {
       child.style.transition = 'all 0.3s ease';
       child.style.backgroundColor = '';
@@ -244,7 +240,6 @@ export default function Home() {
     if (matches.length === 0 || currentMatchIndex === 0 || !viewRef.current) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
-
     matches.forEach(idx => {
       const el = children[idx];
       if (el) {
@@ -272,7 +267,6 @@ export default function Home() {
 
   const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
   const prevMatch = () => setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length);
-
 
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
@@ -515,34 +509,15 @@ export default function Home() {
     <div className="min-h-screen bg-[#090b0e] text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full">
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       
-      {/* Десктопная адаптация шапки - расширяем max-width на md: */}
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Верхний док управления (расширен для Desktop) */}
+      {/* Верхний док управления (Кнопка профиля и сохранения) */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveConstitution} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
-        </div>
-
-        {/* Панель инструментов: добавлена динамическая подсветка кнопок */}
-        <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-90 translate-x-8 pointer-events-none'}`}>
-          <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full max-w-2xl">
-            <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5 min-w-0">
-              <button onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Bold size={14}/></button>
-              <button onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Italic size={14}/></button>
-              <button onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Strikethrough size={14}/></button>
-              <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-              <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading1 size={14}/></button>
-              <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading2 size={14}/></button>
-              <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-              <button onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignLeft size={14}/></button>
-              <button onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignCenter size={14}/></button>
-              <button onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
-            </div>
-          </div>
         </div>
 
         {dbUser && !selectedPlayer && (
@@ -562,6 +537,26 @@ export default function Home() {
             </span>
           </button>
         )}
+      </div>
+
+      {/* ОТДЕЛЬНАЯ ПАНЕЛЬ ФОРМАТИРОВАНИЯ (Внизу на мобилках, сверху на ПК) */}
+      <div className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center pointer-events-none
+        ${showToolbar ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-12 md:-translate-y-4'}
+        bottom-2 left-2 right-2          
+        md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto 
+      `}>
+        <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 pointer-events-auto w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-center">
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Bold size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Italic size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Strikethrough size={14}/></button>
+          <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', '<h1>')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading1 size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', '<h2>')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading2 size={14}/></button>
+          <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignLeft size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignCenter size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-xl md:rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
+        </div>
       </div>
 
       {/* Окно профиля */}
@@ -630,9 +625,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Добавлена поддержка Desktop через md:max-w-5xl и отступ слева под боковое меню) */}
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
+        {/* ВИДЖЕТ EXAROTON */}
         {activeTab === 'profile' && (
           <div className="space-y-4 animate-fade-in w-full md:max-w-2xl">
             <div className="flex items-center justify-between w-full px-1">
@@ -761,7 +757,7 @@ export default function Home() {
             </div>
 
             {!isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[110px] -mt-2 pb-3 pt-2' : 'top-[96px] pr-0 mb-4'}`}>
+              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[110px] md:pr-[120px] -mt-2 pb-3 pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
@@ -807,12 +803,9 @@ export default function Home() {
                   ref={editorRef} 
                   contentEditable 
                   suppressContentEditableWarning 
-                  // Слушатели для проверки формата текста под курсором
                   onKeyUp={checkFormatting}
                   onMouseUp={checkFormatting}
-                  onInput={checkFormatting}
-                  className="w-full min-h-[600px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words" 
-                  dangerouslySetInnerHTML={{ __html: constitution }} 
+                  className="w-full min-h-[600px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" 
                   data-placeholder="Начните писать законы здесь..." 
                 />
               </div>
@@ -951,8 +944,10 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ (Снизу на мобильных, Боковая панель на ПК) */}
-      <nav className="fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-24 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-8 md:px-2 rounded-full md:rounded-[40px] z-50 shadow-2xl transition-all">
+      {/* НАВИГАЦИОННОЕ МЕНЮ (Прячется при открытии панели форматирования) */}
+      <nav className={`fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-24 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-8 md:px-2 rounded-full md:rounded-[40px] z-50 shadow-2xl transition-all duration-500
+         ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
+      `}>
         <div className={`grid w-full items-center justify-items-center md:flex md:flex-col md:gap-6 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <User size={20} />
@@ -978,8 +973,8 @@ export default function Home() {
       {/* КНОПКА "НАВЕРХ" */}
       <button 
         onClick={scrollToTop} 
-        className={`fixed z-40 p-3 bg-[#c0ff00] text-black rounded-full shadow-[0_0_20px_rgba(192,255,0,0.3)] transition-all duration-500 hover:scale-110 active:scale-90 ${
-          showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 opacity-0 translate-y-10 pointer-events-none'
+        className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${
+          showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'
         }`}
       >
         <ArrowUp size={20} />
