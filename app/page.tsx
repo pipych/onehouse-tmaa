@@ -5,10 +5,10 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  Home as HomeIcon, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
+  User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft
+  Info, ArrowLeft, Home as HomeIcon
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -118,7 +118,9 @@ export default function Home() {
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
       tg.expand(); 
-      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen();
+      }
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       
@@ -341,12 +343,11 @@ export default function Home() {
   };
 
   const loadConstitution = async () => {
-    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]);
-    if (data) {
-      const constDoc = data.find((d: any) => d.id === 1);
-      const cmdDoc = data.find((d: any) => d.id === 2);
-      if (constDoc) setConstitutionText(constDoc.content);
-      if (cmdDoc) setCommandmentsText(cmdDoc.content);
+    const { data } = await supabase.from('constitution').select('content').eq('id', 1).single();
+    if (data && data.content) {
+      const parts = data.content.split('');
+      setConstitutionText(parts[0] || '');
+      setCommandmentsText(parts[1] || '<h1>Заповеди Дома</h1><p>Здесь будут записаны внеигровые правила...</p>');
     }
   };
 
@@ -448,16 +449,18 @@ export default function Home() {
     if (!editorRef.current || activeDocument === 'none') return;
     
     const updatedContent = editorRef.current.innerHTML;
-    const docId = activeDocument === 'constitution' ? 1 : 2;
+    let newDbContent = '';
+
+    if (activeDocument === 'constitution') {
+      newDbContent = updatedContent + '' + commandmentsText;
+      setConstitutionText(updatedContent);
+    } else {
+      newDbContent = constitutionText + '' + updatedContent;
+      setCommandmentsText(updatedContent);
+    }
     
-    const { error } = await supabase.from('constitution').update({ content: updatedContent }).eq('id', docId);
-    
+    const { error } = await supabase.from('constitution').update({ content: newDbContent }).eq('id', 1);
     if (!error) {
-      if (activeDocument === 'constitution') {
-        setConstitutionText(updatedContent);
-      } else {
-        setCommandmentsText(updatedContent);
-      }
       setIsEditing(false);
     } else {
       alert(`Ошибка сохранения: ${error.message}`);
@@ -535,18 +538,12 @@ export default function Home() {
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0">
       
-      {/* 1. ФОН ДЛЯ ТЕЛЕФОНОВ */}
+      {/* ФОН ДЛЯ ТЕЛЕФОНОВ */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
       
-      {/* 2. ЖИВЫЕ ОБОИ ДЛЯ ПК */}
+      {/* ЖИВЫЕ ОБОИ ДЛЯ ПК */}
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          className="w-full h-full object-cover"
-        >
+        <video autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src="/bg-video.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-[#090b0e]/85 backdrop-blur-[2px]" />
@@ -574,17 +571,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* Верхний док управления */}
+      {/* Верхний док управления (Редактор) */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
-        
-        {/* Кнопка сохранения (Панель редактирования) */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
-        {/* Кнопка Профиля (Только на телефонах, на ПК она в боковом меню) */}
+        {/* Кнопка Профиля (Только на телефонах) */}
         {dbUser && !selectedPlayer && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
@@ -691,128 +686,127 @@ export default function Home() {
       )}
 
       {/* ГЛАВНЫЙ КОНТЕЙНЕР (Сетка на ПК) */}
-      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
+      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full break-words">
         
-        {/* ГЛАВНАЯ (Виджет Сервера) */}
+        {/* ГЛАВНАЯ ПАНЕЛЬ */}
         {activeTab === 'profile' && (
-          <div className="flex flex-col w-full animate-fade-in">
-            <div className="space-y-4 w-full">
-              <div className="flex items-center justify-between w-full px-1">
-                <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                  <Server size={18} className="text-[#c0ff00]" />
-                  Статус сервера
-                </h2>
-                <button 
-                  onClick={fetchServerStatus} 
-                  className={`p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 ${isServerLoading ? 'animate-spin' : ''}`}
-                >
-                  <RefreshCw size={14} />
-                </button>
-              </div>
+          <div className="space-y-6 w-full animate-fade-in">
+            <div className="flex items-center justify-between w-full px-1">
+              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                <HomeIcon size={18} className="text-[#c0ff00]" />
+                Главная панель
+              </h2>
+            </div>
 
-              {/* Компактный и широкий виджет на Десктопе */}
-              <div className="bg-[#14171c] p-5 md:p-6 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
-                {serverInfo && (
-                  <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />
-                )}
-
-                <div className="space-y-5 md:space-y-0 md:flex md:items-stretch md:gap-8 relative z-10 w-full">
+            <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
+              
+              {/* СЕРВЕР ВИДЖЕТ */}
+              <div className="flex-1 w-full min-w-0 bg-[#14171c]/90 backdrop-blur-xl p-4 md:p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
+                {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+                
+                <div className="flex flex-col md:flex-row gap-4 items-stretch relative z-10">
                   
-                  {/* Секция 1: Текущее состояние */}
-                  <div className="flex items-center justify-between md:flex-col md:justify-center md:items-start md:min-w-[160px] shrink-0 bg-black/20 md:bg-transparent rounded-2xl p-3 md:p-0 border border-white/5 md:border-transparent">
-                    <div className="space-y-0.5 md:space-y-1">
-                      <div className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
-                      <div className={`text-xl md:text-2xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                  {/* Статус */}
+                  <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start w-full md:w-36 shrink-0 bg-black/30 rounded-2xl p-4 border border-white/5">
+                    <div className="space-y-1">
+                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        Статус 
+                        <button onClick={fetchServerStatus} className={`hover:text-white transition-colors ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={10} /></button>
+                      </div>
+                      <div className={`text-lg md:text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
                         {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                       </div>
                     </div>
                     {serverInfo?.status === 1 && (
-                      <div className="bg-black/30 border border-white/5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-xl md:rounded-2xl text-center md:mt-3">
-                        <div className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
-                        <div className="text-[#c0ff00] font-black text-sm md:text-base">{serverInfo.players.count} / {serverInfo.players.max}</div>
+                      <div className="mt-0 md:mt-3 text-right md:text-left">
+                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
+                        <div className="text-[#c0ff00] font-black text-sm">{serverInfo.players.count} / {serverInfo.players.max} чел.</div>
                       </div>
                     )}
                   </div>
 
-                  {/* Секция 2: Информационная сетка */}
-                  <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-2 md:gap-3 flex-1 w-full">
-                    {/* IP 1 */}
-                    <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 w-full">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
-                        <div className="font-mono text-sm md:text-base text-gray-200 truncate">{staticIp}</div>
-                      </div>
-                      <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
-                        <Copy size={16} />
-                      </button>
-                    </div>
-
-                    {/* IP 2 */}
-                    {serverInfo?.host && serverInfo.status === 1 && (
-                      <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 animate-fade-in w-full">
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Прямой IP (Резервный)</div>
-                          <div className="font-mono text-xs md:text-sm text-[#c0ff00] truncate">
-                            {serverInfo.host}:{serverInfo.port}
-                          </div>
+                  {/* Информация */}
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group">
+                        <div className="min-w-0">
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP Адрес</div>
+                          <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
                         </div>
-                        <button onClick={() => copyToClipboard(`${serverInfo.host}:${serverInfo.port}`)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
-                          <Copy size={16} />
+                        <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0 ml-2">
+                          <Copy size={14} />
                         </button>
-                      </div>
-                    )}
-
-                    {/* Версия */}
-                    <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 w-full">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#a1a1aa]/10 rounded-xl text-[#a1a1aa]"><AnvilIcon size={18} /></div>
-                        <div>
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия игры</div>
-                          <div className="font-bold text-sm text-white">Forge <span className="text-gray-400 text-xs">1.20.1</span></div>
+                     </div>
+                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-3">
+                        <div className="p-2 bg-[#a1a1aa]/10 rounded-xl text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
+                        <div className="min-w-0">
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
+                          <div className="font-bold text-sm text-white truncate">Forge <span className="text-gray-400 text-xs">1.20.1</span></div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Баланс */}
-                    {credits !== null && (
-                      <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 w-full">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00]"><Coins size={18} /></div>
-                          <div>
-                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс аккаунта</div>
-                            <div className="font-bold text-sm text-white">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кредитов</span></div>
+                     </div>
+                     {credits !== null && (
+                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between sm:col-span-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00] shrink-0"><Coins size={16} /></div>
+                          <div className="min-w-0">
+                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс хостинга</div>
+                            <div className="font-bold text-sm text-white truncate">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кр.</span></div>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0 ml-2">
                           <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Хватит на</div>
-                          <div className="font-mono text-xs text-[#c0ff00]">{Math.floor(credits / 7)} ч. {Math.floor(((credits % 7) / 7) * 60)} мин.</div>
+                          <div className="font-mono text-xs text-[#c0ff00]">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
                         </div>
-                      </div>
-                    )}
+                     </div>
+                     )}
                   </div>
 
-                  {/* Секция 3: Кнопки управления */}
-                  <div className="pt-2 md:pt-0 flex gap-2 md:flex-col md:justify-center shrink-0 md:w-[150px]">
-                    <button 
-                      onClick={() => handleServerAction('start')}
-                      disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
-                      className="flex-1 ui-pill-btn justify-center py-3 md:py-4 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
-                    >
-                      <Play size={14} className="fill-current" />
-                      <span>Включить</span>
-                    </button>
-                    <button 
-                      onClick={() => handleServerAction('stop')}
-                      disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
-                      className="flex-1 ui-pill-btn justify-center py-3 md:py-4 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
-                    >
-                      <Square size={14} className="fill-current" />
-                      <span>Выключить</span>
-                    </button>
+                  {/* Кнопки */}
+                  <div className="w-full md:w-32 shrink-0 flex flex-row md:flex-col gap-2 md:justify-center">
+                     <button 
+                       onClick={() => handleServerAction('start')}
+                       disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
+                       className="flex-1 py-3 md:py-0 md:h-[48px] bg-[#c0ff00] text-black rounded-2xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-[#a8e600] hover:shadow-[0_0_20px_rgba(192,255,0,0.4)] transition-all disabled:opacity-30 disabled:grayscale active:scale-95"
+                     >
+                       <Play size={14} className="fill-black" /> Включить
+                     </button>
+                     <button 
+                       onClick={() => handleServerAction('stop')}
+                       disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
+                       className="flex-1 py-3 md:py-0 md:h-[48px] bg-[#1a1e24] border border-red-500/30 text-red-500 rounded-2xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-500 transition-all disabled:opacity-30 disabled:grayscale active:scale-95"
+                     >
+                       <Square size={14} className="fill-current" /> Выключить
+                     </button>
                   </div>
-
                 </div>
               </div>
+
+              {/* ВИДЖЕТ КОНСТИТУЦИИ */}
+              <div className="w-full xl:w-[320px] shrink-0">
+                 <div 
+                    onClick={() => {
+                      setActiveTab('constitution');
+                      setActiveDocument('constitution');
+                    }}
+                    className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[32px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[188px] p-5 xl:p-6"
+                  >
+                    <div 
+                      className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat"
+                      style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
+
+                    <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
+                      <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
+                        <BookOpen size={20} className="text-[#c0ff00]" />
+                      </div>
+                      <div className="text-left xl:text-center flex-1">
+                        <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Конституция</h3>
+                        <p className="text-[10px] xl:text-[11px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые законы</p>
+                      </div>
+                    </div>
+                  </div>
+              </div>
+
             </div>
           </div>
         )}
@@ -830,7 +824,8 @@ export default function Home() {
                     <ArrowLeft size={16} />
                   </button>
                 )}
-                <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">
+                <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide flex items-center gap-2">
+                  <BookOpen size={18} />
                   {activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}
                 </h2>
               </div>
@@ -844,15 +839,14 @@ export default function Home() {
             {activeDocument === 'none' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mt-6 w-full">
                 
-                {/* Виджет: Конституция (Обертка relative для всплывашки) */}
+                {/* Виджет: Конституция */}
                 <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('constitution')}>
-                  {/* Tooltip для ПК (Вылазит СВЕРХУ виджета) */}
+                  {/* Tooltip для ПК */}
                   <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">
                     Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.
                   </div>
 
-                  {/* Сам виджет */}
-                  <div className="relative overflow-hidden bg-[#14171c] rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-[#c0ff00]/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
+                  <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-[#c0ff00]/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
                     <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat"
                       style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
@@ -874,15 +868,14 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Виджет: Заповеди дома (Обертка relative для всплывашки) */}
+                {/* Виджет: Заповеди дома */}
                 <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('commandments')}>
-                  {/* Tooltip для ПК (Вылазит СВЕРХУ виджета) */}
+                  {/* Tooltip для ПК */}
                   <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">
                     Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Никакое оправдание под предлогом РП не принимается, все кто нарушат — дураки.
                   </div>
 
-                  {/* Сам виджет */}
-                  <div className="relative overflow-hidden bg-[#14171c] rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-red-500/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
+                  <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-red-500/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
                     <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat"
                       style={{ backgroundImage: "url('/zapovedi.gif')", imageRendering: "pixelated" }} />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
@@ -909,7 +902,7 @@ export default function Home() {
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
             {activeDocument !== 'none' && !isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[110px] md:pr-0 -mt-2 pb-3 pt-2' : 'top-[96px] pr-0 mb-4'}`}>
+              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
@@ -958,7 +951,7 @@ export default function Home() {
                   onKeyUp={checkFormatting}
                   onMouseUp={checkFormatting}
                   onInput={checkFormatting}
-                  className="w-full min-h-[600px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" 
+                  className="w-full min-h-[600px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" 
                   data-placeholder={`Начните писать ${activeDocument === 'constitution' ? 'законы' : 'заповеди'} здесь...`} 
                 />
               </div>
@@ -967,7 +960,7 @@ export default function Home() {
             {activeDocument !== 'none' && !isEditing && (
               <div 
                 ref={viewRef}
-                className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" 
+                className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" 
                 dangerouslySetInnerHTML={{ __html: currentDocText }} 
               />
             )}
@@ -977,10 +970,17 @@ export default function Home() {
         {/* ИГРОКИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
+            <div className="flex items-center justify-between w-full px-1">
+              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                <Users size={18} className="text-[#c0ff00]" />
+                Жители сервера
+              </h2>
+            </div>
+
             {dbUser && (
               <div className="space-y-2 w-full md:max-w-sm">
                 <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
-                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c] to-[#1c2026] border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
+                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
                   <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}>
                     <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                   </div>
@@ -997,12 +997,12 @@ export default function Home() {
             )}
 
             <div className="space-y-3 w-full">
-              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Жители сервера</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Все игроки</div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}>
+                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20 hover:bg-[#1a1e24]/90'}`}>
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
                         <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
                       </div>
@@ -1027,7 +1027,7 @@ export default function Home() {
         {/* АДМИН ПАНЕЛЬ */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
-            <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
               <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Добавить жителя</span></div>
               <div className="space-y-3">
                 <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
@@ -1044,7 +1044,7 @@ export default function Home() {
               <button onClick={handleAddPlayer} disabled={isUploadingNewUser} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3 disabled:opacity-50"><Check size={16} /><span>Создать аккаунт</span></button>
             </div>
 
-            <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
               <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Управление ролями</span></div>
               <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
                 <input type="text" placeholder="Название новой роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input"/>
@@ -1128,20 +1128,17 @@ export default function Home() {
       {/* САЙДБАР ДЛЯ ПК (Профиль + Навигация) */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        
-       {/* Десктопная кнопка Профиля (Кружок сверху) */}
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
            <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all">
              <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
            </div>
-           {/* Всплывающая подсказка Профиля */}
            <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
              Мой профиль
            </div>
          </button>
        )}
 
-       {/* Десктопная Панель Вкладок (Dock) */}
        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
          
          <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
