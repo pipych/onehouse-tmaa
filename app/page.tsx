@@ -55,9 +55,9 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // Состояния для поиска
+  // ПЕРЕДЕЛАННЫЕ Состояния для поиска (храним ИНДЕКСЫ вместо элементов)
   const [searchQuery, setSearchQuery] = useState('');
-  const [matches, setMatches] = useState<HTMLElement[]>([]);
+  const [matches, setMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -87,7 +87,7 @@ export default function Home() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // Слушатель скролла для эффекта "прилипания"
+  // Прилипание поиска при скролле
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -134,19 +134,18 @@ export default function Home() {
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchServerStatus();
-      const intervalId = setInterval(() => {
-        fetchServerStatus();
-      }, 3600000); 
+      const intervalId = setInterval(() => fetchServerStatus(), 3600000); 
       return () => clearInterval(intervalId);
     }
   }, [activeTab]);
 
-  // --- ЛОГИКА ПОИСКА (Поиск абзацев) ---
+  // --- ИСПРАВЛЕННАЯ ЛОГИКА ПОИСКА (Поиск абзацев) ---
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
 
+    // 1. Очищаем стили при каждом новом поиске
     children.forEach((child) => {
       child.style.transition = 'all 0.3s ease';
       child.style.backgroundColor = '';
@@ -166,9 +165,10 @@ export default function Home() {
     const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const fuzzyRegex = new RegExp(safeQuery.split('').join('.*?'), 'i');
 
-    const foundMatches: HTMLElement[] = [];
+    const foundIndices: number[] = [];
 
-    children.forEach((child) => {
+    // 2. Ищем и запоминаем индексы элементов (номера по порядку)
+    children.forEach((child, index) => {
       const text = child.textContent?.toLowerCase() || '';
       if (!text.trim()) return;
 
@@ -177,39 +177,52 @@ export default function Home() {
       else if (query.length >= 3 && fuzzyRegex.test(text)) score += 10;
 
       if (score > 0) {
-        foundMatches.push(child);
+        foundIndices.push(index); // Добавляем индекс в массив
         child.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
         child.style.borderRadius = '8px';
       } else {
-        child.style.opacity = '0.3';
+        child.style.opacity = '0.3'; // Приглушаем то, что не подошло
       }
     });
 
-    setMatches(foundMatches);
-    setCurrentMatchIndex(foundMatches.length > 0 ? 1 : 0);
+    setMatches(foundIndices);
+    setCurrentMatchIndex(foundIndices.length > 0 ? 1 : 0);
   }, [searchQuery, constitution, activeTab, isEditing]);
 
-  // --- ЛОГИКА ПОИСКА (Прокрутка) ---
+  // --- ИСПРАВЛЕННАЯ ЛОГИКА ПОИСКА (Подсветка и жесткая прокрутка) ---
   useEffect(() => {
-    if (matches.length === 0 || currentMatchIndex === 0) return;
+    if (matches.length === 0 || currentMatchIndex === 0 || !viewRef.current) return;
 
-    matches.forEach(el => {
-      el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-      el.style.boxShadow = '';
-      el.style.transform = '';
+    const children = Array.from(viewRef.current.children) as HTMLElement[];
+
+    // Снимаем яркое выделение со всех совпадений
+    matches.forEach(idx => {
+      const el = children[idx];
+      if (el) {
+        el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        el.style.boxShadow = '';
+        el.style.transform = '';
+      }
     });
 
-    const activeEl = matches[currentMatchIndex - 1];
+    // Находим текущий активный элемент
+    const activeIdx = matches[currentMatchIndex - 1];
+    const activeEl = children[activeIdx];
     
-    activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
-    activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
-    activeEl.style.transform = 'scale(1.02)';
+    if (activeEl) {
+      // Красим в яркий зеленый
+      activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
+      activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
+      activeEl.style.transform = 'scale(1.02)';
+      activeEl.style.borderRadius = '8px';
 
-    // Жесткая прокрутка, работает безотказно после очистки overflow-hidden
-    setTimeout(() => {
-      activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 50);
-
+      // Надежный математический скролл
+      setTimeout(() => {
+        // Вычисляем координату с учетом прокрутки и высоты шапки (160px)
+        const yOffset = activeEl.getBoundingClientRect().top + window.pageYOffset - 160;
+        window.scrollTo({ top: yOffset, behavior: 'smooth' });
+      }, 50);
+    }
   }, [currentMatchIndex, matches]);
 
   const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
@@ -911,6 +924,7 @@ export default function Home() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
+        /* УБРАЛИ overflow-x-hidden, чтобы работал sticky */
         body, html { 
           font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; 
           max-w-full; 
