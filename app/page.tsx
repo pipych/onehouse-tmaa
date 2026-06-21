@@ -110,7 +110,12 @@ export default function Home() {
 
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
-      tg.expand();
+      tg.expand(); 
+      
+      // ВОССТАНОВЛЕНА СТРОКА ПОЛНОЭКРАННОГО РЕЖИМА
+      if (typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen();
+      }
       
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
@@ -148,7 +153,6 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  // Защита курсора: вставляем текст только при открытии редактора
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.innerHTML = constitution;
@@ -625,7 +629,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Добавлена поддержка Desktop через md:max-w-5xl и отступ слева под боковое меню) */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
         {/* ВИДЖЕТ EXAROTON */}
@@ -805,6 +809,7 @@ export default function Home() {
                   suppressContentEditableWarning 
                   onKeyUp={checkFormatting}
                   onMouseUp={checkFormatting}
+                  onInput={checkFormatting}
                   className="w-full min-h-[600px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" 
                   data-placeholder="Начните писать законы здесь..." 
                 />
@@ -819,7 +824,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ИГРОКИ (Сетка колонок на Десктопе) */}
+        {/* ИГРОКИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             {dbUser && (
@@ -869,7 +874,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* АДМИН ПАНЕЛЬ (Делится на 2 колонки на ПК) */}
+        {/* АДМИН ПАНЕЛЬ */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -944,7 +949,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ (Прячется при открытии панели форматирования) */}
+      {/* НАВИГАЦИОННОЕ МЕНЮ */}
       <nav className={`fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-24 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-8 md:px-2 rounded-full md:rounded-[40px] z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
