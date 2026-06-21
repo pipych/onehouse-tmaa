@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown
+  Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp
 } from 'lucide-react';
 
 const FoxIcon = ({ size = 18, className = "" }) => (
@@ -55,11 +55,17 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // ПЕРЕДЕЛАННЫЕ Состояния для поиска (храним ИНДЕКСЫ вместо элементов)
+  // Состояния для поиска
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false); // Кнопка "Наверх"
+
+  // Состояние активного форматирования текста
+  const [formats, setFormats] = useState({
+    bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
+  });
 
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
@@ -87,12 +93,20 @@ export default function Home() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // Прилипание поиска при скролле
+  // Скролл-события (Прилипание + Кнопка наверх)
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 40);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+      // Показываем кнопку "наверх", если прокрутили больше 1.5 экранов
+      setShowScrollTop(window.scrollY > window.innerHeight * 1.5);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -100,12 +114,11 @@ export default function Home() {
 
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
-      tg.expand();
+      tg.expand(); // Максимально растягивает фрейм в Телеграме
       
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
-      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
-
+      
       const userFromTg = tg.initDataUnsafe.user;
       setTgUser(userFromTg);
       checkUserInDb(userFromTg.id);
@@ -139,13 +152,52 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  // --- ИСПРАВЛЕННАЯ ЛОГИКА ПОИСКА (Поиск абзацев) ---
+  // --- ЛОГИКА ФОРМАТИРОВАНИЯ РЕДАКТОРА ---
+  const checkFormatting = () => {
+    if (typeof document === 'undefined') return;
+    try {
+      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+      setFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        strikeThrough: document.queryCommandState('strikeThrough'),
+        h1: formatBlock.includes('h1'),
+        h2: formatBlock.includes('h2'),
+        justifyLeft: document.queryCommandState('justifyLeft'),
+        justifyCenter: document.queryCommandState('justifyCenter'),
+      });
+    } catch (e) {
+      // Игнорируем ошибки фокуса браузера
+    }
+  };
+
+  const execEditorCommand = (command: string, value: string = '') => {
+    if (typeof document !== 'undefined') {
+      // Если кликнули на активный заголовок H1/H2, превращаем его обратно в обычный параграф
+      if (command === 'formatBlock') {
+        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase();
+        if ((value.includes('h1') && currentBlock.includes('h1')) || 
+            (value.includes('h2') && currentBlock.includes('h2'))) {
+          document.execCommand(command, false, '<p>');
+        } else {
+          document.execCommand(command, false, value);
+        }
+      } else {
+        document.execCommand(command, false, value);
+      }
+      
+      if (editorRef.current) editorRef.current.focus();
+      // Обновляем подсветку кнопок сразу после применения
+      setTimeout(checkFormatting, 50);
+    }
+  };
+
+  // --- ЛОГИКА ПОИСКА ---
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
 
-    // 1. Очищаем стили при каждом новом поиске
     children.forEach((child) => {
       child.style.transition = 'all 0.3s ease';
       child.style.backgroundColor = '';
@@ -167,7 +219,6 @@ export default function Home() {
 
     const foundIndices: number[] = [];
 
-    // 2. Ищем и запоминаем индексы элементов (номера по порядку)
     children.forEach((child, index) => {
       const text = child.textContent?.toLowerCase() || '';
       if (!text.trim()) return;
@@ -177,11 +228,11 @@ export default function Home() {
       else if (query.length >= 3 && fuzzyRegex.test(text)) score += 10;
 
       if (score > 0) {
-        foundIndices.push(index); // Добавляем индекс в массив
+        foundIndices.push(index);
         child.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
         child.style.borderRadius = '8px';
       } else {
-        child.style.opacity = '0.3'; // Приглушаем то, что не подошло
+        child.style.opacity = '0.3';
       }
     });
 
@@ -189,13 +240,11 @@ export default function Home() {
     setCurrentMatchIndex(foundIndices.length > 0 ? 1 : 0);
   }, [searchQuery, constitution, activeTab, isEditing]);
 
-  // --- ИСПРАВЛЕННАЯ ЛОГИКА ПОИСКА (Подсветка и жесткая прокрутка) ---
   useEffect(() => {
     if (matches.length === 0 || currentMatchIndex === 0 || !viewRef.current) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
 
-    // Снимаем яркое выделение со всех совпадений
     matches.forEach(idx => {
       const el = children[idx];
       if (el) {
@@ -205,20 +254,16 @@ export default function Home() {
       }
     });
 
-    // Находим текущий активный элемент
     const activeIdx = matches[currentMatchIndex - 1];
     const activeEl = children[activeIdx];
     
     if (activeEl) {
-      // Красим в яркий зеленый
       activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
       activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
       activeEl.style.transform = 'scale(1.02)';
       activeEl.style.borderRadius = '8px';
 
-      // Надежный математический скролл
       setTimeout(() => {
-        // Вычисляем координату с учетом прокрутки и высоты шапки (160px)
         const yOffset = activeEl.getBoundingClientRect().top + window.pageYOffset - 160;
         window.scrollTo({ top: yOffset, behavior: 'smooth' });
       }, 50);
@@ -392,13 +437,6 @@ export default function Home() {
     }
   };
 
-  const execEditorCommand = (command: string, value: string = '') => {
-    if (typeof document !== 'undefined') {
-      document.execCommand(command, false, value);
-      if (editorRef.current) editorRef.current.focus();
-    }
-  };
-
   const saveConstitution = async () => {
     if (!editorRef.current) return;
     const updatedContent = editorRef.current.innerHTML;
@@ -463,7 +501,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white animate-fade-in">
-        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md w-full break-words shadow-2xl scale-95 transition-all">
+        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md md:max-w-xl w-full break-words shadow-2xl scale-95 transition-all">
           <div className="text-red-500 font-bold text-lg mb-2">Авторизация не удалась</div>
           <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">{error}</div>
         </div>
@@ -474,30 +512,34 @@ export default function Home() {
   const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white pb-32 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full">
+    <div className="min-h-screen bg-[#090b0e] text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full">
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
+      
+      {/* Десктопная адаптация шапки - расширяем max-width на md: */}
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Верхний док управления */}
-      <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-end gap-2 pointer-events-none">
+      {/* Верхний док управления (расширен для Desktop) */}
+      <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
+        
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveConstitution} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
+        {/* Панель инструментов: добавлена динамическая подсветка кнопок */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-90 translate-x-8 pointer-events-none'}`}>
-          <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full">
+          <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full max-w-2xl">
             <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5 min-w-0">
-              <button onClick={() => execEditorCommand('bold')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Bold size={14}/></button>
-              <button onClick={() => execEditorCommand('italic')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Italic size={14}/></button>
-              <button onClick={() => execEditorCommand('strikeThrough')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Strikethrough size={14}/></button>
+              <button onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Bold size={14}/></button>
+              <button onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Italic size={14}/></button>
+              <button onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Strikethrough size={14}/></button>
               <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-              <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading1 size={14}/></button>
-              <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading2 size={14}/></button>
+              <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading1 size={14}/></button>
+              <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading2 size={14}/></button>
               <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-              <button onClick={() => execEditorCommand('justifyLeft')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignLeft size={14}/></button>
-              <button onClick={() => execEditorCommand('justifyCenter')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignCenter size={14}/></button>
+              <button onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignLeft size={14}/></button>
+              <button onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignCenter size={14}/></button>
               <button onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
             </div>
           </div>
@@ -588,11 +630,11 @@ export default function Home() {
         </div>
       )}
 
-      <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full break-words">
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Добавлена поддержка Desktop через md:max-w-5xl и отступ слева под боковое меню) */}
+      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
-        {/* ВИДЖЕТ EXAROTON */}
         {activeTab === 'profile' && (
-          <div className="space-y-4 animate-fade-in w-full">
+          <div className="space-y-4 animate-fade-in w-full md:max-w-2xl">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
                 <Server size={18} className="text-[#c0ff00]" />
@@ -708,7 +750,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ЗАКОНЫ С ПРИЛИПАЮЩИМ ПОИСКОМ */}
+        {/* ЗАКОНЫ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative">
             <div className="flex items-center justify-between w-full">
@@ -761,7 +803,18 @@ export default function Home() {
 
             {isEditing ? (
               <div className="space-y-4 scale-100 w-full pt-2">
-                <div ref={editorRef} contentEditable suppressContentEditableWarning className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words" dangerouslySetInnerHTML={{ __html: constitution }} data-placeholder="Начните писать законы здесь..." />
+                <div 
+                  ref={editorRef} 
+                  contentEditable 
+                  suppressContentEditableWarning 
+                  // Слушатели для проверки формата текста под курсором
+                  onKeyUp={checkFormatting}
+                  onMouseUp={checkFormatting}
+                  onInput={checkFormatting}
+                  className="w-full min-h-[600px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words" 
+                  dangerouslySetInnerHTML={{ __html: constitution }} 
+                  data-placeholder="Начните писать законы здесь..." 
+                />
               </div>
             ) : (
               <div 
@@ -773,11 +826,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* ИГРОКИ */}
+        {/* ИГРОКИ (Сетка колонок на Десктопе) */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             {dbUser && (
-              <div className="space-y-2 w-full">
+              <div className="space-y-2 w-full md:max-w-sm">
                 <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
                 <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c] to-[#1c2026] border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
                   <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}>
@@ -797,7 +850,7 @@ export default function Home() {
 
             <div className="space-y-3 w-full">
               <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Жители сервера</div>
-              <div className="grid grid-cols-1 gap-3 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
@@ -823,9 +876,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* АДМИН ПАНЕЛЬ */}
+        {/* АДМИН ПАНЕЛЬ (Делится на 2 колонки на ПК) */}
         {activeTab === 'admin' && isAdmin && (
-          <div className="space-y-6 animate-fade-in w-full">
+          <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
               <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Добавить жителя</span></div>
               <div className="space-y-3">
@@ -898,8 +951,9 @@ export default function Home() {
         )}
       </main>
 
-      <nav className="fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl max-w-md mx-auto transition-all">
-        <div className={`grid w-full items-center justify-items-center ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+      {/* НАВИГАЦИОННОЕ МЕНЮ (Снизу на мобильных, Боковая панель на ПК) */}
+      <nav className="fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-24 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-8 md:px-2 rounded-full md:rounded-[40px] z-50 shadow-2xl transition-all">
+        <div className={`grid w-full items-center justify-items-center md:flex md:flex-col md:gap-6 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <User size={20} />
             <span className="text-[10px] font-medium tracking-wide mt-1">Главная</span>
@@ -921,10 +975,19 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* КНОПКА "НАВЕРХ" */}
+      <button 
+        onClick={scrollToTop} 
+        className={`fixed z-40 p-3 bg-[#c0ff00] text-black rounded-full shadow-[0_0_20px_rgba(192,255,0,0.3)] transition-all duration-500 hover:scale-110 active:scale-90 ${
+          showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 opacity-0 translate-y-10 pointer-events-none'
+        }`}
+      >
+        <ArrowUp size={20} />
+      </button>
+
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
-        /* УБРАЛИ overflow-x-hidden, чтобы работал sticky */
         body, html { 
           font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; 
           max-w-full; 
