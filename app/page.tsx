@@ -10,7 +10,8 @@ import {
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp
 } from 'lucide-react';
 
-const FoxIcon = ({ size = 18, className = "" }) => (
+// ИСПРАВЛЕНО: Вернули правильную иконку Наковальни
+const AnvilIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
     <path d="M7 5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1" />
@@ -625,7 +626,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Сетка на ПК) */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
         {/* ГЛАВНАЯ (Два виджета: Сервер и Конституция) */}
@@ -750,12 +751,11 @@ export default function Home() {
 
             {/* Виджет Конституции с Pixel-Art фоном */}
             <div className="space-y-4 w-full md:max-w-[300px]">
-              <div className="hidden md:block h-[26px]"></div> {/* Выравнивание на Десктопе */}
+              <div className="hidden md:block h-[26px]"></div> 
               <div 
                 onClick={() => handleTabChange('constitution')}
                 className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[296px] p-5 md:p-6"
               >
-                {/* Картинка-фон Зачарованной Книги */}
                 <div 
                   className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
                   style={{ 
@@ -763,14 +763,12 @@ export default function Home() {
                     backgroundSize: "120px", 
                     backgroundPosition: "right -10px center", 
                     backgroundRepeat: "no-repeat",
-                    imageRendering: "pixelated" // Оставляем пиксели резкими!
+                    imageRendering: "pixelated" 
                   }} 
                 />
                 
-                {/* Градиент поверх картинки, чтобы текст читался */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
 
-                {/* Контент */}
                 <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
                   <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 md:mb-4 mr-4 md:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md flex-shrink-0">
                     <BookOpen size={24} className="text-[#c0ff00] md:w-8 md:h-8" />
@@ -985,7 +983,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ (Тонкая капсула на Десктопе) */}
+      {/* НАВИГАЦИОННОЕ МЕНЮ */}
       <nav className={`fixed bottom-6 left-6 right-6 md:left-8 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
