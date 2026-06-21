@@ -10,13 +10,15 @@ import {
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp
 } from 'lucide-react';
 
-const FoxIcon = ({ size = 18, className = "" }) => (
+// Новая иконка Наковальни для Forge
+const AnvilIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M3 13.5l1.5-7.5 4.5 3 3-4.5 3 4.5 4.5-3L21 13.5" />
-    <path d="M3 13.5A9 9 0 0 0 12 22a9 9 0 0 0 9-8.5" />
-    <path d="M12 18v.01" />
-    <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
-    <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+    <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
+    <path d="M7 5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1" />
+    <path d="M17 10h1a4 4 0 0 0 4-4 1 1 0 0 0-1-1h-4" />
+    <path d="M9 12v5" />
+    <path d="M15 12v5" />
+    <path d="M5 20a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z" />
   </svg>
 );
 
@@ -111,12 +113,7 @@ export default function Home() {
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
       tg.expand(); 
-      
-      // ВОССТАНОВЛЕНА СТРОКА ПОЛНОЭКРАННОГО РЕЖИМА
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen();
-      }
-      
+      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       
@@ -499,7 +496,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white animate-fade-in">
-        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md md:max-w-xl w-full break-words shadow-2xl scale-95 transition-all">
+        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md w-full break-words shadow-2xl scale-95 transition-all">
           <div className="text-red-500 font-bold text-lg mb-2">Авторизация не удалась</div>
           <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">{error}</div>
         </div>
@@ -629,128 +626,151 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Добавлена поддержка Desktop через md:max-w-5xl и отступ слева под боковое меню) */}
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Сетка на ПК) */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
-        {/* ВИДЖЕТ EXAROTON */}
+        {/* ГЛАВНАЯ (Два виджета: Сервер и Конституция) */}
         {activeTab === 'profile' && (
-          <div className="space-y-4 animate-fade-in w-full md:max-w-2xl">
-            <div className="flex items-center justify-between w-full px-1">
-              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                <Server size={18} className="text-[#c0ff00]" />
-                Статус сервера
-              </h2>
-              <button 
-                onClick={fetchServerStatus} 
-                className={`p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 ${isServerLoading ? 'animate-spin' : ''}`}
-              >
-                <RefreshCw size={14} />
-              </button>
-            </div>
+          <div className="flex flex-col md:flex-row gap-6 items-start w-full animate-fade-in">
+            
+            {/* Виджет Сервера (Ограничен по ширине на Десктопе) */}
+            <div className="space-y-4 w-full md:max-w-[420px]">
+              <div className="flex items-center justify-between w-full px-1">
+                <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                  <Server size={18} className="text-[#c0ff00]" />
+                  Статус сервера
+                </h2>
+                <button 
+                  onClick={fetchServerStatus} 
+                  className={`p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 ${isServerLoading ? 'animate-spin' : ''}`}
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </div>
 
-            <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 shadow-2xl relative overflow-hidden">
-              {serverInfo && (
-                <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />
-              )}
+              <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 shadow-2xl relative overflow-hidden">
+                {serverInfo && (
+                  <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />
+                )}
 
-              <div className="space-y-5 relative z-10">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
-                    <div className={`text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
-                      {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
-                    </div>
-                  </div>
-                  {serverInfo?.status === 1 && (
-                    <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
-                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
-                      <div className="text-[#c0ff00] font-black text-sm">{serverInfo.players.count} / {serverInfo.players.max}</div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
-                      <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
-                    </div>
-                    <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
-                      <Copy size={16} />
-                    </button>
-                  </div>
-
-                  {serverInfo?.host && serverInfo.status === 1 && (
-                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 animate-fade-in">
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Прямой IP (Резервный)</div>
-                        <div className="font-mono text-xs text-[#c0ff00] truncate">
-                          {serverInfo.host}:{serverInfo.port}
-                        </div>
+                <div className="space-y-5 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
+                      <div className={`text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                        {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                       </div>
-                      <button onClick={() => copyToClipboard(`${serverInfo.host}:${serverInfo.port}`)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
+                    </div>
+                    {serverInfo?.status === 1 && (
+                      <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
+                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
+                        <div className="text-[#c0ff00] font-black text-sm">{serverInfo.players.count} / {serverInfo.players.max}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
+                        <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
+                      </div>
+                      <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
                         <Copy size={16} />
                       </button>
                     </div>
-                  )}
 
-                  {credits !== null && (
+                    {serverInfo?.host && serverInfo.status === 1 && (
+                      <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 animate-fade-in">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Прямой IP (Резервный)</div>
+                          <div className="font-mono text-xs text-[#c0ff00] truncate">
+                            {serverInfo.host}:{serverInfo.port}
+                          </div>
+                        </div>
+                        <button onClick={() => copyToClipboard(`${serverInfo.host}:${serverInfo.port}`)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
+                          <Copy size={16} />
+                        </button>
+                      </div>
+                    )}
+
+                    {credits !== null && (
+                      <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00]">
+                            <Coins size={18} />
+                          </div>
+                          <div>
+                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс аккаунта</div>
+                            <div className="font-bold text-sm text-white">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кредитов</span></div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Хватит на</div>
+                          <div className="font-mono text-xs text-[#c0ff00]">{Math.floor(credits / 7)} ч. {Math.floor(((credits % 7) / 7) * 60)} мин.</div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00]">
-                          <Coins size={18} />
+                        <div className="p-2 bg-[#a1a1aa]/10 rounded-xl text-[#a1a1aa]">
+                          <AnvilIcon size={18} />
                         </div>
                         <div>
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс аккаунта</div>
-                          <div className="font-bold text-sm text-white">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кредитов</span></div>
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия игры</div>
+                          <div className="font-bold text-sm text-white">Forge <span className="text-gray-400 text-xs">1.20.1</span></div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Хватит на</div>
-                        <div className="font-mono text-xs text-[#c0ff00]">{Math.floor(credits / 7)} ч. {Math.floor(((credits % 7) / 7) * 60)} мин.</div>
-                      </div>
                     </div>
-                  )}
-
-                  <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[#ff8c00]/10 rounded-xl text-[#ff8c00]">
-                        <FoxIcon size={18} />
-                      </div>
-                      <div>
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия игры</div>
-                        <div className="font-bold text-sm text-white">Neoforge <span className="text-gray-400 text-xs">1.20.1</span></div>
-                      </div>
-                    </div>
+                    
                   </div>
-                  
-                </div>
 
-                <div className="pt-2 flex gap-2">
-                  <button 
-                    onClick={() => handleServerAction('start')}
-                    disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
-                    className="flex-1 ui-pill-btn justify-center py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
-                  >
-                    <Play size={14} className="fill-current" />
-                    <span>Включить</span>
-                  </button>
-                  <button 
-                    onClick={() => handleServerAction('stop')}
-                    disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
-                    className="flex-1 ui-pill-btn justify-center py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
-                  >
-                    <Square size={14} className="fill-current" />
-                    <span>Выключить</span>
-                  </button>
-                </div>
+                  <div className="pt-2 flex gap-2">
+                    <button 
+                      onClick={() => handleServerAction('start')}
+                      disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
+                      className="flex-1 ui-pill-btn justify-center py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
+                    >
+                      <Play size={14} className="fill-current" />
+                      <span>Включить</span>
+                    </button>
+                    <button 
+                      onClick={() => handleServerAction('stop')}
+                      disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
+                      className="flex-1 ui-pill-btn justify-center py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
+                    >
+                      <Square size={14} className="fill-current" />
+                      <span>Выключить</span>
+                    </button>
+                  </div>
 
+                </div>
               </div>
             </div>
+
+            {/* Виджет перехода в Конституцию */}
+            <div className="space-y-4 w-full md:max-w-[300px]">
+              <div className="hidden md:block h-[26px]"></div> {/* Пустой блок для выравнивания по высоте на ПК */}
+              <div 
+                onClick={() => handleTabChange('constitution')}
+                className="bg-[#14171c] p-6 rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-col items-center justify-center text-center group w-full aspect-square md:aspect-auto md:h-[296px] relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                  <BookOpen size={120} />
+                </div>
+                <div className="w-16 h-16 rounded-full bg-[#c0ff00]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10">
+                  <BookOpen size={32} className="text-[#c0ff00]" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 relative z-10">Конституция</h3>
+                <p className="text-xs text-gray-500 relative z-10 px-4">Свод законов и правил сервера. Нажмите, чтобы открыть.</p>
+              </div>
+            </div>
+
           </div>
         )}
 
-        {/* ЗАКОНЫ */}
+        {/* ЗАКОНЫ С ПРИЛИПАЮЩИМ ПОИСКОМ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative">
             <div className="flex items-center justify-between w-full">
@@ -949,27 +969,27 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ */}
-      <nav className={`fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-24 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-8 md:px-2 rounded-full md:rounded-[40px] z-50 shadow-2xl transition-all duration-500
+      {/* НАВИГАЦИОННОЕ МЕНЮ (Капсула на Десктопе) */}
+      <nav className={`fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
         <div className={`grid w-full items-center justify-items-center md:flex md:flex-col md:gap-6 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <User size={20} />
-            <span className="text-[10px] font-medium tracking-wide mt-1">Главная</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Главная</span>
           </button>
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <BookOpen size={20} />
-            <span className="text-[10px] font-medium tracking-wide mt-1">Законы</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Законы</span>
           </button>
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <Users size={20} />
-            <span className="text-[10px] font-medium tracking-wide mt-1">Игроки</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Игроки</span>
           </button>
           {isAdmin && (
             <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
               <ShieldAlert size={20} />
-              <span className="text-[10px] font-medium tracking-wide mt-1">Админ</span>
+              <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Админ</span>
             </button>
           )}
         </div>
