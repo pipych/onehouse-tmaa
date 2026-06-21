@@ -87,7 +87,7 @@ export default function Home() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // Обработчик прокрутки (для прилипания поиска)
+  // Слушатель скролла для эффекта "прилипания"
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -141,13 +141,12 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  // --- УЛУЧШЕННАЯ ЛОГИКА ПОИСКА (Анализ и Сброс) ---
+  // --- ЛОГИКА ПОИСКА (Поиск абзацев) ---
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
 
-    // 1. Сбрасываем стили абсолютно у всех абзацев
     children.forEach((child) => {
       child.style.transition = 'all 0.3s ease';
       child.style.backgroundColor = '';
@@ -169,7 +168,6 @@ export default function Home() {
 
     const foundMatches: HTMLElement[] = [];
 
-    // 2. Ищем совпадения
     children.forEach((child) => {
       const text = child.textContent?.toLowerCase() || '';
       if (!text.trim()) return;
@@ -191,11 +189,10 @@ export default function Home() {
     setCurrentMatchIndex(foundMatches.length > 0 ? 1 : 0);
   }, [searchQuery, constitution, activeTab, isEditing]);
 
-  // --- УЛУЧШЕННАЯ ЛОГИКА ПОИСКА (Жесткий Скролл) ---
+  // --- ЛОГИКА ПОИСКА (Прокрутка) ---
   useEffect(() => {
     if (matches.length === 0 || currentMatchIndex === 0) return;
 
-    // Сбрасываем выделение предыдущего активного элемента
     matches.forEach(el => {
       el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
       el.style.boxShadow = '';
@@ -204,16 +201,13 @@ export default function Home() {
 
     const activeEl = matches[currentMatchIndex - 1];
     
-    // Подсвечиваем новый
     activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
     activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
     activeEl.style.transform = 'scale(1.02)';
 
-    // ЖЕСТКИЙ СКРОЛЛ по координатам (обходим баги мобильных браузеров)
+    // Жесткая прокрутка, работает безотказно после очистки overflow-hidden
     setTimeout(() => {
-      // 180 - это отступ сверху, чтобы абзац не прятался под прилипшим поиском и шапкой
-      const yOffset = activeEl.getBoundingClientRect().top + window.scrollY - 180;
-      window.scrollTo({ top: yOffset, behavior: 'smooth' });
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 50);
 
   }, [currentMatchIndex, matches]);
@@ -581,7 +575,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Контент страниц */}
       <main className="p-4 pt-36 max-w-md mx-auto transition-all duration-300 w-full break-words">
         
         {/* ВИДЖЕТ EXAROTON */}
@@ -918,17 +911,13 @@ export default function Home() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
-        /* УБРАЛИ overflow-x-hidden, чтобы работал sticky */
         body, html { 
           font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; 
           max-w-full; 
-          overflow-x: hidden; 
+          overflow-x: clip; 
         }
         
-        button, input, textarea, div, span { 
-          font-family: inherit; 
-        }
-
+        button, input, textarea, div, span { font-family: inherit; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
