@@ -111,14 +111,21 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  useEffect(() => {
+ useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
 
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
-      tg.expand(); 
-      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
+      tg.expand(); // Растягивает окно внутри Telegram (работает везде)
+      
+      // УМНАЯ ПРОВЕРКА ПЛАТФОРМЫ
+      // Запрашиваем "Абсолютный полный экран" ТОЛЬКО на мобильных устройствах
+      const mobilePlatforms = ['android', 'ios'];
+      if (mobilePlatforms.includes(tg.platform) && typeof tg.requestFullscreen === 'function') {
+        tg.requestFullscreen();
+      }
+      
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       
@@ -130,7 +137,6 @@ export default function Home() {
       setLoading(false);
     }
   }, []);
-
   const fetchServerStatus = async () => {
     setIsServerLoading(true);
     try {
