@@ -45,7 +45,9 @@ export default function Home() {
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin'>('players');
+  
+  // ИЗМЕНЕНО: Теперь стартовая вкладка по умолчанию — Главная (profile)
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin'>('profile');
   
   const [players, setPlayers] = useState<Player[]>([]);
   
@@ -342,13 +344,14 @@ export default function Home() {
     if (data) setPlayers(data);
   };
 
-  // --- ХИТРАЯ ЗАГРУЗКА ИЗ ОДНОЙ СТРОКИ БД ---
+  // ИЗМЕНЕНО: Загружаем обе строки из БД по их реальным ID (1 и 2)
   const loadConstitution = async () => {
-    const { data } = await supabase.from('constitution').select('content').eq('id', 1).single();
-    if (data && data.content) {
-      const parts = data.content.split('');
-      setConstitutionText(parts[0] || '');
-      setCommandmentsText(parts[1] || '<h1>Заповеди Дома</h1><p>Здесь будут записаны внеигровые правила...</p>');
+    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]);
+    if (data) {
+      const constDoc = data.find((d: any) => d.id === 1);
+      const cmdDoc = data.find((d: any) => d.id === 2);
+      if (constDoc) setConstitutionText(constDoc.content);
+      if (cmdDoc) setCommandmentsText(cmdDoc.content);
     }
   };
 
@@ -446,23 +449,21 @@ export default function Home() {
     }
   };
 
-  // --- ХИТРОЕ СОХРАНЕНИЕ ДВУХ ДОКУМЕНТОВ В ОДНУ ЯЧЕЙКУ БД ---
+  // ИЗМЕНЕНО: Чистое сохранение в разные ячейки БД
   const saveDocument = async () => {
     if (!editorRef.current || activeDocument === 'none') return;
     
     const updatedContent = editorRef.current.innerHTML;
-    let newDbContent = '';
-
-    if (activeDocument === 'constitution') {
-      newDbContent = updatedContent + '' + commandmentsText;
-      setConstitutionText(updatedContent);
-    } else {
-      newDbContent = constitutionText + '' + updatedContent;
-      setCommandmentsText(updatedContent);
-    }
+    const docId = activeDocument === 'constitution' ? 1 : 2;
     
-    const { error } = await supabase.from('constitution').update({ content: newDbContent }).eq('id', 1);
+    const { error } = await supabase.from('constitution').update({ content: updatedContent }).eq('id', docId);
+    
     if (!error) {
+      if (activeDocument === 'constitution') {
+        setConstitutionText(updatedContent);
+      } else {
+        setCommandmentsText(updatedContent);
+      }
       setIsEditing(false);
     } else {
       alert(`Ошибка сохранения: ${error.message}`);
@@ -561,7 +562,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Верхний док управления */}
+      {/* Верхний док управления (Кнопка профиля и сохранения) */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
@@ -1118,7 +1119,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ (Тонкая капсула на Десктопе) */}
+      {/* НАВИГАЦИОННОЕ МЕНЮ */}
       <nav className={`fixed bottom-6 left-6 right-6 md:left-8 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
