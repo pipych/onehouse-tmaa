@@ -7,10 +7,9 @@ import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw, Coins
+  Copy, Play, Square, Server, RefreshCw, Coins, Search
 } from 'lucide-react';
 
-// Кастомная иконка лисы для Neoforge
 const FoxIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M3 13.5l1.5-7.5 4.5 3 3-4.5 3 4.5 4.5-3L21 13.5" />
@@ -56,6 +55,9 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
+  // Состояние поиска по конституции
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
@@ -80,6 +82,7 @@ export default function Home() {
   const [newRolePerm, setNewRolePerm] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -118,17 +121,72 @@ export default function Home() {
     }
   };
 
-  // Автоматическое обновление статуса раз в час (3 600 000 мс) при открытой главной вкладке
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchServerStatus();
       const intervalId = setInterval(() => {
         fetchServerStatus();
       }, 3600000); 
-      
-      return () => clearInterval(intervalId); // Очистка интервала при уходе с вкладки
+      return () => clearInterval(intervalId);
     }
   }, [activeTab]);
+
+  // --- ЛОГИКА УМНОГО ПОИСКА ПО КОНСТИТУЦИИ ---
+  useEffect(() => {
+    if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
+
+    const children = Array.from(viewRef.current.children) as HTMLElement[];
+
+    // 1. Очищаем старую подсветку
+    children.forEach((child) => {
+      if (child.dataset.highlighted) {
+        child.style.backgroundColor = '';
+        child.style.boxShadow = '';
+        child.style.borderRadius = '';
+        child.style.transform = '';
+        delete child.dataset.highlighted;
+      }
+    });
+
+    if (!searchQuery.trim()) return;
+
+    const query = searchQuery.toLowerCase().trim();
+    // Создаем "нечеткий" паттерн: прднт -> п.*?р.*?д.*?н.*?т
+    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const fuzzyRegex = new RegExp(safeQuery.split('').join('.*?'), 'i');
+
+    let bestMatch: HTMLElement | null = null;
+    let bestScore = 0;
+
+    // 2. Ищем лучшее совпадение среди абзацев
+    children.forEach((child) => {
+      const text = child.textContent?.toLowerCase() || '';
+      if (!text) return;
+
+      let score = 0;
+      if (text.includes(query)) score += 100; // Точное совпадение
+      else if (fuzzyRegex.test(text)) score += 10; // Нечеткое совпадение с опечатками
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = child;
+      }
+    });
+
+    // 3. Подсвечиваем и скроллим
+    if (bestMatch && bestScore > 0) {
+      bestMatch.dataset.highlighted = "true";
+      bestMatch.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+      bestMatch.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
+      bestMatch.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
+      bestMatch.style.borderRadius = '8px';
+      bestMatch.style.transform = 'scale(1.02)';
+
+      setTimeout(() => {
+        bestMatch?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [searchQuery, constitution, activeTab, isEditing]);
 
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
@@ -311,6 +369,7 @@ export default function Home() {
 
   const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
     setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); setActiveTab(tab);
+    setSearchQuery(''); // Очищаем поиск при переходе
   };
 
   const isAdmin = dbUser?.roles.includes('admin');
@@ -570,7 +629,6 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* НОВЫЙ БЛОК ВЕРСИИ NEOFORGE С ЛИСОЙ */}
                   <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-[#ff8c00]/10 rounded-xl text-[#ff8c00]">
@@ -585,7 +643,6 @@ export default function Home() {
                   
                 </div>
 
-                {/* Кнопки теперь доступны ВСЕМ игрокам */}
                 <div className="pt-2 flex gap-2">
                   <button 
                     onClick={() => handleServerAction('start')}
@@ -610,7 +667,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ЗАКОНЫ */}
+        {/* ЗАКОНЫ С УМНЫМ ПОИСКОМ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full overflow-x-hidden">
             <div className="flex items-center justify-between w-full">
@@ -620,12 +677,34 @@ export default function Home() {
               )}
             </div>
 
+            {!isEditing && (
+              <div className="relative mb-4">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Нечеткий поиск по законам..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="ui-input pl-11 !bg-[#1c2026] !border-white/5 focus:!border-[#c0ff00]/40 transition-all"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-all active:scale-90">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            )}
+
             {isEditing ? (
               <div className="space-y-4 scale-100 w-full overflow-x-hidden pt-2">
                 <div ref={editorRef} contentEditable suppressContentEditableWarning className="w-full min-h-[400px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words overflow-x-hidden" dangerouslySetInnerHTML={{ __html: constitution }} data-placeholder="Начните писать законы здесь..." />
               </div>
             ) : (
-              <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full" dangerouslySetInnerHTML={{ __html: constitution }} />
+              <div 
+                ref={viewRef} 
+                className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full transition-all" 
+                dangerouslySetInnerHTML={{ __html: constitution }} 
+              />
             )}
           </div>
         )}
@@ -796,7 +875,7 @@ export default function Home() {
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
         .prose h1 { font-size: 1.5rem; font-weight: 800; color: #ffffff; margin-top: 1rem; margin-bottom: 0.5rem; }
         .prose h2 { font-size: 1.25rem; font-weight: 700; color: #c0ff00; margin-top: 0.8rem; margin-bottom: 0.4rem; }
-        .prose p { margin-bottom: 0.75rem; color: #d1d5db; }
+        .prose p { margin-bottom: 0.75rem; color: #d1d5db; transition: all 0.3s ease; }
         .prose b, .prose strong { color: #ffffff; font-weight: 700; }
         .prose i, .prose em { color: #e5e7eb; font-style: italic; }
       `}</style>
