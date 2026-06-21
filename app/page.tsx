@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw
+  Copy, Play, Square, Server, RefreshCw, Coins
 } from 'lucide-react';
 
 interface Player {
@@ -50,11 +50,12 @@ export default function Home() {
 
   // Стейты Exaroton
   const [serverInfo, setServerInfo] = useState<any>(null);
+  const [credits, setCredits] = useState<number | null>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
-  // ВАШ СТАТИЧЕСКИЙ IP - ЗАМЕНИТЕ НА СВОЙ
-  const staticIp = "mc.your-domain.com"; 
+  // ОСНОВНОЙ IP
+  const staticIp = "Onehouse2.exaroton.me:15879"; 
 
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
@@ -101,14 +102,16 @@ export default function Home() {
     if (savedRoles) setCustomRoles(JSON.parse(savedRoles));
   }, []);
 
-  // Exaroton API: Получение статуса
+  // Exaroton API: Получение статуса и кредитов
   const fetchServerStatus = async () => {
     setIsServerLoading(true);
     try {
       const res = await fetch('/api/exaroton');
       const data = await res.json();
       if (data.success) {
-        setServerInfo(data.data);
+        // Поддержка обновленного бекенда, который возвращает { server, credits }
+        setServerInfo(data.data.server || data.data);
+        setCredits(data.data.credits ?? null);
       }
     } catch (e) {
       console.error('Ошибка получения статуса сервера:', e);
@@ -360,17 +363,14 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Верхний док управления (Плавные анимации) */}
+      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-end gap-2 pointer-events-none">
-        
-        {/* Кнопка сохранения Конституции */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveConstitution} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
-        {/* Панель инструментов редактирования */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-90 translate-x-8 pointer-events-none'}`}>
           <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full">
             <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5 min-w-0">
@@ -388,7 +388,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Анимированная кнопка профиля */}
         {dbUser && !selectedPlayer && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
@@ -408,7 +407,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Окно детального просмотра профиля */}
+      {/* Окно профиля */}
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedIsDead ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
@@ -535,6 +534,25 @@ export default function Home() {
                       <button onClick={() => copyToClipboard(`${serverInfo.host}:${serverInfo.port}`)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
                         <Copy size={16} />
                       </button>
+                    </div>
+                  )}
+
+                  {/* БЛОК КРЕДИТОВ (Отображается только если удалось получить данные о балансе) */}
+                  {credits !== null && (
+                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00]">
+                          <Coins size={18} />
+                        </div>
+                        <div>
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс аккаунта</div>
+                          <div className="font-bold text-sm text-white">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кредитов</span></div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Хватит на</div>
+                        <div className="font-mono text-xs text-[#c0ff00]">{Math.floor(credits / 7)} ч. {Math.floor(((credits % 7) / 7) * 60)} мин.</div>
+                      </div>
                     </div>
                   )}
                 </div>
