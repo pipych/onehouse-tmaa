@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
+  Home as HomeIcon, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
   Info, ArrowLeft
@@ -111,21 +111,14 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
- useEffect(() => {
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
 
     if (tg && tg.initDataUnsafe?.user?.id) {
       tg.ready();
-      tg.expand(); // Растягивает окно внутри Telegram (работает везде)
-      
-      // УМНАЯ ПРОВЕРКА ПЛАТФОРМЫ
-      // Запрашиваем "Абсолютный полный экран" ТОЛЬКО на мобильных устройствах
-      const mobilePlatforms = ['android', 'ios'];
-      if (mobilePlatforms.includes(tg.platform) && typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen();
-      }
-      
+      tg.expand(); 
+      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       
@@ -137,6 +130,7 @@ export default function Home() {
       setLoading(false);
     }
   }, []);
+
   const fetchServerStatus = async () => {
     setIsServerLoading(true);
     try {
@@ -541,10 +535,10 @@ export default function Home() {
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0">
       
-      {/* 1. ФОН ДЛЯ ТЕЛЕФОНОВ (сплошной цвет, чтобы не грузить мобилки видео) */}
+      {/* 1. ФОН ДЛЯ ТЕЛЕФОНОВ */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
       
-      {/* 2. ЖИВЫЕ ОБОИ ДЛЯ ПК (видео загружается только на десктопе) */}
+      {/* 2. ЖИВЫЕ ОБОИ ДЛЯ ПК */}
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
         <video 
           autoPlay 
@@ -555,7 +549,6 @@ export default function Home() {
         >
           <source src="/bg-video.mp4" type="video/mp4" />
         </video>
-        {/* Затемняющая пленка поверх видео для читаемости текста */}
         <div className="absolute inset-0 bg-[#090b0e]/85 backdrop-blur-[2px]" />
       </div>
 
@@ -563,9 +556,9 @@ export default function Home() {
       
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Модальное окно справки */}
+      {/* Модальное окно справки для Мобилок */}
       {showTooltip !== 'none' && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowTooltip('none')}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:hidden" onClick={() => setShowTooltip('none')}>
           <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowTooltip('none')} className="absolute top-5 right-5 p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={16}/></button>
             <div className="flex items-center gap-3 mb-4 pr-8">
@@ -581,19 +574,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Верхний док управления (Кнопка профиля и сохранения) */}
+      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         
+        {/* Кнопка сохранения (Панель редактирования) */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
+        {/* Кнопка Профиля (Только на телефонах, на ПК она в боковом меню) */}
         {dbUser && !selectedPlayer && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
-            className={`flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${
+            className={`md:hidden flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${
               showToolbar ? 'w-10 justify-center px-0' : 'w-auto px-1.5 pr-4'
             }`}
           >
@@ -698,12 +693,10 @@ export default function Home() {
       {/* ГЛАВНЫЙ КОНТЕЙНЕР (Сетка на ПК) */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
-        {/* ГЛАВНАЯ (Два виджета: Сервер и Конституция) */}
+        {/* ГЛАВНАЯ (Виджет Сервера) */}
         {activeTab === 'profile' && (
-          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start w-full animate-fade-in">
-            
-            {/* Виджет Сервера */}
-            <div className="space-y-4 w-full md:max-w-[420px]">
+          <div className="flex flex-col w-full animate-fade-in">
+            <div className="space-y-4 w-full">
               <div className="flex items-center justify-between w-full px-1">
                 <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
                   <Server size={18} className="text-[#c0ff00]" />
@@ -717,43 +710,49 @@ export default function Home() {
                 </button>
               </div>
 
-              <div className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 shadow-2xl relative overflow-hidden">
+              {/* Компактный и широкий виджет на Десктопе */}
+              <div className="bg-[#14171c] p-5 md:p-6 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
                 {serverInfo && (
                   <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />
                 )}
 
-                <div className="space-y-5 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
-                      <div className={`text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                <div className="space-y-5 md:space-y-0 md:flex md:items-stretch md:gap-8 relative z-10 w-full">
+                  
+                  {/* Секция 1: Текущее состояние */}
+                  <div className="flex items-center justify-between md:flex-col md:justify-center md:items-start md:min-w-[160px] shrink-0 bg-black/20 md:bg-transparent rounded-2xl p-3 md:p-0 border border-white/5 md:border-transparent">
+                    <div className="space-y-0.5 md:space-y-1">
+                      <div className="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
+                      <div className={`text-xl md:text-2xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
                         {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                       </div>
                     </div>
                     {serverInfo?.status === 1 && (
-                      <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
-                        <div className="text-[#c0ff00] font-black text-sm">{serverInfo.players.count} / {serverInfo.players.max}</div>
+                      <div className="bg-black/30 border border-white/5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-xl md:rounded-2xl text-center md:mt-3">
+                        <div className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
+                        <div className="text-[#c0ff00] font-black text-sm md:text-base">{serverInfo.players.count} / {serverInfo.players.max}</div>
                       </div>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
+                  {/* Секция 2: Информационная сетка */}
+                  <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-2 md:gap-3 flex-1 w-full">
+                    {/* IP 1 */}
+                    <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 w-full">
                       <div className="min-w-0 flex-1">
                         <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
-                        <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
+                        <div className="font-mono text-sm md:text-base text-gray-200 truncate">{staticIp}</div>
                       </div>
                       <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
                         <Copy size={16} />
                       </button>
                     </div>
 
+                    {/* IP 2 */}
                     {serverInfo?.host && serverInfo.status === 1 && (
-                      <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 animate-fade-in">
+                      <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 animate-fade-in w-full">
                         <div className="min-w-0 flex-1">
                           <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Прямой IP (Резервный)</div>
-                          <div className="font-mono text-xs text-[#c0ff00] truncate">
+                          <div className="font-mono text-xs md:text-sm text-[#c0ff00] truncate">
                             {serverInfo.host}:{serverInfo.port}
                           </div>
                         </div>
@@ -763,12 +762,22 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* Версия */}
+                    <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[#a1a1aa]/10 rounded-xl text-[#a1a1aa]"><AnvilIcon size={18} /></div>
+                        <div>
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия игры</div>
+                          <div className="font-bold text-sm text-white">Forge <span className="text-gray-400 text-xs">1.20.1</span></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Баланс */}
                     {credits !== null && (
-                      <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
+                      <div className="bg-black/20 border border-white/5 p-3 md:p-4 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 w-full">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00]">
-                            <Coins size={18} />
-                          </div>
+                          <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00]"><Coins size={18} /></div>
                           <div>
                             <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс аккаунта</div>
                             <div className="font-bold text-sm text-white">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кредитов</span></div>
@@ -780,26 +789,14 @@ export default function Home() {
                         </div>
                       </div>
                     )}
-
-                    <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#a1a1aa]/10 rounded-xl text-[#a1a1aa]">
-                          <AnvilIcon size={18} />
-                        </div>
-                        <div>
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия игры</div>
-                          <div className="font-bold text-sm text-white">Forge <span className="text-gray-400 text-xs">1.20.1</span></div>
-                        </div>
-                      </div>
-                    </div>
-                    
                   </div>
 
-                  <div className="pt-2 flex gap-2">
+                  {/* Секция 3: Кнопки управления */}
+                  <div className="pt-2 md:pt-0 flex gap-2 md:flex-col md:justify-center shrink-0 md:w-[150px]">
                     <button 
                       onClick={() => handleServerAction('start')}
                       disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
-                      className="flex-1 ui-pill-btn justify-center py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
+                      className="flex-1 ui-pill-btn justify-center py-3 md:py-4 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
                     >
                       <Play size={14} className="fill-current" />
                       <span>Включить</span>
@@ -807,7 +804,7 @@ export default function Home() {
                     <button 
                       onClick={() => handleServerAction('stop')}
                       disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
-                      className="flex-1 ui-pill-btn justify-center py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
+                      className="flex-1 ui-pill-btn justify-center py-3 md:py-4 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
                     >
                       <Square size={14} className="fill-current" />
                       <span>Выключить</span>
@@ -817,42 +814,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {/* Виджет перехода в Конституцию */}
-            <div className="space-y-4 w-full md:max-w-[300px]">
-              <div className="hidden md:block h-[26px]"></div> 
-              <div 
-                onClick={() => {
-                  setActiveTab('constitution');
-                  setActiveDocument('constitution');
-                }}
-                className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[296px] p-5 md:p-6"
-              >
-                <div 
-                  className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
-                  style={{ 
-                    backgroundImage: "url('/1000024917.png')", 
-                    backgroundSize: "120px", 
-                    backgroundPosition: "right -10px center", 
-                    backgroundRepeat: "no-repeat",
-                    imageRendering: "pixelated" 
-                  }} 
-                />
-                
-                <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
-
-                <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
-                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 md:mb-4 mr-4 md:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md flex-shrink-0">
-                    <BookOpen size={24} className="text-[#c0ff00] md:w-8 md:h-8" />
-                  </div>
-                  <div className="text-left md:text-center flex-1">
-                    <h3 className="text-base md:text-lg font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
-                    <p className="text-[10px] md:text-xs text-gray-400 font-medium leading-tight md:px-2 drop-shadow-md max-w-[150px] md:max-w-none">Свод законов и правил сервера.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
         )}
 
@@ -870,7 +831,7 @@ export default function Home() {
                   </button>
                 )}
                 <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">
-                  {activeDocument === 'none' ? 'Законы и Правила' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}
+                  {activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}
                 </h2>
               </div>
 
@@ -881,64 +842,64 @@ export default function Home() {
 
             {/* МЕНЮ ВЫБОРА ДОКУМЕНТОВ */}
             {activeDocument === 'none' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mt-6 w-full">
                 
-                {/* Виджет: Конституция */}
-                <div 
-                  onClick={() => setActiveDocument('constitution')}
-                  className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[240px] p-5 md:p-6"
-                >
-                  <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
-                    style={{ backgroundImage: "url('/1000024917.png')", backgroundSize: "120px", backgroundPosition: "right -10px center", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }} />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
-                  
-                  {/* Кнопка "i" для телефона */}
-                  <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
-                    <Info size={16} />
-                  </button>
-                  
-                  {/* Tooltip для ПК */}
-                  <div className="hidden md:block absolute top-4 right-14 z-30 w-[240px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[11px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed">
+                {/* Виджет: Конституция (Обертка relative для всплывашки) */}
+                <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('constitution')}>
+                  {/* Tooltip для ПК (Вылазит СВЕРХУ виджета) */}
+                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">
                     Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.
                   </div>
-                  <div className="hidden md:flex absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] transition-colors">
-                    <Info size={16} />
-                  </div>
 
-                  <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
-                    <div className="text-left md:text-center flex-1">
-                      <h3 className="text-base md:text-xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
-                      <p className="text-[10px] md:text-xs text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p>
+                  {/* Сам виджет */}
+                  <div className="relative overflow-hidden bg-[#14171c] rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-[#c0ff00]/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
+                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat"
+                      style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
+                    
+                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
+                      <Info size={16} />
+                    </button>
+                    
+                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-[#c0ff00] transition-colors shadow-lg backdrop-blur-sm">
+                      <Info size={18} />
+                    </div>
+
+                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
+                      <div className="text-left md:text-center flex-1">
+                        <h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
+                        <p className="text-[10px] md:text-sm text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Виджет: Заповеди дома */}
-                <div 
-                  onClick={() => setActiveDocument('commandments')}
-                  className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[240px] p-5 md:p-6"
-                >
-                  <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
-                    style={{ backgroundImage: "url('/zapovedi.gif')", backgroundSize: "120px", backgroundPosition: "right -10px center", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }} />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
-                  
-                  {/* Кнопка "i" для телефона */}
-                  <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
-                    <Info size={16} />
-                  </button>
-                  
-                  {/* Tooltip для ПК */}
-                  <div className="hidden md:block absolute top-4 right-14 z-30 w-[240px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[11px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed">
+                {/* Виджет: Заповеди дома (Обертка relative для всплывашки) */}
+                <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('commandments')}>
+                  {/* Tooltip для ПК (Вылазит СВЕРХУ виджета) */}
+                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">
                     Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Никакое оправдание под предлогом РП не принимается, все кто нарушат — дураки.
                   </div>
-                  <div className="hidden md:flex absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-red-400 transition-colors">
-                    <Info size={16} />
-                  </div>
 
-                  <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
-                    <div className="text-left md:text-center flex-1">
-                      <h3 className="text-base md:text-xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3>
-                      <p className="text-[10px] md:text-xs text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p>
+                  {/* Сам виджет */}
+                  <div className="relative overflow-hidden bg-[#14171c] rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-red-500/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
+                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat"
+                      style={{ backgroundImage: "url('/zapovedi.gif')", imageRendering: "pixelated" }} />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
+                    
+                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
+                      <Info size={16} />
+                    </button>
+                    
+                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-red-400 transition-colors shadow-lg backdrop-blur-sm">
+                      <Info size={18} />
+                    </div>
+
+                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
+                      <div className="text-left md:text-center flex-1">
+                        <h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3>
+                        <p className="text-[10px] md:text-sm text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -948,7 +909,7 @@ export default function Home() {
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
             {activeDocument !== 'none' && !isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[110px] md:pr-[120px] -mt-2 pb-3 pt-2' : 'top-[96px] pr-0 mb-4'}`}>
+              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[110px] md:pr-0 -mt-2 pb-3 pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
@@ -1138,31 +1099,82 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ (Тонкая капсула на Десктопе) */}
-      <nav className={`fixed bottom-6 left-6 right-6 md:left-8 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
-         ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
+      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
+      <nav className={`md:hidden fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
+         ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
       `}>
-        <div className={`grid w-full items-center justify-items-center md:flex md:flex-col md:gap-8 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <div className={`grid w-full items-center justify-items-center ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <User size={22} />
-            <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Главная</span>
+            <HomeIcon size={22} />
+            <span className="text-[10px] font-medium tracking-wide mt-1">Главная</span>
           </button>
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
             <BookOpen size={22} />
-            <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Законы</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1">Законы</span>
           </button>
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
             <Users size={22} />
-            <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Игроки</span>
+            <span className="text-[10px] font-medium tracking-wide mt-1">Игроки</span>
           </button>
           {isAdmin && (
             <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
               <ShieldAlert size={22} />
-              <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Админ</span>
+              <span className="text-[10px] font-medium tracking-wide mt-1">Админ</span>
             </button>
           )}
         </div>
       </nav>
+
+      {/* САЙДБАР ДЛЯ ПК (Профиль + Навигация) */}
+      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
+       
+       {/* Десктопная кнопка Профиля (Кружок сверху) */}
+       {dbUser && (
+         <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
+           <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all">
+             <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
+           </div>
+           {/* Всплывающая подсказка Профиля */}
+           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+             Мой профиль
+           </div>
+         </button>
+       )}
+
+       {/* Десктопная Панель Вкладок (Dock) */}
+       <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
+         
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <HomeIcon size={24} />
+            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+              Главная
+            </div>
+         </button>
+
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <BookOpen size={24} />
+            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+              Законы
+            </div>
+         </button>
+
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Users size={24} />
+            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+              Игроки
+            </div>
+         </button>
+
+         {isAdmin && (
+            <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+              <ShieldAlert size={24} />
+              <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+                Админ-панель
+              </div>
+            </button>
+         )}
+       </nav>
+      </aside>
 
       {/* КНОПКА "НАВЕРХ" */}
       <button 
