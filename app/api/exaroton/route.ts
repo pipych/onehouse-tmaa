@@ -9,12 +9,24 @@ export async function GET() {
   }
 
   try {
-    const res = await fetch(`https://api.exaroton.com/v1/servers/${serverId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store'
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Запрашиваем параллельно статус сервера и баланс кредитов
+    const [serverRes, creditsRes] = await Promise.all([
+      fetch(`https://api.exaroton.com/v1/servers/${serverId}`, { headers, cache: 'no-store' }),
+      fetch(`https://api.exaroton.com/v1/billing/credits`, { headers, cache: 'no-store' })
+    ]);
+    
+    const serverData = await serverRes.json();
+    const creditsData = await creditsRes.json();
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        server: serverData.data,
+        credits: creditsData.data?.credits || 0
+      }
     });
-    const data = await res.json();
-    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Ошибка связи с Exaroton' }, { status: 500 });
   }
@@ -30,7 +42,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const action = body.action; // 'start', 'stop' или 'restart'
+    const action = body.action;
 
     const res = await fetch(`https://api.exaroton.com/v1/servers/${serverId}/${action}`, {
       method: 'POST',
