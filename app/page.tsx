@@ -7,10 +7,10 @@ import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp
+  Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
+  Info, ArrowLeft
 } from 'lucide-react';
 
-// ИСПРАВЛЕНО: Вернули правильную иконку Наковальни
 const AnvilIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
@@ -48,7 +48,11 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin'>('players');
   
   const [players, setPlayers] = useState<Player[]>([]);
-  const [constitution, setConstitution] = useState('');
+  
+  // Документы
+  const [constitutionText, setConstitutionText] = useState('');
+  const [commandmentsText, setCommandmentsText] = useState('');
+  const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [isEditing, setIsEditing] = useState(false);
   
   const [newRpName, setNewRpName] = useState('');
@@ -56,6 +60,9 @@ export default function Home() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
+
+  // Справка
+  const [showTooltip, setShowTooltip] = useState<'none' | 'constitution' | 'commandments'>('none');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<number[]>([]);
@@ -152,9 +159,9 @@ export default function Home() {
 
   useEffect(() => {
     if (isEditing && editorRef.current) {
-      editorRef.current.innerHTML = constitution;
+      editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
     }
-  }, [isEditing]);
+  }, [isEditing, activeDocument]);
 
   const checkFormatting = () => {
     if (typeof document === 'undefined') return;
@@ -191,8 +198,10 @@ export default function Home() {
     }
   };
 
+  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+
   useEffect(() => {
-    if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
+    if (!viewRef.current || activeTab !== 'constitution' || isEditing || activeDocument === 'none') return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
     children.forEach((child) => {
@@ -235,7 +244,7 @@ export default function Home() {
 
     setMatches(foundIndices);
     setCurrentMatchIndex(foundIndices.length > 0 ? 1 : 0);
-  }, [searchQuery, constitution, activeTab, isEditing]);
+  }, [searchQuery, currentDocText, activeTab, isEditing, activeDocument]);
 
   useEffect(() => {
     if (matches.length === 0 || currentMatchIndex === 0 || !viewRef.current) return;
@@ -333,9 +342,14 @@ export default function Home() {
     if (data) setPlayers(data);
   };
 
+  // --- ХИТРАЯ ЗАГРУЗКА ИЗ ОДНОЙ СТРОКИ БД ---
   const loadConstitution = async () => {
     const { data } = await supabase.from('constitution').select('content').eq('id', 1).single();
-    if (data) setConstitution(data.content);
+    if (data && data.content) {
+      const parts = data.content.split('');
+      setConstitutionText(parts[0] || '');
+      setCommandmentsText(parts[1] || '<h1>Заповеди Дома</h1><p>Здесь будут записаны внеигровые правила...</p>');
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
@@ -432,17 +446,34 @@ export default function Home() {
     }
   };
 
-  const saveConstitution = async () => {
-    if (!editorRef.current) return;
+  // --- ХИТРОЕ СОХРАНЕНИЕ ДВУХ ДОКУМЕНТОВ В ОДНУ ЯЧЕЙКУ БД ---
+  const saveDocument = async () => {
+    if (!editorRef.current || activeDocument === 'none') return;
+    
     const updatedContent = editorRef.current.innerHTML;
-    const { error } = await supabase.from('constitution').update({ content: updatedContent }).eq('id', 1);
+    let newDbContent = '';
+
+    if (activeDocument === 'constitution') {
+      newDbContent = updatedContent + '' + commandmentsText;
+      setConstitutionText(updatedContent);
+    } else {
+      newDbContent = constitutionText + '' + updatedContent;
+      setCommandmentsText(updatedContent);
+    }
+    
+    const { error } = await supabase.from('constitution').update({ content: newDbContent }).eq('id', 1);
     if (!error) {
-      setConstitution(updatedContent); setIsEditing(false);
+      setIsEditing(false);
+    } else {
+      alert(`Ошибка сохранения: ${error.message}`);
     }
   };
 
   const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
-    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); setActiveTab(tab);
+    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
+    setActiveTab(tab);
+    setActiveDocument('none'); 
+    setIsEditing(false);
     setSearchQuery('');
   };
 
@@ -460,7 +491,7 @@ export default function Home() {
 
   const isDead = (roles: string[]) => roles.some(r => r.toLowerCase() === 'мёртв');
 
-  const showToolbar = isEditing && activeTab === 'constitution' && !selectedPlayer;
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
@@ -512,11 +543,29 @@ export default function Home() {
       
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Верхний док управления (Кнопка профиля и сохранения) */}
+      {/* Модальное окно справки */}
+      {showTooltip !== 'none' && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowTooltip('none')}>
+          <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowTooltip('none')} className="absolute top-5 right-5 p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={16}/></button>
+            <div className="flex items-center gap-3 mb-4 pr-8">
+              <div className="p-2.5 bg-[#c0ff00]/10 rounded-full text-[#c0ff00]"><Info size={20}/></div>
+              <h3 className="font-black text-white text-xl tracking-wide">{showTooltip === 'constitution' ? 'Конституция' : 'Заповеди дома'}</h3>
+            </div>
+            <p className="text-[13px] text-gray-300 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
+              {showTooltip === 'constitution'
+                ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.'
+                : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Никакое оправдание под предлогом РП не принимается, все кто нарушат — дураки.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
-          <button onClick={saveConstitution} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
+          <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
@@ -749,11 +798,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Виджет Конституции с Pixel-Art фоном */}
+            {/* Виджет перехода в Конституцию */}
             <div className="space-y-4 w-full md:max-w-[300px]">
               <div className="hidden md:block h-[26px]"></div> 
               <div 
-                onClick={() => handleTabChange('constitution')}
+                onClick={() => {
+                  setActiveTab('constitution');
+                  setActiveDocument('constitution');
+                }}
                 className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[296px] p-5 md:p-6"
               >
                 <div 
@@ -784,23 +836,104 @@ export default function Home() {
           </div>
         )}
 
-        {/* ЗАКОНЫ С ПРИЛИПАЮЩИМ ПОИСКОМ */}
+        {/* ЗАКОНЫ И ДОКУМЕНТЫ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative">
             <div className="flex items-center justify-between w-full">
-              <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">Конституция Дома</h2>
-              {canEditConstitution && !isEditing && (
+              <div className="flex items-center gap-3">
+                {activeDocument !== 'none' && !isEditing && (
+                  <button 
+                    onClick={() => setActiveDocument('none')} 
+                    className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 shadow-md"
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                )}
+                <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">
+                  {activeDocument === 'none' ? 'Законы и Правила' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}
+                </h2>
+              </div>
+
+              {activeDocument !== 'none' && canEditConstitution && !isEditing && (
                 <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
               )}
             </div>
 
-            {!isEditing && (
+            {/* МЕНЮ ВЫБОРА ДОКУМЕНТОВ */}
+            {activeDocument === 'none' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                
+                {/* Виджет: Конституция */}
+                <div 
+                  onClick={() => setActiveDocument('constitution')}
+                  className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[240px] p-5 md:p-6"
+                >
+                  <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+                    style={{ backgroundImage: "url('/1000024917.png')", backgroundSize: "120px", backgroundPosition: "right -10px center", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
+                  
+                  {/* Кнопка "i" для телефона */}
+                  <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
+                    <Info size={16} />
+                  </button>
+                  
+                  {/* Tooltip для ПК */}
+                  <div className="hidden md:block absolute top-4 right-14 z-30 w-[240px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[11px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed">
+                    Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.
+                  </div>
+                  <div className="hidden md:flex absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] transition-colors">
+                    <Info size={16} />
+                  </div>
+
+                  <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
+                    <div className="text-left md:text-center flex-1">
+                      <h3 className="text-base md:text-xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
+                      <p className="text-[10px] md:text-xs text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Виджет: Заповеди дома */}
+                <div 
+                  onClick={() => setActiveDocument('commandments')}
+                  className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[240px] p-5 md:p-6"
+                >
+                  <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+                    style={{ backgroundImage: "url('/zapovedi.gif')", backgroundSize: "120px", backgroundPosition: "right -10px center", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
+                  
+                  {/* Кнопка "i" для телефона */}
+                  <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
+                    <Info size={16} />
+                  </button>
+                  
+                  {/* Tooltip для ПК */}
+                  <div className="hidden md:block absolute top-4 right-14 z-30 w-[240px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[11px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed">
+                    Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Никакое оправдание под предлогом РП не принимается, все кто нарушат — дураки.
+                  </div>
+                  <div className="hidden md:flex absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-red-400 transition-colors">
+                    <Info size={16} />
+                  </div>
+
+                  <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
+                    <div className="text-left md:text-center flex-1">
+                      <h3 className="text-base md:text-xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3>
+                      <p className="text-[10px] md:text-xs text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
+            {activeDocument !== 'none' && !isEditing && (
               <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[110px] md:pr-[120px] -mt-2 pb-3 pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
                     type="text"
-                    placeholder="Поиск"
+                    placeholder={`Поиск по ${activeDocument === 'constitution' ? 'конституции' : 'заповедям'}...`}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full flex-1 placeholder:text-gray-500"
@@ -835,7 +968,7 @@ export default function Home() {
               </div>
             )}
 
-            {isEditing ? (
+            {activeDocument !== 'none' && isEditing && (
               <div className="space-y-4 scale-100 w-full pt-2">
                 <div 
                   ref={editorRef} 
@@ -845,14 +978,16 @@ export default function Home() {
                   onMouseUp={checkFormatting}
                   onInput={checkFormatting}
                   className="w-full min-h-[600px] bg-[#14171c] border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" 
-                  data-placeholder="Начните писать законы здесь..." 
+                  data-placeholder={`Начните писать ${activeDocument === 'constitution' ? 'законы' : 'заповеди'} здесь...`} 
                 />
               </div>
-            ) : (
+            )}
+            
+            {activeDocument !== 'none' && !isEditing && (
               <div 
                 ref={viewRef}
                 className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" 
-                dangerouslySetInnerHTML={{ __html: constitution }} 
+                dangerouslySetInnerHTML={{ __html: currentDocText }} 
               />
             )}
           </div>
@@ -983,7 +1118,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ */}
+      {/* НАВИГАЦИОННОЕ МЕНЮ (Тонкая капсула на Десктопе) */}
       <nav className={`fixed bottom-6 left-6 right-6 md:left-8 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
