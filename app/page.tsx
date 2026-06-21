@@ -43,7 +43,6 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // Состояния для статуса загрузки файлов
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
@@ -130,7 +129,6 @@ export default function Home() {
     if (data) setConstitution(data.content);
   };
 
-  // Универсальная функция загрузки файла в Storage
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
     setUrlCallback: (url: string) => void, 
@@ -165,19 +163,17 @@ export default function Home() {
     }
   };
 
-  // ОБНОВЛЕНО: Сохранение профиля по ID выбранного игрока
   const saveProfileData = async () => {
     if (!selectedPlayer || !newRpName.trim()) return;
     const { error } = await supabase
       .from('users')
       .update({ rp_name: newRpName, avatar_url: newAvatarUrl })
-      .eq('id', selectedPlayer.id); // теперь сохраняем для открытого юзера
+      .eq('id', selectedPlayer.id); 
       
     if (!error) {
       const updatedUser = { ...selectedPlayer, rp_name: newRpName, avatar_url: newAvatarUrl };
       setSelectedPlayer(updatedUser);
       
-      // Если редактировали сами себя — обновляем свой личный профиль
       if (dbUser?.id === selectedPlayer.id) {
         setDbUser(updatedUser);
       }
@@ -372,35 +368,53 @@ export default function Home() {
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
       {/* Верхний док управления */}
-      <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-between gap-2 pointer-events-none">
+      <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-end gap-2 pointer-events-none">
         
-        <div className={`p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 transition-all duration-300 ease-in-out pointer-events-auto origin-left ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'absolute opacity-0 scale-95 -translate-x-4 pointer-events-none'}`}>
-          <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5">
-            <button onClick={() => execEditorCommand('bold')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Bold size={14}/></button>
-            <button onClick={() => execEditorCommand('italic')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Italic size={14}/></button>
-            <button onClick={() => execEditorCommand('strikeThrough')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Strikethrough size={14}/></button>
-            <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-            <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading1 size={14}/></button>
-            <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading2 size={14}/></button>
-            <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-            <button onClick={() => execEditorCommand('justifyLeft')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignLeft size={14}/></button>
-            <button onClick={() => execEditorCommand('justifyCenter')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignCenter size={14}/></button>
-            <button onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
+        {/* Новая кнопка сохранения */}
+        <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
+          <button
+            onClick={saveConstitution}
+            className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform"
+          >
+            <Save size={16} />
+          </button>
+        </div>
+
+        {/* Панель форматирования */}
+        <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-90 translate-x-8 pointer-events-none'}`}>
+          <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full">
+            <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5 min-w-0">
+              <button onClick={() => execEditorCommand('bold')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Bold size={14}/></button>
+              <button onClick={() => execEditorCommand('italic')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Italic size={14}/></button>
+              <button onClick={() => execEditorCommand('strikeThrough')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Strikethrough size={14}/></button>
+              <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+              <button onClick={() => execEditorCommand('formatBlock', '<h1>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading1 size={14}/></button>
+              <button onClick={() => execEditorCommand('formatBlock', '<h2>')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><Heading2 size={14}/></button>
+              <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+              <button onClick={() => execEditorCommand('justifyLeft')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignLeft size={14}/></button>
+              <button onClick={() => execEditorCommand('justifyCenter')} className="p-1.5 hover:text-[#c0ff00] hover:bg-white/5 rounded-full transition-all active:scale-75 flex-shrink-0"><AlignCenter size={14}/></button>
+              <button onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
+            </div>
           </div>
         </div>
 
-        {dbUser && !selectedPlayer && !isEditing && (
-          <button 
+        {/* Анимированная кнопка профиля */}
+        {dbUser && !selectedPlayer && (
+          <button
             onClick={() => {
               setIsEditingProfile(false);
               setSelectedPlayer(dbUser);
             }}
-            className="ml-auto flex items-center bg-[#14171c]/90 border border-white/10 p-1.5 rounded-full transition-all duration-300 ease-in-out active:scale-95 shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto pr-3.5"
+            className={`flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border ${
+              showToolbar ? 'w-10 justify-center px-0' : 'w-auto px-1.5 pr-4'
+            }`}
           >
-            <div className="w-5 h-5 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
               <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
             </div>
-            <span className="text-[11px] font-bold text-gray-200 tracking-wide ml-2">
+            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] whitespace-nowrap overflow-hidden ${
+              showToolbar ? 'max-w-0 opacity-0 ml-0' : 'max-w-[100px] opacity-100 ml-2.5'
+            }`}>
               Профиль
             </span>
           </button>
@@ -417,7 +431,6 @@ export default function Home() {
             <X size={14} />
           </button>
 
-          {/* ОБНОВЛЕНО: Проверка на админа для кнопки редактирования. Также предзагружаем данные профиля */}
           {((selectedPlayer.id === dbUser?.id && !selectedIsDead) || isAdmin) && !isEditingProfile && (
             <button onClick={() => {
               setNewRpName(selectedPlayer.rp_name);
@@ -574,14 +587,6 @@ export default function Home() {
                   dangerouslySetInnerHTML={{ __html: constitution }}
                   data-placeholder="Начните писать законы здесь..."
                 />
-
-                <button 
-                  onClick={saveConstitution} 
-                  className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3.5"
-                >
-                  <Save size={14} />
-                  <span>Сохранить изменения</span>
-                </button>
               </div>
             ) : (
               <div 
@@ -679,7 +684,6 @@ export default function Home() {
                 <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
                 <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
                 
-                {/* Кнопка загрузки аватара в админке */}
                 <label className="ui-pill-btn w-full justify-center !bg-[#1c2026] !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-3 relative overflow-hidden">
                   <input 
                     type="file" 
