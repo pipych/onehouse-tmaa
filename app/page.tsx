@@ -10,8 +10,7 @@ import {
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp
 } from 'lucide-react';
 
-// Новая иконка Наковальни для Forge
-const AnvilIcon = ({ size = 18, className = "" }) => (
+const FoxIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
     <path d="M7 5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1" />
@@ -496,7 +495,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white animate-fade-in">
-        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md w-full break-words shadow-2xl scale-95 transition-all">
+        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md md:max-w-xl w-full break-words shadow-2xl scale-95 transition-all">
           <div className="text-red-500 font-bold text-lg mb-2">Авторизация не удалась</div>
           <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">{error}</div>
         </div>
@@ -540,7 +539,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* ОТДЕЛЬНАЯ ПАНЕЛЬ ФОРМАТИРОВАНИЯ (Внизу на мобилках, сверху на ПК) */}
+      {/* ОТДЕЛЬНАЯ ПАНЕЛЬ ФОРМАТИРОВАНИЯ */}
       <div className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center pointer-events-none
         ${showToolbar ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-12 md:-translate-y-4'}
         bottom-2 left-2 right-2          
@@ -626,14 +625,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Сетка на ПК) */}
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
         {/* ГЛАВНАЯ (Два виджета: Сервер и Конституция) */}
         {activeTab === 'profile' && (
-          <div className="flex flex-col md:flex-row gap-6 items-start w-full animate-fade-in">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start w-full animate-fade-in">
             
-            {/* Виджет Сервера (Ограничен по ширине на Десктопе) */}
+            {/* Виджет Сервера */}
             <div className="space-y-4 w-full md:max-w-[420px]">
               <div className="flex items-center justify-between w-full px-1">
                 <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
@@ -749,21 +748,38 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Виджет перехода в Конституцию */}
+            {/* Виджет Конституции с Pixel-Art фоном */}
             <div className="space-y-4 w-full md:max-w-[300px]">
-              <div className="hidden md:block h-[26px]"></div> {/* Пустой блок для выравнивания по высоте на ПК */}
+              <div className="hidden md:block h-[26px]"></div> {/* Выравнивание на Десктопе */}
               <div 
                 onClick={() => handleTabChange('constitution')}
-                className="bg-[#14171c] p-6 rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-col items-center justify-center text-center group w-full aspect-square md:aspect-auto md:h-[296px] relative overflow-hidden"
+                className="group relative overflow-hidden bg-[#14171c] rounded-[28px] border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[296px] p-5 md:p-6"
               >
-                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                  <BookOpen size={120} />
+                {/* Картинка-фон Зачарованной Книги */}
+                <div 
+                  className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+                  style={{ 
+                    backgroundImage: "url('/1000024917.png')", 
+                    backgroundSize: "120px", 
+                    backgroundPosition: "right -10px center", 
+                    backgroundRepeat: "no-repeat",
+                    imageRendering: "pixelated" // Оставляем пиксели резкими!
+                  }} 
+                />
+                
+                {/* Градиент поверх картинки, чтобы текст читался */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:to-transparent z-0" />
+
+                {/* Контент */}
+                <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
+                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 md:mb-4 mr-4 md:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md flex-shrink-0">
+                    <BookOpen size={24} className="text-[#c0ff00] md:w-8 md:h-8" />
+                  </div>
+                  <div className="text-left md:text-center flex-1">
+                    <h3 className="text-base md:text-lg font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
+                    <p className="text-[10px] md:text-xs text-gray-400 font-medium leading-tight md:px-2 drop-shadow-md max-w-[150px] md:max-w-none">Свод законов и правил сервера.</p>
+                  </div>
                 </div>
-                <div className="w-16 h-16 rounded-full bg-[#c0ff00]/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform relative z-10">
-                  <BookOpen size={32} className="text-[#c0ff00]" />
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 relative z-10">Конституция</h3>
-                <p className="text-xs text-gray-500 relative z-10 px-4">Свод законов и правил сервера. Нажмите, чтобы открыть.</p>
               </div>
             </div>
 
@@ -969,26 +985,26 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИОННОЕ МЕНЮ (Капсула на Десктопе) */}
-      <nav className={`fixed bottom-6 left-6 right-6 md:left-6 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
+      {/* НАВИГАЦИОННОЕ МЕНЮ (Тонкая капсула на Десктопе) */}
+      <nav className={`fixed bottom-6 left-6 right-6 md:left-8 md:right-auto md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 md:py-6 md:px-2 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 md:translate-y-0 md:-translate-x-32 pointer-events-none' : 'opacity-100 translate-y-0 md:translate-x-0'}
       `}>
-        <div className={`grid w-full items-center justify-items-center md:flex md:flex-col md:gap-6 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <User size={20} />
+        <div className={`grid w-full items-center justify-items-center md:flex md:flex-col md:gap-8 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <User size={22} />
             <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Главная</span>
           </button>
-          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <BookOpen size={20} />
+          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <BookOpen size={22} />
             <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Законы</span>
           </button>
-          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Users size={20} />
+          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Users size={22} />
             <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Игроки</span>
           </button>
           {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-              <ShieldAlert size={20} />
+            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+              <ShieldAlert size={22} />
               <span className="text-[10px] font-medium tracking-wide mt-1 md:hidden">Админ</span>
             </button>
           )}
