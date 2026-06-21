@@ -10,6 +10,17 @@ import {
   Copy, Play, Square, Server, RefreshCw, Coins
 } from 'lucide-react';
 
+// Кастомная иконка лисы для Neoforge
+const FoxIcon = ({ size = 18, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M3 13.5l1.5-7.5 4.5 3 3-4.5 3 4.5 4.5-3L21 13.5" />
+    <path d="M3 13.5A9 9 0 0 0 12 22a9 9 0 0 0 9-8.5" />
+    <path d="M12 18v.01" />
+    <circle cx="8" cy="14" r="1.5" fill="currentColor"/>
+    <circle cx="16" cy="14" r="1.5" fill="currentColor"/>
+  </svg>
+);
+
 interface Player {
   id: string;
   tg_id: number;
@@ -107,8 +118,16 @@ export default function Home() {
     }
   };
 
+  // Автоматическое обновление статуса раз в час (3 600 000 мс) при открытой главной вкладке
   useEffect(() => {
-    if (activeTab === 'profile') fetchServerStatus();
+    if (activeTab === 'profile') {
+      fetchServerStatus();
+      const intervalId = setInterval(() => {
+        fetchServerStatus();
+      }, 3600000); 
+      
+      return () => clearInterval(intervalId); // Очистка интервала при уходе с вкладки
+    }
   }, [activeTab]);
 
   const handleServerAction = async (action: 'start' | 'stop') => {
@@ -158,7 +177,6 @@ export default function Home() {
     }
   };
 
-  // Загружаем роли из Базы Данных (Supabase)
   const loadRoles = async () => {
     const { data } = await supabase.from('roles').select('*').order('name');
     if (data) {
@@ -226,7 +244,6 @@ export default function Home() {
     }
   };
 
-  // Сохранение новой роли в БД
   const handleCreateRole = async () => {
     if (!newRoleName.trim()) return;
     const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
@@ -240,12 +257,10 @@ export default function Home() {
     }
   };
 
-  // Обновление состояния в интерфейсе (чтобы интерфейс не лагал при печати)
   const handleRoleChange = (id: string, field: string, value: any) => {
     setCustomRoles(roles => roles.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
-  // Отправка обновленных данных роли в БД
   const saveRoleToDb = async (role: CustomRole) => {
     if (!role.id) return;
     await supabase.from('roles').update({
@@ -554,36 +569,44 @@ export default function Home() {
                       </div>
                     </div>
                   )}
+
+                  {/* НОВЫЙ БЛОК ВЕРСИИ NEOFORGE С ЛИСОЙ */}
+                  <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10 mt-2">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-[#ff8c00]/10 rounded-xl text-[#ff8c00]">
+                        <FoxIcon size={18} />
+                      </div>
+                      <div>
+                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия игры</div>
+                        <div className="font-bold text-sm text-white">Neoforge <span className="text-gray-400 text-xs">1.20.1</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  
                 </div>
 
-                {isAdmin && (
-                  <div className="pt-2 flex gap-2">
-                    <button 
-                      onClick={() => handleServerAction('start')}
-                      disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
-                      className="flex-1 ui-pill-btn justify-center py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
-                    >
-                      <Play size={14} className="fill-current" />
-                      <span>Включить</span>
-                    </button>
-                    <button 
-                      onClick={() => handleServerAction('stop')}
-                      disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
-                      className="flex-1 ui-pill-btn justify-center py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
-                    >
-                      <Square size={14} className="fill-current" />
-                      <span>Выключить</span>
-                    </button>
-                  </div>
-                )}
+                {/* Кнопки теперь доступны ВСЕМ игрокам */}
+                <div className="pt-2 flex gap-2">
+                  <button 
+                    onClick={() => handleServerAction('start')}
+                    disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
+                    className="flex-1 ui-pill-btn justify-center py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
+                  >
+                    <Play size={14} className="fill-current" />
+                    <span>Включить</span>
+                  </button>
+                  <button 
+                    onClick={() => handleServerAction('stop')}
+                    disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
+                    className="flex-1 ui-pill-btn justify-center py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
+                  >
+                    <Square size={14} className="fill-current" />
+                    <span>Выключить</span>
+                  </button>
+                </div>
+
               </div>
             </div>
-            
-            {!isAdmin && (
-              <p className="text-center text-[10px] text-gray-500 mt-4 px-4 leading-relaxed">
-                Запускать и останавливать сервер могут только администраторы через этот пульт.
-              </p>
-            )}
           </div>
         )}
 
