@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw, Coins, Search
+  Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 const FoxIcon = ({ size = 18, className = "" }) => (
@@ -55,8 +55,13 @@ export default function Home() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
-  // Состояние поиска по конституции
+  // Состояния для F3-поиска
   const [searchQuery, setSearchQuery] = useState('');
+  const [matches, setMatches] = useState<HTMLElement[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  
+  // Состояние для прокрутки (прилипание поиска)
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
@@ -83,6 +88,13 @@ export default function Home() {
 
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
+
+  // Слушатель прокрутки страницы
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -131,62 +143,87 @@ export default function Home() {
     }
   }, [activeTab]);
 
-  // --- ЛОГИКА УМНОГО ПОИСКА ПО КОНСТИТУЦИИ ---
+  // --- ЛОГИКА УМНОГО ПОИСКА F3 ---
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing) return;
 
     const children = Array.from(viewRef.current.children) as HTMLElement[];
 
-    // 1. Очищаем старую подсветку
+    // Очистка старых стилей
     children.forEach((child) => {
-      if (child.dataset.highlighted) {
-        child.style.backgroundColor = '';
-        child.style.boxShadow = '';
-        child.style.borderRadius = '';
-        child.style.transform = '';
-        delete child.dataset.highlighted;
-      }
+      child.style.transition = 'all 0.3s ease';
+      child.style.backgroundColor = '';
+      child.style.boxShadow = '';
+      child.style.borderRadius = '';
+      child.style.transform = '';
+      child.style.opacity = '1';
     });
 
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      setMatches([]);
+      setCurrentMatchIndex(0);
+      return;
+    }
 
     const query = searchQuery.toLowerCase().trim();
-    // Создаем "нечеткий" паттерн: прднт -> п.*?р.*?д.*?н.*?т
     const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const fuzzyRegex = new RegExp(safeQuery.split('').join('.*?'), 'i');
 
-    let bestMatch: HTMLElement | null = null;
-    let bestScore = 0;
+    const foundMatches: HTMLElement[] = [];
 
-    // 2. Ищем лучшее совпадение среди абзацев
+    // Поиск совпадений
     children.forEach((child) => {
       const text = child.textContent?.toLowerCase() || '';
-      if (!text) return;
+      if (!text.trim()) return;
 
       let score = 0;
-      if (text.includes(query)) score += 100; // Точное совпадение
-      else if (fuzzyRegex.test(text)) score += 10; // Нечеткое совпадение с опечатками
+      if (text.includes(query)) score += 100;
+      else if (fuzzyRegex.test(text)) score += 10;
 
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = child;
+      if (score > 0) {
+        foundMatches.push(child);
+        // Базовая подсветка для всех найденных
+        child.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        child.style.borderRadius = '8px';
+      } else {
+        // Приглушаем несовпадающие абзацы
+        child.style.opacity = '0.3';
       }
     });
 
-    // 3. Подсвечиваем и скроллим
-    if (bestMatch && bestScore > 0) {
-      bestMatch.dataset.highlighted = "true";
-      bestMatch.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
-      bestMatch.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
-      bestMatch.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
-      bestMatch.style.borderRadius = '8px';
-      bestMatch.style.transform = 'scale(1.02)';
-
-      setTimeout(() => {
-        bestMatch?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
+    setMatches(foundMatches);
+    if (foundMatches.length > 0) {
+      setCurrentMatchIndex(1);
+    } else {
+      setCurrentMatchIndex(0);
     }
   }, [searchQuery, constitution, activeTab, isEditing]);
+
+  // Прокрутка и фокус на активном абзаце
+  useEffect(() => {
+    if (matches.length === 0 || currentMatchIndex === 0) return;
+
+    matches.forEach(el => {
+      el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+      el.style.boxShadow = '';
+      el.style.transform = '';
+    });
+
+    const activeEl = matches[currentMatchIndex - 1];
+    activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
+    activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
+    activeEl.style.transform = 'scale(1.02)';
+
+    // Небольшая задержка для плавности
+    setTimeout(() => {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  }, [currentMatchIndex, matches]);
+
+  const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
+  const prevMatch = () => setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length);
+
+  // --- КОНЕЦ ЛОГИКИ ПОИСКА ---
 
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
@@ -369,7 +406,7 @@ export default function Home() {
 
   const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
     setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); setActiveTab(tab);
-    setSearchQuery(''); // Очищаем поиск при переходе
+    setSearchQuery('');
   };
 
   const isAdmin = dbUser?.roles.includes('admin');
@@ -439,12 +476,15 @@ export default function Home() {
 
       {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 z-40 max-w-md mx-auto flex items-center justify-end gap-2 pointer-events-none">
+        
+        {/* Кнопка сохранения для редактора */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveConstitution} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
+        {/* Панель инструментов редактирования */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center ${showToolbar ? 'flex-1 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-90 translate-x-8 pointer-events-none'}`}>
           <div className="p-1 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-0.5 pointer-events-auto w-full">
             <div className="flex items-center w-full justify-start overflow-x-auto no-scrollbar py-0.5 px-1 gap-0.5 min-w-0">
@@ -462,10 +502,11 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Анимированная кнопка профиля */}
         {dbUser && !selectedPlayer && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
-            className={`flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border ${
+            className={`flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${
               showToolbar ? 'w-10 justify-center px-0' : 'w-auto px-1.5 pr-4'
             }`}
           >
@@ -481,7 +522,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Окно профиля */}
+      {/* Окно профиля (модальное) */}
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedIsDead ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
@@ -667,9 +708,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* ЗАКОНЫ С УМНЫМ ПОИСКОМ */}
+        {/* ЗАКОНЫ С ПРИЛИПАЮЩИМ ПОИСКОМ */}
         {activeTab === 'constitution' && (
-          <div className="space-y-4 animate-fade-in w-full overflow-x-hidden">
+          <div className="space-y-4 animate-fade-in w-full overflow-x-hidden relative">
             <div className="flex items-center justify-between w-full">
               <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide">Конституция Дома</h2>
               {canEditConstitution && !isEditing && (
@@ -678,20 +719,43 @@ export default function Home() {
             </div>
 
             {!isEditing && (
-              <div className="relative mb-4">
-                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Нечеткий поиск по законам..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="ui-input pl-11 !bg-[#1c2026] !border-white/5 focus:!border-[#c0ff00]/40 transition-all"
-                />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-all active:scale-90">
-                    <X size={14} />
-                  </button>
-                )}
+              <div className={`sticky top-[96px] z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'pr-[110px] -mt-2 pb-3 pt-1' : 'pr-0 mb-4'}`}>
+                <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
+                  <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Поиск"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full flex-1 placeholder:text-gray-500"
+                  />
+                  
+                  {matches.length > 0 && (
+                    <div className="flex items-center gap-2 ml-2 border-l border-white/10 pl-3">
+                      <span className="text-[10px] text-gray-400 font-mono font-bold whitespace-nowrap">
+                        {currentMatchIndex} / {matches.length}
+                      </span>
+                      <div className="flex gap-1">
+                        <button onClick={prevMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
+                          <ChevronUp size={14}/>
+                        </button>
+                        <button onClick={nextMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
+                          <ChevronDown size={14}/>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchQuery && matches.length === 0 && (
+                    <span className="text-[10px] font-bold text-red-400 ml-2 whitespace-nowrap">0 / 0</span>
+                  )}
+
+                  {searchQuery && (
+                    <button onClick={() => setSearchQuery('')} className="p-1.5 ml-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-90 flex-shrink-0">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -701,7 +765,7 @@ export default function Home() {
               </div>
             ) : (
               <div 
-                ref={viewRef} 
+                ref={viewRef}
                 className="bg-[#14171c] p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words overflow-x-hidden w-full transition-all" 
                 dangerouslySetInnerHTML={{ __html: constitution }} 
               />
