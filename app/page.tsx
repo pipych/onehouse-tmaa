@@ -823,24 +823,32 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* ВИДЖЕТ КАРТЫ */}
+                    {/* ВИДЖЕТ КАРТЫ С ПЛАШКОЙ SOON */}
                     <div 
                       onClick={() => handleTabChange('map')}
-                      className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1"
+                      className="group/widget relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1"
                     >
+                      {/* ПЛАШКА SOON С ПОДСКАЗКОЙ */}
+                      <div className="absolute top-4 right-4 z-30 group/badge">
+                        <div className="bg-[#c0ff00] text-black text-[9px] font-black uppercase px-2 py-1 rounded-md shadow-lg cursor-help">Soon</div>
+                        <div className="hidden xl:block absolute top-[calc(100%+8px)] right-0 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">
+                          Функционал в разработке, появится позже
+                        </div>
+                      </div>
+
                       {/* ФОНОВАЯ КАРТИНКА (mapicon.svg) */}
                       <div 
-                        className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat"
+                        className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale"
                         style={{ backgroundImage: "url('/mapicon.svg')" }} 
                       />
                       <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
 
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
-                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
-                          <Map size={20} className="text-[#c0ff00] xl:w-6 xl:h-6" />
+                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover/widget:scale-110 transition-transform backdrop-blur-md shrink-0">
+                          <Map size={20} className="text-gray-400 xl:w-6 xl:h-6" />
                         </div>
                         <div className="text-left xl:text-center flex-1">
-                          <h3 className="text-base xl:text-lg font-black text-white m-0 tracking-wide drop-shadow-md">Карта мира</h3>
+                          <h3 className="text-base xl:text-lg font-bold text-gray-300 m-0 tracking-wide drop-shadow-md">Карта мира</h3>
                         </div>
                       </div>
                     </div>
@@ -1008,23 +1016,36 @@ export default function Home() {
           </div>
         )}
 
-        {/* ВКЛАДКА MAP (КАРТА СЕРВЕРА) */}
+        {/* ВКЛАДКА MAP (ЗАГЛУШКА SOON) */}
         {activeTab === 'map' && (
           <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
             <div className="flex items-center justify-between w-full px-1 mb-4">
-              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                <Map size={18} className="text-[#c0ff00]" />
-                Карта мира
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2">
+                  <Map size={18} />
+                  Карта мира
+                </h2>
+                <div className="group/badge relative">
+                  <div className="bg-[#c0ff00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md cursor-help shadow-lg">Soon</div>
+                  <div className="hidden md:block absolute top-full left-0 mt-2 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">
+                    Функционал в разработке, появится позже
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-black/50">
-              <iframe
-                src="https://fascinating-macaron-c568f7.netlify.app/" 
-                className="w-full h-full min-h-[500px] md:min-h-[700px] border-none"
-                title="Interactive Server Map"
-                allowFullScreen
-              />
+            <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-[#14171c]/90 backdrop-blur-xl flex items-center justify-center">
+              {/* Анимация/свечение на фоне */}
+              <div className="absolute inset-0 z-0 opacity-20 bg-gradient-to-br from-[#c0ff00]/5 to-transparent" />
+              
+              <div className="text-center p-6 max-w-sm relative z-10 animate-fade-in">
+                 <div className="w-20 h-20 bg-black/40 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-5 relative shadow-xl">
+                   <Map size={32} className="text-gray-500" />
+                   <div className="absolute -bottom-2 bg-[#c0ff00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-lg">Soon</div>
+                 </div>
+                 <h3 className="text-xl font-black text-white mb-2 tracking-wide">Карта в разработке</h3>
+                 <p className="text-sm text-gray-400 leading-relaxed">Интерактивный 3D-рендер мира находится в стадии настройки. Этот функционал появится в приложении немного позже.</p>
+              </div>
             </div>
           </div>
         )}
@@ -1162,25 +1183,37 @@ export default function Home() {
       </main>
 
       {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
-      <nav className={`md:hidden fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
+      <nav className={`md:hidden fixed bottom-6 left-6 right-6 bg-[#14171c]/80 backdrop-blur-xl border border-white/10 py-2.5 rounded-[24px] z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
       `}>
-        <div className={`flex w-full items-center justify-between px-4`}>
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <HomeIcon size={22} />
+        <div className={`flex w-full items-center justify-between px-2`}>
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
+            <HomeIcon size={20} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
           </button>
-          <button onClick={() => handleTabChange('map')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Map size={22} />
+          
+          <button onClick={() => handleTabChange('map')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
+            <div className="relative">
+              <Map size={20} />
+              <div className="absolute -top-1.5 -right-3.5 bg-[#c0ff00] text-black text-[7px] font-black uppercase px-1 rounded-sm shadow-sm pointer-events-none">Soon</div>
+            </div>
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Карта</span>
           </button>
-          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <BookOpen size={22} />
+          
+          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
+            <BookOpen size={20} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span>
           </button>
-          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Users size={22} />
+          
+          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Users size={20} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
           </button>
+          
           {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-              <ShieldAlert size={22} />
+            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
+              <ShieldAlert size={20} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span>
             </button>
           )}
         </div>
@@ -1210,9 +1243,13 @@ export default function Home() {
          </button>
 
          <button onClick={() => handleTabChange('map')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Map size={24} />
-            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-              Карта сервера
+            <div className="relative">
+              <Map size={24} />
+              <div className="absolute -top-1.5 -right-3.5 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1 rounded-sm shadow-sm pointer-events-none">Soon</div>
+            </div>
+            <div className="absolute left-[calc(100%+28px)] px-4 py-2.5 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl flex flex-col gap-0.5 items-start z-50">
+              <span className="text-[13px] font-bold text-white">Карта сервера</span>
+              <span className="text-[10px] text-[#c0ff00] font-medium">Функционал в разработке, появится позже</span>
             </div>
          </button>
 
