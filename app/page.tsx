@@ -342,12 +342,35 @@ export default function Home() {
     if (data) setPlayers(data);
   };
 
+  // Железобетонная загрузка документов из базы
   const loadConstitution = async () => {
-    const { data } = await supabase.from('constitution').select('content').eq('id', 1).single();
-    if (data && data.content) {
-      const parts = data.content.split('');
-      setConstitutionText(parts[0] || '');
-      setCommandmentsText(parts[1] || '<h1>Заповеди Дома</h1><p>Здесь будут записаны внеигровые правила...</p>');
+    const { data, error } = await supabase.from('constitution').select('*').in('id', [1, 2]);
+    if (data) {
+      const constDoc = data.find((d: any) => d.id === 1);
+      const cmdDoc = data.find((d: any) => d.id === 2);
+      if (constDoc) setConstitutionText(constDoc.content || '');
+      if (cmdDoc) setCommandmentsText(cmdDoc.content || '');
+    }
+  };
+
+  // Железобетонное сохранение документов (используем upsert, чтобы обходить ограничения SQL)
+  const saveDocument = async () => {
+    if (!editorRef.current || activeDocument === 'none') return;
+    
+    const updatedContent = editorRef.current.innerHTML;
+    const docId = activeDocument === 'constitution' ? 1 : 2;
+    
+    const { error } = await supabase.from('constitution').upsert({ id: docId, content: updatedContent });
+    
+    if (!error) {
+      if (activeDocument === 'constitution') {
+        setConstitutionText(updatedContent);
+      } else {
+        setCommandmentsText(updatedContent);
+      }
+      setIsEditing(false);
+    } else {
+      alert(`Ошибка сохранения. Возможно, база данных заблокирована. Ошибка: ${error.message}`);
     }
   };
 
@@ -442,28 +465,6 @@ export default function Home() {
     if (!error) {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
-    }
-  };
-
-  const saveDocument = async () => {
-    if (!editorRef.current || activeDocument === 'none') return;
-    
-    const updatedContent = editorRef.current.innerHTML;
-    let newDbContent = '';
-
-    if (activeDocument === 'constitution') {
-      newDbContent = updatedContent + '' + commandmentsText;
-      setConstitutionText(updatedContent);
-    } else {
-      newDbContent = constitutionText + '' + updatedContent;
-      setCommandmentsText(updatedContent);
-    }
-    
-    const { error } = await supabase.from('constitution').update({ content: newDbContent }).eq('id', 1);
-    if (!error) {
-      setIsEditing(false);
-    } else {
-      alert(`Ошибка сохранения: ${error.message}`);
     }
   };
 
@@ -571,8 +572,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* Верхний док управления (Редактор) */}
+      {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
+        
+        {/* Кнопка сохранения */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
@@ -685,10 +688,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Сетка на ПК) */}
-      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full break-words">
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
+      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
         
-        {/* ГЛАВНАЯ ПАНЕЛЬ */}
+        {/* ГЛАВНАЯ (Виджет Сервера и Конституция) */}
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full animate-fade-in">
             <div className="flex items-center justify-between w-full px-1">
@@ -700,94 +703,109 @@ export default function Home() {
 
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
               
-              {/* СЕРВЕР ВИДЖЕТ */}
-              <div className="flex-1 w-full min-w-0 bg-[#14171c]/90 backdrop-blur-xl p-4 md:p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
-                {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
-                
-                <div className="flex flex-col md:flex-row gap-4 items-stretch relative z-10">
-                  
-                  {/* Статус */}
-                  <div className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-start w-full md:w-36 shrink-0 bg-black/30 rounded-2xl p-4 border border-white/5">
-                    <div className="space-y-1">
-                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                        Статус 
-                        <button onClick={fetchServerStatus} className={`hover:text-white transition-colors ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={10} /></button>
-                      </div>
-                      <div className={`text-lg md:text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
-                        {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
-                      </div>
-                    </div>
-                    {serverInfo?.status === 1 && (
-                      <div className="mt-0 md:mt-3 text-right md:text-left">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
-                        <div className="text-[#c0ff00] font-black text-sm">{serverInfo.players.count} / {serverInfo.players.max} чел.</div>
-                      </div>
-                    )}
-                  </div>
+              {/* СЕРВЕР ВИДЖЕТ (Возвращен к чистому и компактному виду) */}
+              <div className="w-full xl:max-w-[480px] space-y-4">
+                 {/* Заголовок и кнопка обновления */}
+                 <div className="flex items-center justify-between w-full px-1">
+                    <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                      <Server size={18} className="text-[#c0ff00]" />
+                      Статус сервера
+                    </h2>
+                    <button onClick={fetchServerStatus} className={`p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 ${isServerLoading ? 'animate-spin' : ''}`}>
+                      <RefreshCw size={14} />
+                    </button>
+                 </div>
 
-                  {/* Информация */}
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group">
-                        <div className="min-w-0">
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP Адрес</div>
-                          <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
-                        </div>
-                        <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0 ml-2">
-                          <Copy size={14} />
-                        </button>
-                     </div>
-                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-3">
-                        <div className="p-2 bg-[#a1a1aa]/10 rounded-xl text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
-                        <div className="min-w-0">
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
-                          <div className="font-bold text-sm text-white truncate">Forge <span className="text-gray-400 text-xs">1.20.1</span></div>
-                        </div>
-                     </div>
-                     {credits !== null && (
-                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between sm:col-span-2">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 bg-[#c0ff00]/10 rounded-xl text-[#c0ff00] shrink-0"><Coins size={16} /></div>
-                          <div className="min-w-0">
-                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Баланс хостинга</div>
-                            <div className="font-bold text-sm text-white truncate">{credits.toFixed(2)} <span className="text-gray-400 text-xs">кр.</span></div>
+                 {/* Карточка */}
+                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
+                    {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+                    
+                    <div className="relative z-10 flex flex-col gap-4">
+                      
+                      {/* Состояние (Перемещено вверх, текст меньше) */}
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
+                          <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                            {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                           </div>
                         </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Хватит на</div>
-                          <div className="font-mono text-xs text-[#c0ff00]">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
-                        </div>
-                     </div>
-                     )}
-                  </div>
+                        {serverInfo?.status === 1 && (
+                          <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
+                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
+                            <div className="text-[#c0ff00] font-black text-sm leading-none">{serverInfo.players.count} / {serverInfo.players.max}</div>
+                          </div>
+                        )}
+                      </div>
 
-                  {/* Кнопки */}
-                  <div className="w-full md:w-32 shrink-0 flex flex-row md:flex-col gap-2 md:justify-center">
-                     <button 
-                       onClick={() => handleServerAction('start')}
-                       disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
-                       className="flex-1 py-3 md:py-0 md:h-[48px] bg-[#c0ff00] text-black rounded-2xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-[#a8e600] hover:shadow-[0_0_20px_rgba(192,255,0,0.4)] transition-all disabled:opacity-30 disabled:grayscale active:scale-95"
-                     >
-                       <Play size={14} className="fill-black" /> Включить
-                     </button>
-                     <button 
-                       onClick={() => handleServerAction('stop')}
-                       disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
-                       className="flex-1 py-3 md:py-0 md:h-[48px] bg-[#1a1e24] border border-red-500/30 text-red-500 rounded-2xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:border-red-500 transition-all disabled:opacity-30 disabled:grayscale active:scale-95"
-                     >
-                       <Square size={14} className="fill-current" /> Выключить
-                     </button>
-                  </div>
-                </div>
+                      {/* Информационная сетка */}
+                      <div className="space-y-2">
+                        {/* Основной IP */}
+                        <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
+                            <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
+                          </div>
+                          <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
+                            <Copy size={16} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                           {/* Версия */}
+                           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
+                             <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
+                             <div className="min-w-0">
+                               <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
+                               <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
+                             </div>
+                           </div>
+                           {/* Баланс */}
+                           {credits !== null && (
+                           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
+                             <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00] shrink-0"><Coins size={16} /></div>
+                             <div className="min-w-0">
+                               <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">{credits.toFixed(2)} кр.</div>
+                               <div className="font-mono text-xs text-[#c0ff00] truncate">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
+                             </div>
+                           </div>
+                           )}
+                        </div>
+                      </div>
+
+                      {/* Кнопки (Вернули нормальный вид "пилюль") */}
+                      <div className="flex gap-2 pt-1">
+                        <button 
+                          onClick={() => handleServerAction('start')}
+                          disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
+                          className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
+                        >
+                          <Play size={14} className="fill-current" />
+                          <span>Включить</span>
+                        </button>
+                        <button 
+                          onClick={() => handleServerAction('stop')}
+                          disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
+                          className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
+                        >
+                          <Square size={14} className="fill-current" />
+                          <span>Выключить</span>
+                        </button>
+                      </div>
+
+                    </div>
+                 </div>
               </div>
 
-              {/* ВИДЖЕТ КОНСТИТУЦИИ */}
-              <div className="w-full xl:w-[320px] shrink-0">
+              {/* ВИДЖЕТ КОНСТИТУЦИИ (Справа на ПК) */}
+              <div className="w-full xl:max-w-[320px] shrink-0 space-y-4">
+                 <div className="hidden xl:block h-[26px]"></div> {/* Пустой блок для выравнивания с заголовком */}
                  <div 
                     onClick={() => {
                       setActiveTab('constitution');
                       setActiveDocument('constitution');
                     }}
-                    className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[32px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[188px] p-5 xl:p-6"
+                    className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[32px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[230px] p-5 xl:p-6"
                   >
                     <div 
                       className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat"
@@ -796,12 +814,12 @@ export default function Home() {
                     <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
 
                     <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
-                      <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
-                        <BookOpen size={20} className="text-[#c0ff00]" />
+                      <div className="w-12 h-12 xl:w-16 xl:h-16 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-4 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
+                        <BookOpen size={24} className="text-[#c0ff00]" />
                       </div>
                       <div className="text-left xl:text-center flex-1">
-                        <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Конституция</h3>
-                        <p className="text-[10px] xl:text-[11px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые законы</p>
+                        <h3 className="text-base xl:text-xl font-black text-white mb-0.5 xl:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
+                        <p className="text-[10px] xl:text-xs text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые РП законы</p>
                       </div>
                     </div>
                   </div>
@@ -902,7 +920,7 @@ export default function Home() {
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
             {activeDocument !== 'none' && !isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] mb-4'}`}>
+              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
@@ -1098,32 +1116,6 @@ export default function Home() {
           </div>
         )}
       </main>
-
-      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
-      <nav className={`md:hidden fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
-         ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
-      `}>
-        <div className={`grid w-full items-center justify-items-center ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <HomeIcon size={22} />
-            <span className="text-[10px] font-medium tracking-wide mt-1">Главная</span>
-          </button>
-          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <BookOpen size={22} />
-            <span className="text-[10px] font-medium tracking-wide mt-1">Законы</span>
-          </button>
-          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Users size={22} />
-            <span className="text-[10px] font-medium tracking-wide mt-1">Игроки</span>
-          </button>
-          {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-              <ShieldAlert size={22} />
-              <span className="text-[10px] font-medium tracking-wide mt-1">Админ</span>
-            </button>
-          )}
-        </div>
-      </nav>
 
       {/* САЙДБАР ДЛЯ ПК (Профиль + Навигация) */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
