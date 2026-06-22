@@ -689,7 +689,7 @@ export default function Home() {
       {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col">
         
-        {/* ГЛАВНАЯ (Виджет Сервера и Конституция) */}
+        {/* ГЛАВНАЯ (Виджет Сервера, Конституция, Карта) */}
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full animate-fade-in">
             <div className="flex items-center justify-between w-full px-1">
@@ -792,32 +792,69 @@ export default function Home() {
                  </div>
               </div>
 
-              {/* ВИДЖЕТ КОНСТИТУЦИИ */}
+              {/* ПРАВАЯ КОЛОНКА (ВИДЖЕТЫ КОНСТИТУЦИИ И КАРТЫ) */}
               <div className="w-full xl:max-w-[320px] shrink-0 space-y-4">
                  <div className="hidden xl:block h-[26px]"></div> 
-                 <div 
-                    onClick={() => {
-                      setActiveTab('constitution');
-                      setActiveDocument('constitution');
-                    }}
-                    className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[32px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[230px] p-5 xl:p-6"
-                  >
-                    <div 
-                      className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat"
-                      style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
+                 
+                 <div className="flex flex-col sm:flex-row xl:flex-col gap-4 w-full">
+                   
+                   {/* ВИДЖЕТ КОНСТИТУЦИИ */}
+                   <div 
+                      onClick={() => {
+                        setActiveTab('constitution');
+                        setActiveDocument('constitution');
+                      }}
+                      className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1"
+                    >
+                      <div 
+                        className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat"
+                        style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
 
-                    <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
-                      <div className="w-12 h-12 xl:w-16 xl:h-16 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-4 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
-                        <BookOpen size={24} className="text-[#c0ff00]" />
-                      </div>
-                      <div className="text-left xl:text-center flex-1">
-                        <h3 className="text-base xl:text-xl font-black text-white mb-0.5 xl:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
-                        <p className="text-[10px] xl:text-xs text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые РП законы</p>
+                      <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
+                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
+                          <BookOpen size={20} className="text-[#c0ff00] xl:w-6 xl:h-6" />
+                        </div>
+                        <div className="text-left xl:text-center flex-1">
+                          <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Конституция</h3>
+                          <p className="text-[10px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые законы</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+
+                    {/* ВИДЖЕТ КАРТЫ */}
+                    <div 
+                      onClick={() => handleTabChange('map')}
+                      className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1"
+                    >
+                      <div className="absolute inset-0 z-0 opacity-20 group-hover:opacity-40 transition-all duration-500 bg-gradient-to-br from-[#c0ff00]/10 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
+
+                      <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
+                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
+                          <div 
+                            className="w-5 h-5 xl:w-6 xl:h-6 bg-[#c0ff00]" 
+                            style={{ 
+                              WebkitMaskImage: "url('/mapicon.svg')", 
+                              WebkitMaskSize: "contain", 
+                              WebkitMaskRepeat: "no-repeat", 
+                              WebkitMaskPosition: "center",
+                              maskImage: "url('/mapicon.svg')",
+                              maskSize: "contain",
+                              maskRepeat: "no-repeat",
+                              maskPosition: "center"
+                            }} 
+                          />
+                        </div>
+                        <div className="text-left xl:text-center flex-1">
+                          <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Карта мира</h3>
+                          <p className="text-[10px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Интерактивный 3D-рендер</p>
+                        </div>
+                      </div>
+                    </div>
+
+                 </div>
               </div>
 
             </div>
