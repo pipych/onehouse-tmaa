@@ -8,7 +8,7 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon
+  Info, ArrowLeft, Home as HomeIcon, Map
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -46,7 +46,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map'>('profile');
   const [players, setPlayers] = useState<Player[]>([]);
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -342,7 +342,6 @@ export default function Home() {
     if (data) setPlayers(data);
   };
 
-  // Железобетонная загрузка документов из базы
   const loadConstitution = async () => {
     const { data, error } = await supabase.from('constitution').select('*').in('id', [1, 2]);
     if (data) {
@@ -353,7 +352,6 @@ export default function Home() {
     }
   };
 
-  // Железобетонное сохранение документов (используем upsert, чтобы обходить ограничения SQL)
   const saveDocument = async () => {
     if (!editorRef.current || activeDocument === 'none') return;
     
@@ -370,7 +368,7 @@ export default function Home() {
       }
       setIsEditing(false);
     } else {
-      alert(`Ошибка сохранения. Возможно, база данных заблокирована. Ошибка: ${error.message}`);
+      alert(`Ошибка сохранения. Ошибка: ${error.message}`);
     }
   };
 
@@ -468,7 +466,7 @@ export default function Home() {
     }
   };
 
-  const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin') => {
+  const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map') => {
     setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
     setActiveTab(tab);
     setActiveDocument('none'); 
@@ -537,7 +535,7 @@ export default function Home() {
   const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
 
   return (
-    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0">
+    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
       {/* ФОН ДЛЯ ТЕЛЕФОНОВ */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
@@ -689,7 +687,7 @@ export default function Home() {
       )}
 
       {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
-      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-[1200px] mx-auto transition-all duration-300 w-full break-words">
+      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col">
         
         {/* ГЛАВНАЯ (Виджет Сервера и Конституция) */}
         {activeTab === 'profile' && (
@@ -703,7 +701,7 @@ export default function Home() {
 
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
               
-              {/* СЕРВЕР ВИДЖЕТ (Возвращен к чистому и компактному виду) */}
+              {/* СЕРВЕР ВИДЖЕТ */}
               <div className="w-full xl:max-w-[480px] space-y-4">
                  {/* Заголовок и кнопка обновления */}
                  <div className="flex items-center justify-between w-full px-1">
@@ -722,7 +720,7 @@ export default function Home() {
                     
                     <div className="relative z-10 flex flex-col gap-4">
                       
-                      {/* Состояние (Перемещено вверх, текст меньше) */}
+                      {/* Состояние */}
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
@@ -740,7 +738,6 @@ export default function Home() {
 
                       {/* Информационная сетка */}
                       <div className="space-y-2">
-                        {/* Основной IP */}
                         <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                           <div className="min-w-0 flex-1">
                             <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
@@ -752,7 +749,6 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                           {/* Версия */}
                            <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
                              <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
                              <div className="min-w-0">
@@ -760,7 +756,6 @@ export default function Home() {
                                <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
                              </div>
                            </div>
-                           {/* Баланс */}
                            {credits !== null && (
                            <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
                              <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00] shrink-0"><Coins size={16} /></div>
@@ -773,7 +768,7 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* Кнопки (Вернули нормальный вид "пилюль") */}
+                      {/* Кнопки */}
                       <div className="flex gap-2 pt-1">
                         <button 
                           onClick={() => handleServerAction('start')}
@@ -797,9 +792,9 @@ export default function Home() {
                  </div>
               </div>
 
-              {/* ВИДЖЕТ КОНСТИТУЦИИ (Справа на ПК) */}
+              {/* ВИДЖЕТ КОНСТИТУЦИИ */}
               <div className="w-full xl:max-w-[320px] shrink-0 space-y-4">
-                 <div className="hidden xl:block h-[26px]"></div> {/* Пустой блок для выравнивания с заголовком */}
+                 <div className="hidden xl:block h-[26px]"></div> 
                  <div 
                     onClick={() => {
                       setActiveTab('constitution');
@@ -831,7 +826,7 @@ export default function Home() {
 
         {/* ЗАКОНЫ И ДОКУМЕНТЫ */}
         {activeTab === 'constitution' && (
-          <div className="space-y-4 animate-fade-in w-full relative">
+          <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 {activeDocument !== 'none' && !isEditing && (
@@ -985,6 +980,27 @@ export default function Home() {
           </div>
         )}
 
+        {/* ВКЛАДКА MAP (КАРТА СЕРВЕРА) */}
+        {activeTab === 'map' && (
+          <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
+            <div className="flex items-center justify-between w-full px-1 mb-4">
+              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                <Map size={18} className="text-[#c0ff00]" />
+                Карта мира
+              </h2>
+            </div>
+            
+            <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-black/50">
+              <iframe
+                src="https://fascinating-macaron-c568f7.netlify.app/" 
+                className="w-full h-full min-h-[500px] md:min-h-[700px] border-none"
+                title="Interactive Server Map"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
+
         {/* ИГРОКИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
@@ -1117,6 +1133,31 @@ export default function Home() {
         )}
       </main>
 
+      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
+      <nav className={`md:hidden fixed bottom-6 left-6 right-6 bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
+         ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
+      `}>
+        <div className={`flex w-full items-center justify-between px-4`}>
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <HomeIcon size={22} />
+          </button>
+          <button onClick={() => handleTabChange('map')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Map size={22} />
+          </button>
+          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <BookOpen size={22} />
+          </button>
+          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Users size={22} />
+          </button>
+          {isAdmin && (
+            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+              <ShieldAlert size={22} />
+            </button>
+          )}
+        </div>
+      </nav>
+
       {/* САЙДБАР ДЛЯ ПК (Профиль + Навигация) */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        
@@ -1137,6 +1178,13 @@ export default function Home() {
             <HomeIcon size={24} />
             <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
               Главная
+            </div>
+         </button>
+
+         <button onClick={() => handleTabChange('map')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Map size={24} />
+            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+              Карта сервера
             </div>
          </button>
 
