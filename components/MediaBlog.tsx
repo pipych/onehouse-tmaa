@@ -199,7 +199,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           {/* Пуленепробиваемый формат 16:9 с боковыми отступами в полном посте */}
           {selectedPost.youtube_url && getYoutubeEmbedUrl(selectedPost.youtube_url) ? (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
                 <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div className="px-5 md:px-6 w-full mb-4">
               <div 
                 onClick={() => setIsImageZoomOpen(true)}
-                className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in"
+                className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in relative"
                 style={{ paddingBottom: '56.25%' }}
               >
                 <img src={selectedPost.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
@@ -225,7 +225,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        {/* БЛОК КОММЕНТАРИЕВ */}
+        {/* БЛОК КОММЕНТАРИЕВ ( mt-14 до карточки статьи) */}
         <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
           <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
             <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -272,7 +272,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col" style={{ paddingTop: '24px' }}>
         
-        {/* Шапка редактора */}
+        {/* 1. ШАПКА РЕДАКТОРА */}
         <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
           <button 
             onClick={() => setIsCreatingPost(false)} 
@@ -290,7 +290,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
-        {/* БЛОК ВЛОЖЕНИЙ */}
+        {/* 2. БЛОК ВЛОЖЕНИЙ */}
         <div className="w-full" style={{ marginBottom: '54px' }}>
           <div className="text-[11px] font-black text-gray-500 mb-4 px-1 uppercase tracking-widest select-none">Вложения</div>
           
@@ -505,16 +505,16 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
                 </div>
 
-                {/* Исправлено: Жесткий inline-фикс пропорций 16:9 с внутренними боковыми отступами */}
+                {/* Исправлено: Пуленепробиваемый 16:9 адаптивный контейнер с красивыми внутренними боковыми зазорами */}
                 {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) ? (
                   <div className="px-5 md:px-6 w-full mb-2">
-                    <div className="w-full h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
                       <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
                     </div>
                   </div>
                 ) : post.cover_url ? (
                   <div className="px-5 md:px-6 w-full mb-2">
-                    <div className="w-full h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
                       <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
                     </div>
                   </div>
@@ -529,7 +529,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   />
                 </div>
 
-                {/* Подвал карточки: Сдвинут вправо (justify-end) и без серой полоски */}
+                {/* Исправлено: Симметричный подвал, кнопки сдвинуты ВПРАВО (justify-end), добавлены правильные отступы px-6 pb-6 */}
                 <div className="px-6 pb-6 pt-2 flex items-center justify-end gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                   <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                     <Heart size={15} />
@@ -547,7 +547,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       </div>
 
-      {/* МОБИЛЬНАЯ КНОПКА ПЛЮСА */}
+      {/* МОБИЛЬНАЯ КНОПКА СОЗДАНИЯ ПОСТА */}
       {currentUser && !isCreatingPost && (
         <button 
           onClick={() => setIsCreatingPost(true)}
