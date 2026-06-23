@@ -1,14 +1,16 @@
+// app/page.tsx
 'use client';
 
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import MediaBlog from '../components/MediaBlog'; // ИМПОРТ НОВОГО КОМПОНЕНТА
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon, Map
+  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -46,7 +48,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media'>('profile');
   const [players, setPlayers] = useState<Player[]>([]);
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -94,6 +96,9 @@ export default function Home() {
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
+
+  // Оставили только этот стейт, чтобы панель меню могла прятаться
+  const [isCreatingPost, setIsCreatingPost] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -468,7 +473,7 @@ export default function Home() {
     }
   };
 
-  const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map') => {
+  const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') => {
     setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
     setActiveTab(tab);
     setActiveDocument('none'); 
@@ -550,7 +555,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[#090b0e]/85 backdrop-blur-[2px]" />
       </div>
 
-      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
+      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer || isCreatingPost ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); setIsCreatingPost(false); }} />
       
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
@@ -583,7 +588,7 @@ export default function Home() {
         </div>
 
         {/* Кнопка Профиля (Только на телефонах) */}
-        {dbUser && !selectedPlayer && (
+        {dbUser && !selectedPlayer && !isCreatingPost && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
             className={`md:hidden flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${
@@ -860,6 +865,16 @@ export default function Home() {
 
             </div>
           </div>
+        )}
+
+        {/* --- ПОДКЛЮЧАЕМ НОВЫЙ КОМПОНЕНТ БЛОГА --- */}
+        {activeTab === 'media' && (
+          <MediaBlog 
+            currentUser={dbUser} 
+            onProfileClick={setSelectedPlayer} 
+            isCreatingPost={isCreatingPost}
+            setIsCreatingPost={setIsCreatingPost}
+          />
         )}
 
         {/* ЗАКОНЫ И ДОКУМЕНТЫ */}
@@ -1183,14 +1198,19 @@ export default function Home() {
         )}
       </main>
 
-      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Карта убрана) */}
+      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
-         ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
+         ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
       `}>
         <div className={`flex w-full items-center justify-around px-2`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <HomeIcon size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
+          </button>
+          
+          <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Newspaper size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span>
           </button>
           
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
@@ -1212,7 +1232,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* САЙДБАР ДЛЯ ПК (Карта убрана) */}
+      {/* САЙДБАР ДЛЯ ПК */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        
        {dbUser && (
@@ -1232,6 +1252,13 @@ export default function Home() {
             <HomeIcon size={24} />
             <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
               Главная
+            </div>
+         </button>
+
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
+            <Newspaper size={24} />
+            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
+              .медиа
             </div>
          </button>
 
@@ -1270,6 +1297,7 @@ export default function Home() {
         <ArrowUp size={20} />
       </button>
 
+      {/* Стили H1 и H2 переопределены через !important */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
