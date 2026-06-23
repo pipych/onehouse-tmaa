@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Newspaper, Clock, Heart, MessageCircle, Image as ImageIcon, 
-  Youtube, X, Save, Bold, Italic, Strikethrough, 
+  Youtube, X, Send, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, Plus, ArrowLeft,
   Check, RefreshCw
 } from 'lucide-react';
@@ -171,23 +171,23 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col" style={{ paddingTop: '24px' }}>
         
-        {/* 1. ШАПКА РЕДАКТОРА (Зеленая пилюля теперь широкая, красивая и не сжимается) */}
+        {/* 1. ШАПКА РЕДАКТОРА (Теперь это чистые круглые кнопки без лишнего текста) */}
         <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
+          {/* Кнопка Назад (Круг) */}
           <button 
             onClick={() => setIsCreatingPost(false)} 
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider"
+            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0"
           >
-            <ArrowLeft size={16} />
-            <span>Назад</span>
+            <ArrowLeft size={20} />
           </button>
 
+          {/* Кнопка Опубликовать (Круг с иконкой бумажного самолетика Send) */}
           <button 
             onClick={publishPost} 
             disabled={isUploadingPostCover || !newPostTitle.trim()}
-            className="px-8 py-3 bg-[#c0ff00] text-black font-medium text-sm rounded-full shadow-[0_0_30px_rgba(192,255,0,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 shrink-0 whitespace-nowrap"
+            className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0 disabled:opacity-50 disabled:grayscale"
           >
-            <Save size={16} />
-            <span>Опубликовать</span>
+            <Send size={20} className="relative left-[-1px] top-[0.5px]" />
           </button>
         </div>
 
@@ -242,7 +242,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               style={{ height: '160px', borderRadius: '32px' }}
             >
               {newPostYoutubeUrl && (
-                <button onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} className="absolute top-3 right-3 z-30 p-2 bg-black/40 hover:bg-red-500 rounded-full text-white transition-all active:scale-90 backdrop-blur-md">
+                <button onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} className="absolute top-4 right-4 z-30 p-2 bg-black/40 hover:bg-red-500 rounded-full text-white transition-all active:scale-90 backdrop-blur-md">
                   <X size={16}/>
                 </button>
               )}
@@ -291,7 +291,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
-        {/* 4. БЛОК ПАНЕЛИ ФОРМАТИРОВАНИЯ (Выделение теперь идеально круглое 'rounded-full') */}
+        {/* 4. БЛОК ПАНЕЛИ ФОРМАТИРОВАНИЯ */}
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mx-1 select-none" style={{ marginBottom: '40px' }}>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
