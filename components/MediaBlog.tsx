@@ -59,6 +59,14 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
+  // Перенесли парсер ссылок YouTube наверх, чтобы избежать ошибок скоупинга TS
+  const getYoutubeEmbedUrl = (url: string) => {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  };
+
+  // Функция загрузки постов
   const loadPosts = async () => {
     const { data, error } = await supabase
       .from('posts')
@@ -72,6 +80,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return [];
   };
 
+  // Инициализация блога + проверка параметров роутинга в ссылке
   useEffect(() => {
     const initBlog = async () => {
       const fetchedPosts = await loadPosts();
@@ -171,6 +180,43 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
+  const checkFormatting = () => {
+    if (typeof document === 'undefined') return;
+    try {
+      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+      setFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        strikeThrough: document.queryCommandState('strikeThrough'),
+        h1: formatBlock.includes('h1'),
+        h2: formatBlock.includes('h2'),
+        justifyLeft: document.queryCommandState('justifyLeft'),
+        justifyCenter: document.queryCommandState('justifyCenter'),
+      });
+    } catch (e) {}
+  };
+
+  const execEditorCommand = (command: string, value: string = '') => {
+    if (typeof document !== 'undefined') {
+      if (command === 'formatBlock') {
+        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+        const valLower = value.toLowerCase();
+        
+        if ((valLower === 'h1' && currentBlock.includes('h1')) || 
+            (valLower === 'h2' && currentBlock.includes('h2'))) {
+          document.execCommand(command, false, 'P');
+        } else {
+          document.execCommand(command, false, value);
+        }
+      } else {
+        document.execCommand(command, false, value);
+      }
+      
+      if (editorRef.current) editorRef.current.focus();
+      setTimeout(checkFormatting, 50);
+    }
+  };
+
   const publishPost = async () => {
     const postContent = editorRef.current?.innerHTML || '';
 
@@ -213,7 +259,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       {selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
           
-          {/* Вернули обычную кнопку Назад на прежнее место */}
+          {/* Аккуратная кнопка Назад */}
           <div className="mb-6 select-none">
             <button 
               onClick={handleClosePost} 
@@ -226,7 +272,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           {/* Главная карточка поста */}
           <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
             
-            {/* Автор + Управление */}
+            {/* Автор + Опции */}
             <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={() => { if(selectedPost.author) onProfileClick(selectedPost.author); }}>
@@ -275,14 +321,13 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </div>
             )}
 
-            {/* Контент поста */}
+            {/* Описание + Кнопки */}
             <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
               <div>
                 <h1 className="text-2xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedPost.title}</h1>
                 <div className="prose prose-invert max-w-none text-gray-300 text-base leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
               </div>
 
-              {/* Лайки / Ссылка в общем блоке */}
               <div className="flex items-center justify-start gap-3 bg-transparent select-none">
                 <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                   <Heart size={15} />
@@ -299,7 +344,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
-          {/* БЛОК КОММЕНТАРИЕВ (Поле ввода теперь пилюля, кнопка — круг) */}
+          {/* КОММЕНТАРИИ */}
           <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
             <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
               <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -503,7 +548,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       <div className="prose prose-invert max-w-none text-gray-400 text-sm leading-relaxed break-words line-clamp-1 overflow-hidden" dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
 
-                    {/* Раздел кнопок лайков и комментариев */}
+                    {/* Раздел кнопок */}
                     <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                       <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                         <Heart size={15} />
