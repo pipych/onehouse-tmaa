@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
-  Newspaper, Edit2, Clock, Heart, MessageCircle, Image as ImageIcon, 
+  Newspaper, Clock, Heart, MessageCircle, Image as ImageIcon, 
   Youtube, X, Save, Bold, Italic, Strikethrough, 
-  Heading1, Heading2, AlignLeft, AlignCenter, Plus 
+  Heading1, Heading2, AlignLeft, AlignCenter, Plus, ArrowLeft 
 } from 'lucide-react';
 
 interface Player {
@@ -45,6 +45,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [newPostYoutubeUrl, setNewPostYoutubeUrl] = useState('');
   const [isUploadingPostCover, setIsUploadingPostCover] = useState(false);
 
+  // Для текстового редактора
   const editorRef = useRef<HTMLDivElement>(null);
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
@@ -54,6 +55,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     loadPosts();
   }, []);
 
+  // Очистка редактора
   useEffect(() => {
     if (!isCreatingPost && editorRef.current) {
       editorRef.current.innerHTML = '';
@@ -158,18 +160,122 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   };
 
+  // ЕСЛИ МЫ СОЗДАЕМ ПОСТ — ПОКАЗЫВАЕМ ПОЛНОЭКРАННЫЙ РЕДАКТОР (Без модалок)
+  if (isCreatingPost) {
+    return (
+      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 pt-6 md:pt-12 px-2">
+        
+        {/* Кнопка Назад */}
+        <div className="flex items-center gap-4 mb-8">
+          <button 
+            onClick={() => setIsCreatingPost(false)} 
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+          >
+            <ArrowLeft size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Назад в ленту</span>
+          </button>
+        </div>
+
+        {/* Заголовок */}
+        <input 
+          type="text" 
+          placeholder="Яркий заголовок..." 
+          value={newPostTitle} 
+          onChange={e => setNewPostTitle(e.target.value)} 
+          className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-600 border-none outline-none mb-10 px-2"
+        />
+
+        {/* Компактные медиа-кнопки */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 mb-10 px-1">
+          <div className="w-full md:flex-1">
+            <label className="flex items-center justify-center gap-2 py-3 px-4 bg-[#14171c] border border-white/5 hover:border-[#c0ff00]/40 rounded-xl cursor-pointer transition-all active:scale-[0.98] group relative overflow-hidden shadow-inner">
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
+              <ImageIcon size={18} className={newPostCoverUrl ? "text-[#c0ff00]" : "text-gray-500 group-hover:text-white"} />
+              <span className={`text-sm font-bold truncate ${newPostCoverUrl ? "text-[#c0ff00]" : "text-gray-400 group-hover:text-white"}`}>
+                {isUploadingPostCover ? 'Загрузка...' : (newPostCoverUrl ? 'Обложка загружена' : 'Картинка обложки')}
+              </span>
+            </label>
+          </div>
+          
+          <div className="w-full md:flex-1 relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"><Youtube size={18} /></div>
+            <input 
+              type="text" 
+              placeholder="Ссылка на YouTube..." 
+              value={newPostYoutubeUrl} 
+              onChange={e => setNewPostYoutubeUrl(e.target.value)} 
+              className="w-full h-full bg-[#14171c] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm font-bold text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-500 shadow-inner"
+            />
+          </div>
+        </div>
+
+        {/* Превью прикрепленного YouTube */}
+        {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
+          <div className="w-full rounded-2xl overflow-hidden border border-white/10 aspect-video bg-black/50 mb-10 shadow-xl">
+            <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen />
+          </div>
+        )}
+
+        {/* Превью прикрепленной картинки */}
+        {newPostCoverUrl && !newPostYoutubeUrl && (
+          <div className="w-full rounded-2xl overflow-hidden border border-white/10 max-h-[400px] bg-black/50 relative mb-10 shadow-xl flex justify-center items-center">
+            <img src={newPostCoverUrl} alt="Cover preview" className="w-full h-auto object-cover" />
+            <button onClick={() => setNewPostCoverUrl('')} className="absolute top-4 right-4 p-2 bg-black/60 rounded-full hover:bg-red-500/90 text-white transition-all active:scale-90 backdrop-blur-md"><X size={16}/></button>
+          </div>
+        )}
+
+        {/* Панель форматирования текста (Липкая) */}
+        <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-6 mx-1">
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={16}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={16}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Strikethrough size={16}/></button>
+          <div className="w-[1px] h-5 bg-white/10 mx-1 flex-shrink-0" />
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Heading1 size={16}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Heading2 size={16}/></button>
+          <div className="w-[1px] h-5 bg-white/10 mx-1 flex-shrink-0" />
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><AlignLeft size={16}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><AlignCenter size={16}/></button>
+        </div>
+
+        {/* Текстовый редактор (ContentEditable) */}
+        <div 
+          ref={editorRef} 
+          contentEditable 
+          suppressContentEditableWarning 
+          onKeyUp={checkFormatting}
+          onMouseUp={checkFormatting}
+          onInput={checkFormatting}
+          className="w-full flex-grow min-h-[30vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words px-2 pb-10" 
+          data-placeholder="Текст вашей статьи..." 
+        />
+
+        {/* Аккуратная кнопка публикации внизу */}
+        <div className="flex justify-end mt-4 px-2">
+          <button 
+            onClick={publishPost} 
+            disabled={isUploadingPostCover}
+            className="w-full md:w-auto px-8 py-4 bg-[#c0ff00] text-black font-black text-sm md:text-base rounded-2xl shadow-[0_10px_30px_rgba(192,255,0,0.15)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
+          >
+            <Save size={18} /> Опубликовать запись
+          </button>
+        </div>
+
+      </div>
+    );
+  }
+
+  // ИНАЧЕ ПОКАЗЫВАЕМ ЛЕНТУ НОВОСТЕЙ
   return (
     <>
-      {/* ГЛАВНАЯ СТРАНИЦА БЛОГА */}
       <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
-        {/* Шапка */}
+        {/* Шапка Ленты */}
         <div className="flex items-center justify-between w-full">
           <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
             <Newspaper size={24} className="text-[#c0ff00]" />
             .медиа
           </h2>
           
-          {/* ПК-Кнопка создания поста (справа сверху) */}
+          {/* ПК-Кнопка создания поста (Кружок с плюсом сверху справа) */}
           {currentUser && (
             <button 
               onClick={() => setIsCreatingPost(true)} 
@@ -245,121 +351,14 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       </div>
 
-      {/* МОБИЛЬНАЯ КНОПКА СОЗДАНИЯ ПОСТА (справа снизу) */}
+      {/* МОБИЛЬНАЯ КНОПКА СОЗДАНИЯ ПОСТА (Кружок с плюсом справа снизу) */}
       {currentUser && !isCreatingPost && (
         <button 
           onClick={() => setIsCreatingPost(true)}
-          className="md:hidden fixed bottom-[90px] right-6 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(192,255,0,0.35)] z-40 active:scale-90 transition-transform"
+          className="md:hidden fixed bottom-[90px] right-5 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(192,255,0,0.3)] z-40 active:scale-90 transition-transform"
         >
           <Plus size={28} strokeWidth={2.5} />
         </button>
-      )}
-
-      {/* ПОЛНОЭКРАННОЕ ОКНО СОЗДАНИЯ ПОСТА */}
-      {isCreatingPost && (
-        <div className="fixed inset-0 z-[100] bg-[#090b0e] overflow-y-auto no-scrollbar animate-fade-in">
-          
-          {/* Контейнер с безопасной зоной */}
-          <div className="max-w-3xl mx-auto w-full min-h-screen flex flex-col relative px-6 md:px-8 py-8 md:py-10">
-            
-            {/* Шапка редактора */}
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-3">
-                <Newspaper className="text-[#c0ff00] w-6 h-6 md:w-8 md:h-8" />
-                Новая статья
-              </h2>
-              <button onClick={() => setIsCreatingPost(false)} className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 shadow-md">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Заголовок */}
-            <input 
-              type="text" 
-              placeholder="Яркий заголовок..." 
-              value={newPostTitle} 
-              onChange={e => setNewPostTitle(e.target.value)} 
-              className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-600 border-none outline-none mb-10 px-0"
-            />
-
-            {/* Блок прикрепления медиа */}
-            <div className="flex flex-col md:flex-row gap-5 mb-8">
-              <div className="w-full md:flex-1">
-                <label className="flex items-center justify-center gap-2 py-3.5 px-5 bg-[#14171c] border border-white/5 hover:border-[#c0ff00]/40 rounded-2xl cursor-pointer transition-all active:scale-[0.98] group relative overflow-hidden shadow-inner">
-                  <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
-                  <ImageIcon size={18} className={newPostCoverUrl ? "text-[#c0ff00]" : "text-gray-400 group-hover:text-white"} />
-                  <span className={`text-sm font-bold truncate ${newPostCoverUrl ? "text-[#c0ff00]" : "text-gray-400 group-hover:text-white"}`}>
-                    {isUploadingPostCover ? 'Загрузка...' : (newPostCoverUrl ? 'Обложка загружена' : 'Картинка обложки')}
-                  </span>
-                </label>
-              </div>
-              
-              <div className="w-full md:flex-1 relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"><Youtube size={18} /></div>
-                <input 
-                  type="text" 
-                  placeholder="Ссылка на YouTube..." 
-                  value={newPostYoutubeUrl} 
-                  onChange={e => setNewPostYoutubeUrl(e.target.value)} 
-                  className="w-full h-full bg-[#14171c] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-500 shadow-inner"
-                />
-              </div>
-            </div>
-
-            {/* Превью прикрепленного YouTube */}
-            {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
-              <div className="w-full rounded-[24px] overflow-hidden border border-white/10 aspect-video bg-black/50 mb-8 shadow-xl">
-                <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen />
-              </div>
-            )}
-
-            {/* Превью прикрепленной картинки */}
-            {newPostCoverUrl && !newPostYoutubeUrl && (
-              <div className="w-full rounded-[24px] overflow-hidden border border-white/10 max-h-[400px] bg-black/50 relative mb-8 shadow-xl flex justify-center items-center">
-                <img src={newPostCoverUrl} alt="Cover preview" className="w-full h-auto object-cover" />
-                <button onClick={() => setNewPostCoverUrl('')} className="absolute top-4 right-4 p-2.5 bg-black/60 rounded-full hover:bg-red-500/90 text-white transition-all active:scale-90 backdrop-blur-md"><X size={18}/></button>
-              </div>
-            )}
-
-            {/* Панель форматирования текста */}
-            <div className="sticky top-4 z-50 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-6">
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Strikethrough size={16}/></button>
-              <div className="w-[1px] h-5 bg-white/10 mx-1 flex-shrink-0" />
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Heading1 size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Heading2 size={16}/></button>
-              <div className="w-[1px] h-5 bg-white/10 mx-1 flex-shrink-0" />
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><AlignLeft size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><AlignCenter size={16}/></button>
-            </div>
-
-            {/* Текстовый редактор (ContentEditable) */}
-            <div 
-              ref={editorRef} 
-              contentEditable 
-              suppressContentEditableWarning 
-              onKeyUp={checkFormatting}
-              onMouseUp={checkFormatting}
-              onInput={checkFormatting}
-              className="w-full flex-grow min-h-[40vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words px-1 pb-32" 
-              data-placeholder="Текст вашей статьи..." 
-            />
-
-          </div>
-
-          {/* Плавающая кнопка публикации поверх текста */}
-          <div className="fixed bottom-6 left-0 right-0 px-6 z-50 pointer-events-none flex justify-center">
-            <button 
-              onClick={publishPost} 
-              disabled={isUploadingPostCover}
-              className="w-full max-w-xl bg-[#c0ff00] text-black font-black text-lg py-4 rounded-[20px] shadow-[0_10px_40px_rgba(192,255,0,0.25)] pointer-events-auto hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
-            >
-              <Save size={20} /> Опубликовать запись
-            </button>
-          </div>
-
-        </div>
       )}
     </>
   );
