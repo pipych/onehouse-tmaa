@@ -59,7 +59,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  // Железобетонная функция загрузки постов, доступная везде
   const loadPosts = async () => {
     const { data, error } = await supabase
       .from('posts')
@@ -73,12 +72,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return [];
   };
 
-  // Инициализация блога + проверка URL-параметров при открытии сайта
   useEffect(() => {
     const initBlog = async () => {
       const fetchedPosts = await loadPosts();
 
-      // Проверяем, есть ли в ссылке параметр ?post=ID
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const postIdFromUrl = params.get('post');
@@ -94,7 +91,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     initBlog();
   }, []);
 
-  // Синхронизация URL при открытии поста
   const handleOpenPost = (post: Post) => {
     setSelectedPost(post);
     if (typeof window !== 'undefined') {
@@ -105,7 +101,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  // Синхронизация URL при закрытии поста
   const handleClosePost = () => {
     setSelectedPost(null);
     if (typeof window !== 'undefined') {
@@ -116,7 +111,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  // Функция генерации и копирования ссылки на пост
   const handleSharePost = (e: React.MouseEvent, postId: string) => {
     e.stopPropagation(); 
     if (typeof window !== 'undefined') {
@@ -177,61 +171,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  const checkFormatting = () => {
-    if (typeof document === 'undefined') return;
-    try {
-      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-      setFormats({
-        bold: document.queryCommandState('bold'),
-        italic: document.queryCommandState('italic'),
-        strikeThrough: document.queryCommandState('strikeThrough'),
-        h1: formatBlock.includes('h1'),
-        h2: formatBlock.includes('h2'),
-        justifyLeft: document.queryCommandState('justifyLeft'),
-        justifyCenter: document.queryCommandState('justifyCenter'),
-      });
-    } catch (e) {}
-  };
-
-  const execEditorCommand = (command: string, value: string = '') => {
-    if (typeof document !== 'undefined') {
-      if (command === 'formatBlock') {
-        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-        const valLower = value.toLowerCase();
-        
-        if ((valLower === 'h1' && currentBlock.includes('h1')) || 
-            (valLower === 'h2' && currentBlock.includes('h2'))) {
-          document.execCommand(command, false, 'P');
-        } else {
-          document.execCommand(command, false, value);
-        }
-      } else {
-        document.execCommand(command, false, value);
-      }
-      
-      if (editorRef.current) editorRef.current.focus();
-      setTimeout(checkFormatting, 50);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
-    try {
-      setLoadingState(true);
-      const file = event.target.files?.[0];
-      if (!file) return;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
-      if (error) return alert(`Ошибка загрузки: ${error.message}`);
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      if (urlData) setUrlCallback(urlData.publicUrl);
-    } catch (e: any) {
-      alert(`Сбой при загрузке: ${e.message}`);
-    } finally {
-      setLoadingState(false);
-    }
-  };
-
   const publishPost = async () => {
     const postContent = editorRef.current?.innerHTML || '';
 
@@ -266,11 +205,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  const getYoutubeEmbedUrl = (url: string) => {
-    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
-  };
-
   return (
     <>
       {/* --------------------------------------------------------
@@ -279,18 +213,18 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       {selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
           
-          {/* Фикс: Кнопка Назад теперь намертво закреплена (fixed) сверху слева */}
-          <div className="fixed top-[95px] left-4 md:left-[calc(50%-384px+16px)] z-50 select-none">
+          {/* Вернули обычную кнопку Назад на прежнее место */}
+          <div className="mb-6 select-none">
             <button 
               onClick={handleClosePost} 
-              className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-2xl backdrop-blur-md"
+              className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0"
             >
               <ArrowLeft size={20} />
             </button>
           </div>
 
           {/* Главная карточка поста */}
-          <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative mt-12">
+          <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
             
             {/* Автор + Управление */}
             <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -326,28 +260,29 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
 
             {/* Обложка статьи 16:9 */}
-            {selectedPost.youtube_url && getYoutubeEmbedUrl(selectedPost.youtube_url) ? (
+            {selectedPost.youtube_url && (
               <div className="px-5 md:px-6 w-full mb-2">
                 <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
                   <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
                 </div>
               </div>
-            ) : selectedPost.cover_url ? (
+            )}
+            {selectedPost.cover_url && !selectedPost.youtube_url && (
               <div className="px-5 md:px-6 w-full mb-2">
                 <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
                   <img src={selectedPost.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {/* Контент поста (Описание + Лайки + Ссылка) */}
+            {/* Контент поста */}
             <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
               <div>
                 <h1 className="text-2xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedPost.title}</h1>
                 <div className="prose prose-invert max-w-none text-gray-300 text-base leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
               </div>
 
-              {/* Лайки / Ссылка по сетке */}
+              {/* Лайки / Ссылка в общем блоке */}
               <div className="flex items-center justify-start gap-3 bg-transparent select-none">
                 <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                   <Heart size={15} />
@@ -364,7 +299,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
-          {/* БЛОК КОММЕНТАРИЕВ */}
+          {/* БЛОК КОММЕНТАРИЕВ (Поле ввода теперь пилюля, кнопка — круг) */}
           <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
             <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
               <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -372,8 +307,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </h3>
 
             <div className="flex gap-3 items-center">
-              <input type="text" placeholder="Напишите свое мнение..." className="w-full bg-black/30 border border-white/10 rounded-2xl p-4 text-sm text-white outline-none focus:border-[#c0ff00]/40 transition-all placeholder:text-gray-600 shadow-inner" />
-              <button className="p-4 bg-[#c0ff00] hover:bg-[#a6e600] text-black rounded-2xl transition-all active:scale-90 shadow-lg shrink-0">
+              <input 
+                type="text" 
+                placeholder="Напишите свое мнение..." 
+                className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 transition-all placeholder:text-gray-600 shadow-inner" 
+              />
+              <button className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] hover:bg-[#a6e600] text-black transition-all active:scale-90 shadow-lg shrink-0">
                 <Send size={18} />
               </button>
             </div>
@@ -445,7 +384,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
 
           {/* Превью вложений */}
-          {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
+          {newPostYoutubeUrl && (
             <div className="w-full rounded-[24px] overflow-hidden bg-black/50 shadow-xl mx-1" style={{ marginBottom: '44px', aspectRatio: '16/9' }}>
               <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
             </div>
@@ -495,7 +434,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <div className="flex flex-col gap-8 pb-8">
             {posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 px-6 bg-[#14171c]/50 rounded-[32px] border border-white/5 shadow-inner mt-4 select-none">
-                <div className="w-20 h-20 bg-black/40 border border-white/5 rounded-full flex items-center justify-center mb-5 shadow-lg">
+                <div className="w-20 h-20 bg-black/40 border border-white/5 rounded-full flex items-center justify-center mb-5 shadow-lg flex-shrink-0">
                   <Newspaper size={32} className="text-gray-500" />
                 </div>
                 <h3 className="text-lg font-black text-white mb-2 tracking-wide">Здесь пока пусто</h3>
@@ -542,19 +481,20 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
 
                   {/* Медиа 16:9 */}
-                  {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) ? (
+                  {post.youtube_url && (
                     <div className="px-5 md:px-6 w-full mb-2">
                       <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
                         <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
                       </div>
                     </div>
-                  ) : post.cover_url ? (
+                  )}
+                  {post.cover_url && !post.youtube_url && (
                     <div className="px-5 md:px-6 w-full mb-2">
                       <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
                         <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
                       </div>
                     </div>
-                  ) : null}
+                  )}
 
                   {/* Описание + Кнопки */}
                   <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
@@ -563,7 +503,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       <div className="prose prose-invert max-w-none text-gray-400 text-sm leading-relaxed break-words line-clamp-1 overflow-hidden" dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
 
-                    {/* Раздел кнопок */}
+                    {/* Раздел кнопок лайков и комментариев */}
                     <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                       <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                         <Heart size={15} />
