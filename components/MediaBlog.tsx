@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Newspaper, Edit2, Clock, Heart, MessageCircle, Image as ImageIcon, 
-  Youtube, X, Save, Upload, Bold, Italic, Strikethrough, 
+  Youtube, X, Save, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, Plus 
 } from 'lucide-react';
 
@@ -45,7 +45,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [newPostYoutubeUrl, setNewPostYoutubeUrl] = useState('');
   const [isUploadingPostCover, setIsUploadingPostCover] = useState(false);
 
-  // Для текстового редактора
   const editorRef = useRef<HTMLDivElement>(null);
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
@@ -55,7 +54,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     loadPosts();
   }, []);
 
-  // Очистка редактора при закрытии/открытии окна
   useEffect(() => {
     if (!isCreatingPost && editorRef.current) {
       editorRef.current.innerHTML = '';
@@ -76,7 +74,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  // Проверка активных форматов текста
   const checkFormatting = () => {
     if (typeof document === 'undefined') return;
     try {
@@ -93,7 +90,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   };
 
-  // Применение форматирования
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
@@ -165,9 +161,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   return (
     <>
       {/* ГЛАВНАЯ СТРАНИЦА БЛОГА */}
-      <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto">
+      <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
         {/* Шапка */}
-        <div className="flex items-center justify-between w-full px-2">
+        <div className="flex items-center justify-between w-full">
           <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
             <Newspaper size={24} className="text-[#c0ff00]" />
             .медиа
@@ -177,9 +173,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           {currentUser && (
             <button 
               onClick={() => setIsCreatingPost(true)} 
-              className="hidden md:flex w-11 h-11 bg-[#c0ff00] text-black rounded-full items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(192,255,0,0.2)]"
+              className="hidden md:flex w-12 h-12 bg-[#c0ff00] text-black rounded-full items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(192,255,0,0.25)]"
             >
-              <Plus size={24} strokeWidth={3} />
+              <Plus size={26} strokeWidth={2.5} />
             </button>
           )}
         </div>
@@ -223,7 +219,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
                 ) : null}
 
-                {/* Текст поста (Рендерим HTML) */}
+                {/* Текст поста */}
                 <div className="p-5 md:p-6 pt-6">
                   <h3 className="text-2xl md:text-3xl font-black text-white mb-5 leading-tight">{post.title}</h3>
                   <div 
@@ -232,7 +228,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   />
                 </div>
 
-                {/* Подвал (Кнопки) */}
+                {/* Подвал */}
                 <div className="px-5 md:px-6 pb-5 pt-2 flex items-center gap-6 border-t border-white/5 mt-2 pt-5">
                   <button className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-colors active:scale-95 group/btn">
                     <div className="p-2.5 rounded-full group-hover/btn:bg-red-400/10 transition-colors"><Heart size={20} /></div>
@@ -253,7 +249,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       {currentUser && !isCreatingPost && (
         <button 
           onClick={() => setIsCreatingPost(true)}
-          className="md:hidden fixed bottom-[100px] right-5 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(192,255,0,0.3)] z-40 active:scale-90 transition-transform"
+          className="md:hidden fixed bottom-[90px] right-6 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(192,255,0,0.35)] z-40 active:scale-90 transition-transform"
         >
           <Plus size={28} strokeWidth={2.5} />
         </button>
@@ -261,9 +257,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
       {/* ПОЛНОЭКРАННОЕ ОКНО СОЗДАНИЯ ПОСТА */}
       {isCreatingPost && (
-        <div className="fixed inset-0 z-[60] bg-[#090b0e] overflow-y-auto no-scrollbar animate-fade-in">
+        <div className="fixed inset-0 z-[100] bg-[#090b0e] overflow-y-auto no-scrollbar animate-fade-in">
           
-          <div className="max-w-3xl mx-auto w-full min-h-screen flex flex-col relative px-4 md:px-8 py-6 md:py-10">
+          {/* Контейнер с безопасной зоной */}
+          <div className="max-w-3xl mx-auto w-full min-h-screen flex flex-col relative px-6 md:px-8 py-8 md:py-10">
             
             {/* Шапка редактора */}
             <div className="flex items-center justify-between mb-8">
@@ -282,13 +279,13 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               placeholder="Яркий заголовок..." 
               value={newPostTitle} 
               onChange={e => setNewPostTitle(e.target.value)} 
-              className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-600 border-none outline-none mb-8 px-1"
+              className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-600 border-none outline-none mb-10 px-0"
             />
 
             {/* Блок прикрепления медиа */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8 px-1">
+            <div className="flex flex-col md:flex-row gap-5 mb-8">
               <div className="w-full md:flex-1">
-                <label className="flex items-center justify-center gap-2 py-4 px-5 bg-[#14171c] border border-white/5 hover:border-[#c0ff00]/40 rounded-2xl cursor-pointer transition-all active:scale-[0.98] group relative overflow-hidden shadow-inner">
+                <label className="flex items-center justify-center gap-2 py-3.5 px-5 bg-[#14171c] border border-white/5 hover:border-[#c0ff00]/40 rounded-2xl cursor-pointer transition-all active:scale-[0.98] group relative overflow-hidden shadow-inner">
                   <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
                   <ImageIcon size={18} className={newPostCoverUrl ? "text-[#c0ff00]" : "text-gray-400 group-hover:text-white"} />
                   <span className={`text-sm font-bold truncate ${newPostCoverUrl ? "text-[#c0ff00]" : "text-gray-400 group-hover:text-white"}`}>
@@ -304,28 +301,28 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   placeholder="Ссылка на YouTube..." 
                   value={newPostYoutubeUrl} 
                   onChange={e => setNewPostYoutubeUrl(e.target.value)} 
-                  className="w-full h-full bg-[#14171c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-500 shadow-inner"
+                  className="w-full h-full bg-[#14171c] border border-white/5 rounded-2xl py-3.5 pl-12 pr-4 text-sm font-bold text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-500 shadow-inner"
                 />
               </div>
             </div>
 
             {/* Превью прикрепленного YouTube */}
             {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
-              <div className="w-full rounded-3xl overflow-hidden border border-white/10 aspect-video bg-black/50 mx-1 mb-8 shadow-2xl">
+              <div className="w-full rounded-[24px] overflow-hidden border border-white/10 aspect-video bg-black/50 mb-8 shadow-xl">
                 <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen />
               </div>
             )}
 
             {/* Превью прикрепленной картинки */}
             {newPostCoverUrl && !newPostYoutubeUrl && (
-              <div className="w-full rounded-3xl overflow-hidden border border-white/10 max-h-[400px] bg-black/50 relative mx-1 mb-8 shadow-2xl flex justify-center items-center">
+              <div className="w-full rounded-[24px] overflow-hidden border border-white/10 max-h-[400px] bg-black/50 relative mb-8 shadow-xl flex justify-center items-center">
                 <img src={newPostCoverUrl} alt="Cover preview" className="w-full h-auto object-cover" />
                 <button onClick={() => setNewPostCoverUrl('')} className="absolute top-4 right-4 p-2.5 bg-black/60 rounded-full hover:bg-red-500/90 text-white transition-all active:scale-90 backdrop-blur-md"><X size={18}/></button>
               </div>
             )}
 
-            {/* Панель форматирования текста (Липкая) */}
-            <div className="sticky top-4 z-50 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto no-scrollbar mx-1 shadow-2xl mb-6">
+            {/* Панель форматирования текста */}
+            <div className="sticky top-4 z-50 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-6">
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={16}/></button>
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={16}/></button>
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2.5 rounded-xl transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Strikethrough size={16}/></button>
@@ -345,22 +342,23 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               onKeyUp={checkFormatting}
               onMouseUp={checkFormatting}
               onInput={checkFormatting}
-              className="w-full flex-grow min-h-[40vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words px-2 pb-32" 
+              className="w-full flex-grow min-h-[40vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words px-1 pb-32" 
               data-placeholder="Текст вашей статьи..." 
             />
 
-            {/* Плавающая кнопка публикации внизу экрана */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full px-4 md:px-8 max-w-3xl z-50 pointer-events-none">
-              <button 
-                onClick={publishPost} 
-                disabled={isUploadingPostCover}
-                className="w-full bg-[#c0ff00] text-black font-black text-lg md:text-xl py-4 md:py-5 rounded-2xl shadow-[0_10px_40px_rgba(192,255,0,0.25)] pointer-events-auto hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale"
-              >
-                <Save size={22} /> Опубликовать запись
-              </button>
-            </div>
-
           </div>
+
+          {/* Плавающая кнопка публикации поверх текста */}
+          <div className="fixed bottom-6 left-0 right-0 px-6 z-50 pointer-events-none flex justify-center">
+            <button 
+              onClick={publishPost} 
+              disabled={isUploadingPostCover}
+              className="w-full max-w-xl bg-[#c0ff00] text-black font-black text-lg py-4 rounded-[20px] shadow-[0_10px_40px_rgba(192,255,0,0.25)] pointer-events-auto hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:grayscale"
+            >
+              <Save size={20} /> Опубликовать запись
+            </button>
+          </div>
+
         </div>
       )}
     </>
