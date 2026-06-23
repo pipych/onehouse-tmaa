@@ -1,11 +1,10 @@
-// app/page.tsx
 'use client';
 
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import MediaBlog from '../components/MediaBlog'; // ИМПОРТ НОВОГО КОМПОНЕНТА
+import MediaBlog from '../components/MediaBlog';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
@@ -97,7 +96,6 @@ export default function Home() {
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
 
-  // Оставили только этот стейт, чтобы панель меню могла прятаться
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -379,7 +377,24 @@ export default function Home() {
     }
   };
 
-<div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
+  // ФУНКЦИЯ ВЕРНУЛАСЬ!
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
+    try {
+      setLoadingState(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
+      if (error) return alert(`Ошибка загрузки: ${error.message}`);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      if (urlData) setUrlCallback(urlData.publicUrl);
+    } catch (e: any) {
+      alert(`Сбой при загрузке: ${e.message}`);
+    } finally {
+      setLoadingState(false);
+    }
+  };
 
   const saveProfileData = async () => {
     if (!selectedPlayer || !newRpName.trim()) return;
@@ -539,7 +554,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[#090b0e]/85 backdrop-blur-[2px]" />
       </div>
 
-      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer || isCreatingPost ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); setIsCreatingPost(false); }} />
+      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
@@ -678,7 +693,7 @@ export default function Home() {
       )}
 
       {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
-      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col">
+      <main className={`p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col ${isCreatingPost ? 'hidden' : 'block'}`}>
         
         {/* ГЛАВНАЯ (Виджет Сервера, Конституция, Карта) */}
         {activeTab === 'profile' && (
