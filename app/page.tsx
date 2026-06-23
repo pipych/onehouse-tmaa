@@ -277,7 +277,6 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
-  /* ИСПРАВЛЕНИЕ: ВОТ ЭТИ ДВЕ СТРОЧКИ ВЕРНУЛИСЬ НА МЕСТО */
   const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
   const prevMatch = () => setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length);
 
@@ -953,7 +952,6 @@ export default function Home() {
             )}
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
-            {/* ИСПРАВЛЕНО: Отступ на мобилках увеличен до 135px */}
             {activeDocument !== 'none' && !isEditing && (
               <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[135px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
@@ -1185,22 +1183,14 @@ export default function Home() {
         )}
       </main>
 
-      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
+      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Карта убрана) */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
       `}>
-        <div className={`flex w-full items-center justify-between px-2`}>
+        <div className={`flex w-full items-center justify-around px-2`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <HomeIcon size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
-          </button>
-          
-          <button onClick={() => handleTabChange('map')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <div className="relative">
-              <Map size={22} />
-              <div className="absolute -top-1.5 -right-3.5 bg-[#c0ff00] text-black text-[7px] font-black uppercase px-1 rounded-sm shadow-sm pointer-events-none">Soon</div>
-            </div>
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Карта</span>
           </button>
           
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
@@ -1222,7 +1212,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* САЙДБАР ДЛЯ ПК (Профиль + Навигация) */}
+      {/* САЙДБАР ДЛЯ ПК (Карта убрана) */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        
        {dbUser && (
@@ -1245,17 +1235,6 @@ export default function Home() {
             </div>
          </button>
 
-         <button onClick={() => handleTabChange('map')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <div className="relative">
-              <Map size={24} />
-              <div className="absolute -top-1.5 -right-3.5 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1 rounded-sm shadow-sm pointer-events-none">Soon</div>
-            </div>
-            <div className="absolute left-[calc(100%+28px)] px-4 py-2.5 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl flex flex-col gap-0.5 items-start z-50">
-              <span className="text-[13px] font-bold text-white">Карта сервера</span>
-              <span className="text-[10px] text-[#c0ff00] font-medium">Функционал в разработке, появится позже</span>
-            </div>
-         </button>
-
          <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
             <BookOpen size={24} />
             <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
@@ -1274,7 +1253,7 @@ export default function Home() {
             <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
               <ShieldAlert size={24} />
               <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-                Админ-па-нель
+                Админ-панель
               </div>
             </button>
          )}
@@ -1291,7 +1270,6 @@ export default function Home() {
         <ArrowUp size={20} />
       </button>
 
-      {/* ИСПРАВЛЕНО: Стили H1 (сделан самым большим) и H2 переопределены через !important */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
