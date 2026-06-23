@@ -170,7 +170,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 pt-4 md:pt-10 px-4 md:px-0 flex flex-col">
         
-        {/* Шапка статьи (Только аккуратный круг со стрелкой) */}
+        {/* Шапка статьи (Только круг со стрелкой) */}
         <div className="mb-8 select-none">
           <button 
             onClick={() => setSelectedPost(null)} 
@@ -196,27 +196,27 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
-          {/* Исправлено: Обложка внутри полного поста с отступами и скруглениями 16:9 */}
+          {/* Пуленепробиваемый формат 16:9 с боковыми отступами в полном посте */}
           {selectedPost.youtube_url && getYoutubeEmbedUrl(selectedPost.youtube_url) ? (
-            <div className="px-5 md:px-6 w-full mb-2" style={{ aspectRatio: '16/9' }}>
-              <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
-                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="w-full h-full border-none" allowFullScreen />
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
               </div>
             </div>
           ) : selectedPost.cover_url ? (
-            <div 
-              onClick={() => setIsImageZoomOpen(true)}
-              className="px-5 md:px-6 w-full cursor-zoom-in mb-2" 
-              style={{ aspectRatio: '16/9' }}
-            >
-              <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
-                <img src={selectedPost.cover_url} alt="cover" className="w-full h-full object-cover" />
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div 
+                onClick={() => setIsImageZoomOpen(true)}
+                className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in"
+                style={{ paddingBottom: '56.25%' }}
+              >
+                <img src={selectedPost.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
               </div>
             </div>
           ) : null}
 
           {/* Контент поста */}
-          <div className="p-6 md:p-8 pt-4">
+          <div className="p-6 md:p-8 pt-2">
             <h1 className="text-2xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedPost.title}</h1>
             <div 
               className="prose prose-invert max-w-none text-gray-300 text-base leading-relaxed break-words"
@@ -225,7 +225,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        {/* БЛОК КОММЕНТАРИЕВ (Исправлено: Добавлен надёжный отступ mt-14 до карточки статьи) */}
+        {/* БЛОК КОММЕНТАРИЕВ */}
         <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
           <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
             <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -272,7 +272,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col" style={{ paddingTop: '24px' }}>
         
-        {/* 1. ШАПКА РЕДАКТОРА */}
+        {/* Шапка редактора */}
         <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
           <button 
             onClick={() => setIsCreatingPost(false)} 
@@ -290,7 +290,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
-        {/* 2. БЛОК ВЛОЖЕНИЙ */}
+        {/* БЛОК ВЛОЖЕНИЙ */}
         <div className="w-full" style={{ marginBottom: '54px' }}>
           <div className="text-[11px] font-black text-gray-500 mb-4 px-1 uppercase tracking-widest select-none">Вложения</div>
           
@@ -363,7 +363,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        {/* 3. БЛОК ЗАГОЛОВКА */}
+        {/* ЗАГОЛОВК */}
         <div className="w-full px-1" style={{ marginBottom: '44px' }}>
           <input 
             type="text" 
@@ -388,7 +388,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
-        {/* 4. ПАНЕЛЬ ФОРМАТИРОВАНИЯ */}
+        {/* ПАНЕЛЬ ФОРМАТИРОВАНИЯ */}
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-8 mx-1 select-none" style={{ marginBottom: '40px' }}>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
@@ -401,7 +401,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><AlignCenter size={18}/></button>
         </div>
 
-        {/* 5. РЕДАКТОР */}
+        {/* РЕДАКТОР */}
         <div className="w-full px-1">
           <div 
             ref={editorRef} 
@@ -473,7 +473,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* Жёсткий контейнер flex-col gap-8 */}
+        {/* Лента карточек постов */}
         <div className="flex flex-col gap-8 pb-8">
           {posts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6 bg-[#14171c]/50 rounded-[32px] border border-white/5 shadow-inner mt-4 select-none">
@@ -505,17 +505,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
                 </div>
 
-                {/* Исправлено: Строгий формат 16:9 для ВСЕХ обложек с боковыми отступами и скруглениями */}
+                {/* Исправлено: Жесткий inline-фикс пропорций 16:9 с внутренними боковыми отступами */}
                 {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) ? (
-                  <div className="px-5 md:px-6 w-full mb-2" style={{ aspectRatio: '16/9' }}>
-                    <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
-                      <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
+                  <div className="px-5 md:px-6 w-full mb-2">
+                    <div className="w-full h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
+                      <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
                     </div>
                   </div>
                 ) : post.cover_url ? (
-                  <div className="px-5 md:px-6 w-full mb-2" style={{ aspectRatio: '16/9' }}>
-                    <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
-                      <img src={post.cover_url} alt="cover" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="px-5 md:px-6 w-full mb-2">
+                    <div className="w-full h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
+                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
                     </div>
                   </div>
                 ) : null}
@@ -529,8 +529,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   />
                 </div>
 
-                {/* Подвал карточки: Исправлено (Прозрачный фон, без полоски, идеальное выравнивание во фрейме) */}
-                <div className="px-5 md:px-6 pb-6 pt-2 flex items-center gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
+                {/* Подвал карточки: Сдвинут вправо (justify-end) и без серой полоски */}
+                <div className="px-6 pb-6 pt-2 flex items-center justify-end gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                   <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                     <Heart size={15} />
                     <span>0</span>
@@ -547,7 +547,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       </div>
 
-      {/* МОБИЛЬНАЯ КНОПКА */}
+      {/* МОБИЛЬНАЯ КНОПКА ПЛЮСА */}
       {currentUser && !isCreatingPost && (
         <button 
           onClick={() => setIsCreatingPost(true)}
