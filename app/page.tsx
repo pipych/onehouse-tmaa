@@ -377,7 +377,6 @@ export default function Home() {
     }
   };
 
-  // ФУНКЦИЯ ВЕРНУЛАСЬ!
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
     try {
       setLoadingState(true);
@@ -692,8 +691,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
-      <main className={`p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col ${isCreatingPost ? 'hidden' : 'block'}`}>
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Без скрытия!) */}
+      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col">
         
         {/* ГЛАВНАЯ (Виджет Сервера, Конституция, Карта) */}
         {activeTab === 'profile' && (
@@ -1232,7 +1231,7 @@ export default function Home() {
       </nav>
 
       {/* САЙДБАР ДЛЯ ПК */}
-      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
+      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
