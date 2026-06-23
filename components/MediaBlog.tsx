@@ -59,27 +59,33 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  // Загрузка постов + Проверка URL-параметров при открытии сайта
+  // Железобетонная функция загрузки постов, доступная везде
+  const loadPosts = async () => {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*, author:users(*)')
+      .order('created_at', { ascending: false });
+    
+    if (data && !error) {
+      setPosts(data);
+      return data;
+    }
+    return [];
+  };
+
+  // Инициализация блога + проверка URL-параметров при открытии сайта
   useEffect(() => {
     const initBlog = async () => {
-      // 1. Сначала грузим все посты
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*, author:users(*)')
-        .order('created_at', { ascending: false });
-      
-      if (data && !error) {
-        setPosts(data);
+      const fetchedPosts = await loadPosts();
 
-        // 2. Проверяем, есть ли в ссылке параметр ?post=ID
-        if (typeof window !== 'undefined') {
-          const params = new URLSearchParams(window.location.search);
-          const postIdFromUrl = params.get('post');
-          if (postIdFromUrl) {
-            const targetPost = data.find(p => p.id === postIdFromUrl);
-            if (targetPost) {
-              setSelectedPost(targetPost);
-            }
+      // Проверяем, есть ли в ссылке параметр ?post=ID
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const postIdFromUrl = params.get('post');
+        if (postIdFromUrl) {
+          const targetPost = fetchedPosts.find(p => p.id === postIdFromUrl);
+          if (targetPost) {
+            setSelectedPost(targetPost);
           }
         }
       }
@@ -112,13 +118,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
   // Функция генерации и копирования ссылки на пост
   const handleSharePost = (e: React.MouseEvent, postId: string) => {
-    e.stopPropagation(); // Чтобы карточка не кликалась повторно
+    e.stopPropagation(); 
     if (typeof window !== 'undefined') {
       const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
       navigator.clipboard.writeText(shareUrl);
       setCopiedPostId(postId);
       
-      // Вызываем тактильную отдачу в Telegram WebApp, если доступно
       if ((window as any).Telegram?.WebApp?.HapticFeedback) {
         (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
@@ -172,6 +177,61 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
+  const checkFormatting = () => {
+    if (typeof document === 'undefined') return;
+    try {
+      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+      setFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        strikeThrough: document.queryCommandState('strikeThrough'),
+        h1: formatBlock.includes('h1'),
+        h2: formatBlock.includes('h2'),
+        justifyLeft: document.queryCommandState('justifyLeft'),
+        justifyCenter: document.queryCommandState('justifyCenter'),
+      });
+    } catch (e) {}
+  };
+
+  const execEditorCommand = (command: string, value: string = '') => {
+    if (typeof document !== 'undefined') {
+      if (command === 'formatBlock') {
+        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+        const valLower = value.toLowerCase();
+        
+        if ((valLower === 'h1' && currentBlock.includes('h1')) || 
+            (valLower === 'h2' && currentBlock.includes('h2'))) {
+          document.execCommand(command, false, 'P');
+        } else {
+          document.execCommand(command, false, value);
+        }
+      } else {
+        document.execCommand(command, false, value);
+      }
+      
+      if (editorRef.current) editorRef.current.focus();
+      setTimeout(checkFormatting, 50);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
+    try {
+      setLoadingState(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
+      if (error) return alert(`Ошибка загрузки: ${error.message}`);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      if (urlData) setUrlCallback(urlData.publicUrl);
+    } catch (e: any) {
+      alert(`Сбой при загрузке: ${e.message}`);
+    } finally {
+      setLoadingState(false);
+    }
+  };
+
   const publishPost = async () => {
     const postContent = editorRef.current?.innerHTML || '';
 
@@ -206,6 +266,11 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
+  const getYoutubeEmbedUrl = (url: string) => {
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  };
+
   return (
     <>
       {/* --------------------------------------------------------
@@ -214,7 +279,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       {selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
           
-          {/* ФИКС: Кнопка Назад теперь намертво закреплена (fixed) сверху слева */}
+          {/* Фикс: Кнопка Назад теперь намертво закреплена (fixed) сверху слева */}
           <div className="fixed top-[95px] left-4 md:left-[calc(50%-384px+16px)] z-50 select-none">
             <button 
               onClick={handleClosePost} 
@@ -224,7 +289,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </button>
           </div>
 
-          {/* Главная карточка поста (С отступом сверху, чтобы кнопка не перекрывала контент) */}
+          {/* Главная карточка поста */}
           <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative mt-12">
             
             {/* Автор + Управление */}
@@ -254,7 +319,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                     <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl animate-fade-in flex flex-col gap-0.5">
                       <button onClick={() => { setEditingPostId(selectedPost.id); setIsCreatingPost(true); setActiveMenuPostId(null); setSelectedPost(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
                       <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
-                  </div>
+                    </div>
                   )}
                 </div>
               )}
@@ -275,14 +340,14 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </div>
             ) : null}
 
-            {/* Контент поста (Описание + Лайки + Поделиться) */}
+            {/* Контент поста (Описание + Лайки + Ссылка) */}
             <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
               <div>
                 <h1 className="text-2xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedPost.title}</h1>
                 <div className="prose prose-invert max-w-none text-gray-300 text-base leading-relaxed break-words" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
               </div>
 
-              {/* Лайки / Ссылка (Идеальное симметричное расположение по твоему макету) */}
+              {/* Лайки / Ссылка по сетке */}
               <div className="flex items-center justify-start gap-3 bg-transparent select-none">
                 <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                   <Heart size={15} />
@@ -290,7 +355,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 </button>
                 <button 
                   onClick={(e) => handleSharePost(e, selectedPost.id)} 
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono relative"
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[90px]"
                 >
                   <Share2 size={15} />
                   <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span>
@@ -374,7 +439,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
-          {/* ЗАГОЛОВК */}
+          {/* ЗАГОЛОВОК */}
           <div className="w-full px-1" style={{ marginBottom: '44px' }}>
             <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-700 border-none outline-none py-1 focus:ring-0" />
           </div>
@@ -498,7 +563,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       <div className="prose prose-invert max-w-none text-gray-400 text-sm leading-relaxed break-words line-clamp-1 overflow-hidden" dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
 
-                    {/* Раздел кнопок по макетной сетке */}
+                    {/* Раздел кнопок */}
                     <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                       <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                         <Heart size={15} />
@@ -510,10 +575,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       </button>
                       <button 
                         onClick={(e) => handleSharePost(e, post.id)} 
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[100px]"
                       >
                         <Share2 size={15} />
-                        <span>{copiedPostId === post.id ? 'Ссылка скопирована!' : 'Поделиться'}</span>
+                        <span>{copiedPostId === post.id ? 'Ссылка у вас!' : 'Поделиться'}</span>
                       </button>
                     </div>
                   </div>
