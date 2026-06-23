@@ -179,14 +179,19 @@ export default function Home() {
     } catch (e) {}
   };
 
+  // ИСПРАВЛЕНО: Безотказное применение заголовков H1 и H2
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
         const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-        if ((value.includes('h1') && currentBlock.includes('h1')) || 
-            (value.includes('h2') && currentBlock.includes('h2'))) {
-          document.execCommand(command, false, '<p>');
+        const valLower = value.toLowerCase();
+        
+        if ((valLower === 'h1' && currentBlock.includes('h1')) || 
+            (valLower === 'h2' && currentBlock.includes('h2'))) {
+          // Если уже заголовок - возвращаем в абзац
+          document.execCommand(command, false, 'P');
         } else {
+          // Применяем чистый тег без угловых скобок (браузер сам разберется)
           document.execCommand(command, false, value);
         }
       } else {
@@ -611,8 +616,8 @@ export default function Home() {
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Italic size={14}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Strikethrough size={14}/></button>
           <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', '<h1>')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading1 size={14}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', '<h2>')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading2 size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading1 size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading2 size={14}/></button>
           <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignLeft size={14}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignCenter size={14}/></button>
@@ -950,8 +955,9 @@ export default function Home() {
             )}
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
+            {/* ИСПРАВЛЕНО: Поиск сужается на мобилках при скролле (pr-[105px]), чтобы не залазить под кнопку Профиль */}
             {activeDocument !== 'none' && !isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
+              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[105px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
@@ -1035,7 +1041,6 @@ export default function Home() {
             </div>
             
             <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-[#14171c]/90 backdrop-blur-xl flex items-center justify-center">
-              {/* Анимация/свечение на фоне */}
               <div className="absolute inset-0 z-0 opacity-20 bg-gradient-to-br from-[#c0ff00]/5 to-transparent" />
               
               <div className="text-center p-6 max-w-sm relative z-10 animate-fade-in">
@@ -1182,37 +1187,37 @@ export default function Home() {
         )}
       </main>
 
-      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
-      <nav className={`md:hidden fixed bottom-6 left-6 right-6 bg-[#14171c]/80 backdrop-blur-xl border border-white/10 py-2.5 rounded-[24px] z-50 shadow-2xl transition-all duration-500
+      {/* ИСПРАВЛЕНО: МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Пилюля, увеличенная) */}
+      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
       `}>
         <div className={`flex w-full items-center justify-between px-2`}>
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <HomeIcon size={20} />
+            <HomeIcon size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
           </button>
           
           <button onClick={() => handleTabChange('map')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'map' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
             <div className="relative">
-              <Map size={20} />
+              <Map size={22} />
               <div className="absolute -top-1.5 -right-3.5 bg-[#c0ff00] text-black text-[7px] font-black uppercase px-1 rounded-sm shadow-sm pointer-events-none">Soon</div>
             </div>
             <span className="text-[10px] font-bold mt-1 tracking-wide">Карта</span>
           </button>
           
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <BookOpen size={20} />
+            <BookOpen size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span>
           </button>
           
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Users size={20} />
+            <Users size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
           </button>
           
           {isAdmin && (
             <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-              <ShieldAlert size={20} />
+              <ShieldAlert size={22} />
               <span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span>
             </button>
           )}
