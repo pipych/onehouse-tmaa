@@ -277,6 +277,10 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
+  /* ИСПРАВЛЕНИЕ: ВОТ ЭТИ ДВЕ СТРОЧКИ ВЕРНУЛИСЬ НА МЕСТО */
+  const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
+  const prevMatch = () => setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length);
+
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
     try {
@@ -949,7 +953,7 @@ export default function Home() {
             )}
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
-            {/* ИСПРАВЛЕНО: Отступ на мобилках увеличен до 135px, чтобы вообще не касаться кнопки профиля */}
+            {/* ИСПРАВЛЕНО: Отступ на мобилках увеличен до 135px */}
             {activeDocument !== 'none' && !isEditing && (
               <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[135px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
@@ -1270,7 +1274,7 @@ export default function Home() {
             <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
               <ShieldAlert size={24} />
               <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-                Админ-панель
+                Админ-па-нель
               </div>
             </button>
          )}
