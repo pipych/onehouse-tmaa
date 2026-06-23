@@ -379,23 +379,7 @@ export default function Home() {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
-    try {
-      setLoadingState(true);
-      const file = event.target.files?.[0];
-      if (!file) return;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
-      if (error) return alert(`Ошибка загрузки: ${error.message}`);
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      if (urlData) setUrlCallback(urlData.publicUrl);
-    } catch (e: any) {
-      alert(`Сбой при загрузке: ${e.message}`);
-    } finally {
-      setLoadingState(false);
-    }
-  };
+<div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
 
   const saveProfileData = async () => {
     if (!selectedPlayer || !newRpName.trim()) return;
