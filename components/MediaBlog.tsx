@@ -17,7 +17,6 @@ interface Player {
   rp_name: string;
   avatar_url: string;
   roles: string[];
-  party?: string;
 }
 
 interface Post {
@@ -31,206 +30,105 @@ interface Post {
   author?: Player;
 }
 
-interface MediaBlogProps {
-  currentUser: Player | null;
-  onProfileClick: (player: Player) => void;
-  isCreatingPost: boolean;
-  setIsCreatingPost: (val: boolean) => void;
-}
-
-export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
+export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: any) {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null); 
-  const [isImageZoomOpen, setIsImageZoomOpen] = useState(false); 
-  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
-  
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
 
+  // Состояния создания поста
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostCoverUrl, setNewPostCoverUrl] = useState('');
   const [newPostYoutubeUrl, setNewPostYoutubeUrl] = useState('');
   const [isUploadingPostCover, setIsUploadingPostCover] = useState(false);
 
-  const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
+  const loadPosts = async () => {
+    const { data } = await supabase.from('posts').select('*, author:users(*)').order('created_at', { ascending: false });
+    if (data) setPosts(data);
+  };
 
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [formats, setFormats] = useState({
-    bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
-  });
+  useEffect(() => { loadPosts(); }, []);
 
   const getYoutubeEmbedUrl = (url: string) => {
-    if (!url) return null;
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   };
 
-  const loadPosts = async () => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*, author:users(*)')
-      .order('created_at', { ascending: false });
-    
-    if (data && !error) {
-      setPosts(data);
-      return data;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: (u: string) => void, setLoading: (l: boolean) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    const { data } = await supabase.storage.from('avatars').upload(`${Date.now()}_${file.name}`, file);
+    if (data) {
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(data.path);
+      setUrl(urlData.publicUrl);
     }
-    return [];
-  };
-
-  useEffect(() => {
-    const initBlog = async () => {
-      const fetchedPosts = await loadPosts();
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const postIdFromUrl = params.get('post');
-        if (postIdFromUrl) {
-          const targetPost = fetchedPosts.find(p => p.id === postIdFromUrl);
-          if (targetPost) setSelectedPost(targetPost);
-        }
-      }
-    };
-    initBlog();
-  }, []);
-
-  const handleOpenPost = (post: Post) => {
-    setSelectedPost(post);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.set('post', post.id);
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  };
-
-  const handleClosePost = () => {
-    setSelectedPost(null);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.delete('post');
-      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  };
-
-  const handleSharePost = (e: React.MouseEvent, postId: string) => {
-    e.stopPropagation(); 
-    if (typeof window !== 'undefined') {
-      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedPostId(postId);
-      setTimeout(() => setCopiedPostId(null), 2000);
-    }
-  };
-
-  const canManagePost = (post: Post) => {
-    if (!currentUser) return false;
-    const isAdmin = currentUser.roles?.includes('admin');
-    return post.author_id === currentUser.id || isAdmin;
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (!error) {
-      setActiveMenuPostId(null);
-      handleClosePost();
-      loadPosts();
-    }
+    setLoading(false);
   };
 
   const publishPost = async () => {
-    const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) return alert('Заголовок и текст не могут быть пустыми!');
-    
-    const postData = { author_id: currentUser.id, title: newPostTitle, content: postContent, cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null };
-
-    if (editingPostId) {
-      await supabase.from('posts').update(postData).eq('id', editingPostId);
-    } else {
-      await supabase.from('posts').insert([postData]);
-    }
+    const postData = { author_id: currentUser.id, title: newPostTitle, content: editorRef.current?.innerHTML, cover_url: newPostCoverUrl, youtube_url: newPostYoutubeUrl };
+    if (editingPostId) await supabase.from('posts').update(postData).eq('id', editingPostId);
+    else await supabase.from('posts').insert([postData]);
     setIsCreatingPost(false);
-    setEditingPostId(null);
     loadPosts();
   };
 
-  // --- Рендер ---
+  // --- ЭКРАН ПРОСМОТРА ОДНОГО ПОСТА ---
   if (selectedPost) {
     return (
-      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
-        {/* Кнопка Назад с жестким внешним отступом mb-6 */}
-        <div className="mb-6 select-none">
-          <button onClick={handleClosePost} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm">
+      <div className="w-full max-w-3xl mx-auto px-4 pb-20">
+        <div className="mb-8"> {/* Добавлен отступ */}
+          <button onClick={() => setSelectedPost(null)} className="w-12 h-12 flex items-center justify-center bg-white/5 rounded-full text-white hover:bg-white/10 transition-all">
             <ArrowLeft size={20} />
           </button>
         </div>
-
-        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
-          <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if(selectedPost.author) onProfileClick(selectedPost.author); }}>
-                <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
-                <div className="text-xs text-gray-500 font-medium mt-0.5">{new Date(selectedPost.created_at).toLocaleDateString('ru-RU')}</div>
-              </div>
-            </div>
-            {canManagePost(selectedPost) && (
-              <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === selectedPost.id ? null : selectedPost.id); }} className="p-2 text-gray-400 hover:text-white transition-colors"><MoreVertical size={20} /></button>
-            )}
-          </div>
-
-          {/* Media 16:9 контейнеры */}
-          {selectedPost.youtube_url && (
-            <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
-              </div>
-            </div>
-          )}
-          {selectedPost.cover_url && !selectedPost.youtube_url && (
-            <div className="px-5 md:px-6 w-full mb-4">
-              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
-                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" />
-              </div>
-            </div>
-          )}
-
-          <div className="p-6 md:p-8 pt-2">
-            <h1 className="text-2xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedPost.title}</h1>
-            <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
-          </div>
-
-          {/* Кнопки лайков налево + Отступ */}
-          <div className="px-6 pb-6 pt-2 flex items-center justify-start gap-3 select-none">
-            <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all text-xs font-bold font-mono">
-              <Heart size={15} /> <span>0</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all text-xs font-bold font-mono">
-              <Share2 size={15} /> <span>Поделиться</span>
-            </button>
-          </div>
-        </div>
-
-        {/* БЛОК КОММЕНТАРИЕВ (c mt-14) */}
-        <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 shadow-xl" style={{ marginTop: '56px' }}>
-          <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2">
-            <MessageCircle size={20} className="text-[#c0ff00]" /> Комментарии
-          </h3>
-          <div className="flex gap-3 items-center">
-            <input type="text" placeholder="Напишите свое мнение..." className="w-full bg-black/30 border border-white/10 rounded-full p-4 text-sm text-white focus:border-[#c0ff00]/40 outline-none" />
-            <button className="w-12 h-12 rounded-full bg-[#c0ff00] text-black flex items-center justify-center shrink-0"><Send size={18} /></button>
+        
+        <div className="bg-[#14171c] border border-white/5 rounded-[32px] overflow-hidden">
+          {selectedPost.cover_url && <img src={selectedPost.cover_url} className="w-full aspect-video object-cover" />}
+          <div className="p-6">
+            <h1 className="text-3xl font-black text-white mb-4">{selectedPost.title}</h1>
+            <div className="prose prose-invert" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
           </div>
         </div>
       </div>
     );
   }
 
-  // Рендер Ленты и Создания поста остался без изменений
+  // --- ЭКРАН СОЗДАНИЯ ПОСТА ---
+  if (isCreatingPost) {
+    return (
+      <div className="w-full max-w-3xl mx-auto px-4 pb-20">
+        <div className="flex justify-between items-center mb-8">
+          <button onClick={() => setIsCreatingPost(false)} className="text-gray-400">Отмена</button>
+          <button onClick={publishPost} className="bg-[#c0ff00] text-black px-6 py-2 rounded-full font-bold">Опубликовать</button>
+        </div>
+        <input className="w-full text-4xl bg-transparent font-black text-white mb-6" placeholder="Заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} />
+        <label className="block w-full h-40 border-2 border-dashed border-white/10 rounded-2xl flex items-center justify-center cursor-pointer mb-6">
+          {newPostCoverUrl ? <img src={newPostCoverUrl} className="h-full object-cover" /> : "Загрузить обложку"}
+          <input type="file" className="hidden" onChange={e => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} />
+        </label>
+        <div ref={editorRef} contentEditable className="w-full min-h-[200px] bg-white/5 p-4 rounded-2xl text-white outline-none" />
+      </div>
+    );
+  }
+
+  // --- ГЛАВНАЯ ЛЕНТА ---
   return (
-    // ... остальной код ленты, как и был ранее
-    <></> 
+    <div className="space-y-6 w-full max-w-3xl mx-auto px-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-black text-white">.медиа</h2>
+        <button onClick={() => setIsCreatingPost(true)} className="bg-[#c0ff00] text-black p-3 rounded-full"><Plus /></button>
+      </div>
+      
+      {posts.map(post => (
+        <div key={post.id} onClick={() => setSelectedPost(post)} className="bg-[#14171c] p-6 rounded-[32px] cursor-pointer hover:bg-[#1a1e24] transition-colors border border-white/5">
+          <h3 className="text-xl font-bold text-white mb-2">{post.title}</h3>
+          <p className="text-gray-400 text-sm line-clamp-2" dangerouslySetInnerHTML={{ __html: post.content }} />
+        </div>
+      ))}
+    </div>
   );
 }
