@@ -1,4 +1,3 @@
-// components/MediaBlog.tsx
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -140,7 +139,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     const postContent = editorRef.current?.innerHTML || '';
 
     if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
-      alert('Заголовок и текст не могут быть пустыми!');
+      alert('Заголовок и text не могут быть пустыми!');
       return;
     }
 
@@ -170,13 +169,13 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   // --------------------------------------------------------
   if (isCreatingPost) {
     return (
-      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 pt-6 md:pt-12 px-4 md:px-0 relative flex flex-col">
+      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 pt-4 md:pt-10 px-4 md:px-0 flex flex-col space-y-10 md:space-y-14">
         
-        {/* 1. БЛОК ШАПКИ (Исправлены отступы и размеры кнопок) */}
-        <div className="flex items-center justify-between mb-12 px-2 w-full select-none">
+        {/* 1. БЛОК ШАПКИ (Исправлены стили кнопки публикации) */}
+        <div className="flex items-center justify-between px-1 w-full select-none">
           <button 
             onClick={() => setIsCreatingPost(false)} 
-            className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider"
           >
             <ArrowLeft size={16} />
             <span>Назад</span>
@@ -185,20 +184,20 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button 
             onClick={publishPost} 
             disabled={isUploadingPostCover || !newPostTitle.trim()}
-            className="px-6 py-3 bg-[#c0ff00] text-black font-medium text-sm rounded-full shadow-[0_0_25px_rgba(192,255,0,0.2)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale shrink-0 whitespace-nowrap"
+            className="px-5 py-2.5 bg-[#c0ff00] text-black font-medium text-sm rounded-full shadow-[0_0_25px_rgba(192,255,0,0.2)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shrink-0 whitespace-nowrap"
           >
             <Save size={16} />
             <span>Опубликовать</span>
           </button>
         </div>
 
-        {/* 2. БЛОК ВЛОЖЕНИЙ (Вертикально увеличенные квадратные виджеты) */}
-        <div className="mb-12 w-full">
+        {/* 2. БЛОК ВЛОЖЕНИЙ (Увеличена высота, идеальные мягкие углы) */}
+        <div className="w-full">
           <div className="text-[11px] font-black text-gray-500 mb-4 px-2 uppercase tracking-widest select-none">Вложения</div>
           
           <div className="grid grid-cols-2 gap-5 md:gap-6 px-1">
             {/* Виджет: ОБЛОЖКА */}
-            <label className={`relative flex flex-col items-center justify-center gap-2 h-40 md:h-52 rounded-[28px] border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostCoverUrl ? 'border-[#c0ff00]/40 shadow-[0_0_30px_rgba(192,255,0,0.15)]' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}>
+            <label className={`relative flex flex-col items-center justify-center gap-2 h-44 md:h-56 rounded-[32px] border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostCoverUrl ? 'border-[#c0ff00]/40 shadow-[0_0_30px_rgba(192,255,0,0.15)]' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}>
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
               
               {newPostCoverUrl && (
@@ -236,7 +235,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             {/* Виджет: YOUTUBE */}
             <div 
               onClick={() => setIsYoutubeModalOpen(true)}
-              className={`relative flex flex-col items-center justify-center gap-2 h-40 md:h-52 rounded-[28px] border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 shadow-[0_0_30px_rgba(192,255,0,0.15)] bg-gradient-to-tr from-[#14171c] to-[#c0ff00]/10' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}
+              className={`relative flex flex-col items-center justify-center gap-2 h-44 md:h-56 rounded-[32px] border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 shadow-[0_0_30px_rgba(192,255,0,0.15)] bg-gradient-to-tr from-[#14171c] to-[#c0ff00]/10' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}
             >
               {newPostYoutubeUrl && (
                 <button onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} className="absolute top-4 right-4 z-30 p-2 bg-black/40 hover:bg-red-500 rounded-full text-white transition-all active:scale-90 backdrop-blur-md">
@@ -263,8 +262,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        {/* 3. БЛОК ЗАГОЛОВКА (Обернут в div, чтобы отступы железно соблюдались) */}
-        <div className="w-full mb-12 px-2">
+        {/* 3. БЛОК ЗАГОЛОВКА */}
+        <div className="w-full px-2">
           <input 
             type="text" 
             placeholder="Яркий заголовок..." 
@@ -276,20 +275,20 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
         {/* Превью YouTube */}
         {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
-          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 aspect-video bg-black/50 mb-12 shadow-xl mx-1">
+          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 aspect-video bg-black/50 shadow-xl mx-1">
             <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen />
           </div>
         )}
 
         {/* Превью картинки */}
         {newPostCoverUrl && !newPostYoutubeUrl && (
-          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 max-h-[450px] bg-black/50 relative mb-12 shadow-xl flex justify-center items-center mx-1">
+          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 max-h-[450px] bg-black/50 relative shadow-xl flex justify-center items-center mx-1">
             <img src={newPostCoverUrl} alt="Cover preview" className="w-full h-auto object-cover" />
           </div>
         )}
 
         {/* 4. БЛОК ПАНЕЛИ ФОРМАТИРОВАНИЯ */}
-        <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2.5 rounded-[22px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-10 mx-1 select-none">
+        <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2.5 rounded-[22px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mx-1 select-none">
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-[14px] transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-[14px] transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2.5 rounded-[14px] transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Strikethrough size={18}/></button>
@@ -310,12 +309,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             onKeyUp={checkFormatting}
             onMouseUp={checkFormatting}
             onInput={checkFormatting}
-            className="w-full min-h-[45vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words pt-4 pb-10 focus:outline-none" 
+            className="w-full min-h-[45vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words pt-4 pb-20 focus:outline-none" 
             data-placeholder="Текст вашей статьи..." 
           />
         </div>
 
-        {/* МОДАЛЬНОЕ ОКНО ДЛЯ YOUTUBE (С высоким z-index, чтобы перекрывать всё абсолютно) */}
+        {/* МОДАЛЬНОЕ ОКНО YOUTUBE (Вынесено в абсолютный конец разметки) */}
         {isYoutubeModalOpen && (
           <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
             <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
