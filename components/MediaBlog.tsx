@@ -170,7 +170,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 pt-4 md:pt-10 px-4 md:px-0 flex flex-col">
         
-        {/* Шапка статьи: Исправлена кнопка назад на чистый круг */}
+        {/* Шапка статьи (Только аккуратный круг со стрелкой) */}
         <div className="mb-8 select-none">
           <button 
             onClick={() => setSelectedPost(null)} 
@@ -181,7 +181,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
 
         {/* Главная карточка поста */}
-        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col">
+        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2">
           {/* Автор */}
           <div className="p-5 md:p-6 flex items-center gap-4 select-none">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={() => { if(selectedPost.author) onProfileClick(selectedPost.author); }}>
@@ -196,23 +196,27 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
-          {/* Жесткий inline-фикс формата 16:9 */}
+          {/* Исправлено: Обложка внутри полного поста с отступами и скруглениями 16:9 */}
           {selectedPost.youtube_url && getYoutubeEmbedUrl(selectedPost.youtube_url) ? (
-            <div className="w-full bg-black/50 border-y border-white/5 overflow-hidden" style={{ width: '100%', aspectRatio: '16/9' }}>
-              <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
+            <div className="px-5 md:px-6 w-full mb-2" style={{ aspectRatio: '16/9' }}>
+              <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
+                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="w-full h-full border-none" allowFullScreen />
+              </div>
             </div>
           ) : selectedPost.cover_url ? (
             <div 
               onClick={() => setIsImageZoomOpen(true)}
-              className="w-full bg-black/50 border-y border-white/5 overflow-hidden flex items-center justify-center cursor-zoom-in"
-              style={{ width: '100%', aspectRatio: '16/9' }}
+              className="px-5 md:px-6 w-full cursor-zoom-in mb-2" 
+              style={{ aspectRatio: '16/9' }}
             >
-              <img src={selectedPost.cover_url} alt="cover" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
+                <img src={selectedPost.cover_url} alt="cover" className="w-full h-full object-cover" />
+              </div>
             </div>
           ) : null}
 
           {/* Контент поста */}
-          <div className="p-6 md:p-8">
+          <div className="p-6 md:p-8 pt-4">
             <h1 className="text-2xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedPost.title}</h1>
             <div 
               className="prose prose-invert max-w-none text-gray-300 text-base leading-relaxed break-words"
@@ -221,7 +225,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        {/* БЛОК КОММЕНТАРИЕВ (Жесткий чистый отступ сверху mt-14) */}
+        {/* БЛОК КОММЕНТАРИЕВ (Исправлено: Добавлен надёжный отступ mt-14 до карточки статьи) */}
         <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
           <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
             <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -247,7 +251,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         {/* ВСПЛЫВАЮЩЕЕ ОКНО КАРТИНКИ */}
         {isImageZoomOpen && selectedPost.cover_url && (
           <div 
-            onClick={() => setIsImageZoomOpen(false)}
+            onClick={() => { setIsImageZoomOpen(false); }}
             className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in"
           >
             <button className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
@@ -469,7 +473,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* Контейнер flex-col gap-8 */}
+        {/* Жёсткий контейнер flex-col gap-8 */}
         <div className="flex flex-col gap-8 pb-8">
           {posts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-6 bg-[#14171c]/50 rounded-[32px] border border-white/5 shadow-inner mt-4 select-none">
@@ -484,7 +488,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               <div 
                 key={post.id} 
                 onClick={() => setSelectedPost(post)} 
-                className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col"
+                className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2"
               >
                 
                 {/* Автор */}
@@ -501,19 +505,23 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
                 </div>
 
-                {/* Жесткий inline-фикс формата 16:9 для обложек в ленте */}
+                {/* Исправлено: Строгий формат 16:9 для ВСЕХ обложек с боковыми отступами и скруглениями */}
                 {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) ? (
-                  <div className="w-full bg-black/50 border-y border-white/5 overflow-hidden" style={{ width: '100%', aspectRatio: '16/9' }}>
-                    <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
+                  <div className="px-5 md:px-6 w-full mb-2" style={{ aspectRatio: '16/9' }}>
+                    <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
+                      <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
+                    </div>
                   </div>
                 ) : post.cover_url ? (
-                  <div className="w-full bg-black/50 border-y border-white/5 overflow-hidden flex items-center justify-center" style={{ width: '100%', aspectRatio: '16/9' }}>
-                    <img src={post.cover_url} alt="cover" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="px-5 md:px-6 w-full mb-2" style={{ aspectRatio: '16/9' }}>
+                    <div className="w-full h-full rounded-2xl overflow-hidden bg-black/50 shadow-md">
+                      <img src={post.cover_url} alt="cover" className="w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
                   </div>
                 ) : null}
 
                 {/* Описание */}
-                <div className="p-5 md:p-6 pt-6 flex-grow">
+                <div className="p-5 md:p-6 pt-4 flex-grow">
                   <h3 className="text-2xl font-black text-white mb-3 leading-tight truncate">{post.title}</h3>
                   <div 
                     className="prose prose-invert max-w-none text-gray-400 text-sm leading-relaxed break-words line-clamp-1 overflow-hidden"
@@ -521,8 +529,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   />
                 </div>
 
-                {/* Подвал карточки: Полный редизайн с безопасными отступами (px-6 py-4.5) */}
-                <div className="px-6 py-4.5 flex items-center gap-3 border-t border-white/5 bg-black/20 select-none" onClick={(e) => e.stopPropagation()}>
+                {/* Подвал карточки: Исправлено (Прозрачный фон, без полоски, идеальное выравнивание во фрейме) */}
+                <div className="px-5 md:px-6 pb-6 pt-2 flex items-center gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                   <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                     <Heart size={15} />
                     <span>0</span>
@@ -539,7 +547,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       </div>
 
-      {/* МОБИЛЬНАЯ КНОПКА (Правый нижний угол) */}
+      {/* МОБИЛЬНАЯ КНОПКА */}
       {currentUser && !isCreatingPost && (
         <button 
           onClick={() => setIsCreatingPost(true)}
