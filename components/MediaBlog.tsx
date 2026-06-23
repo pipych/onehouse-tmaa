@@ -171,7 +171,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col" style={{ paddingTop: '24px' }}>
         
-        {/* 1. ШАПКА РЕДАКТОРА (Кнопка Назад и Опубликовать на одном уровне) */}
+        {/* 1. ШАПКА РЕДАКТОРА (Зеленая пилюля теперь широкая, красивая и не сжимается) */}
         <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
           <button 
             onClick={() => setIsCreatingPost(false)} 
@@ -181,18 +181,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <span>Назад</span>
           </button>
 
-          {/* Исправлено: Просторная, широкая пилюля кнопки Опубликовать */}
           <button 
             onClick={publishPost} 
             disabled={isUploadingPostCover || !newPostTitle.trim()}
-            className="px-7 py-3 bg-[#c0ff00] text-black font-semibold text-sm rounded-full shadow-[0_0_30px_rgba(192,255,0,0.25)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 shrink-0 whitespace-nowrap"
+            className="px-8 py-3 bg-[#c0ff00] text-black font-medium text-sm rounded-full shadow-[0_0_30px_rgba(192,255,0,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 shrink-0 whitespace-nowrap"
           >
             <Save size={16} />
             <span>Опубликовать</span>
           </button>
         </div>
 
-        {/* 2. БЛОК ВЛОЖЕНИЙ (С жестко фиксированной высотой и закруглениями) */}
+        {/* 2. БЛОК ВЛОЖЕНИЙ */}
         <div className="w-full" style={{ marginBottom: '54px' }}>
           <div className="text-[11px] font-black text-gray-500 mb-4 px-1 uppercase tracking-widest select-none">Вложения</div>
           
@@ -243,18 +242,18 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               style={{ height: '160px', borderRadius: '32px' }}
             >
               {newPostYoutubeUrl && (
-                <button onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} className="absolute top-4 right-4 z-30 p-2 bg-black/40 hover:bg-red-500 rounded-full text-white transition-all active:scale-90 backdrop-blur-md">
+                <button onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} className="absolute top-3 right-3 z-30 p-2 bg-black/40 hover:bg-red-500 rounded-full text-white transition-all active:scale-90 backdrop-blur-md">
                   <X size={16}/>
                 </button>
               )}
 
               <div className="relative z-10 flex flex-col items-center pointer-events-none select-none">
                 {newPostYoutubeUrl ? (
-                  <div className="bg-[#c0ff00] text-black w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(192,255,0,0.4)]">
+                  <div className="bg-[#c0ff00] text-black w-11 h-11 rounded-full flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(192,255,0,0.4)]">
                     <Check size={22} strokeWidth={3} />
                   </div>
                 ) : (
-                  <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-2 group-hover:bg-red-500/20 transition-colors">
+                  <div className="w-11 h-11 bg-white/5 rounded-full flex items-center justify-center mb-2 group-hover:bg-red-500/20 transition-colors">
                     <Youtube className="text-gray-400 group-hover:text-red-500 transition-colors" size={22} />
                   </div>
                 )}
@@ -292,7 +291,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
-        {/* 4. БЛОК ПАНЕЛИ ФОРМАТИРОВАНИЯ (Исправлено: Закругление кнопок сделано полностью круглым rounded-full) */}
+        {/* 4. БЛОК ПАНЕЛИ ФОРМАТИРОВАНИЯ (Выделение теперь идеально круглое 'rounded-full') */}
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mx-1 select-none" style={{ marginBottom: '40px' }}>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
@@ -314,12 +313,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             onKeyUp={checkFormatting}
             onMouseUp={checkFormatting}
             onInput={checkFormatting}
-            className="w-full min-h-[40vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" 
+            className="w-full min-h-[40vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words focus:outline-none" 
             data-placeholder="Текст вашей статьи..." 
           />
         </div>
 
-        {/* МОДАЛЬНОЕ ОКНО YOUTUBE */}
+        {/* МОДАЛЬНОЕ ОКНО ДЛЯ YOUTUBE */}
         {isYoutubeModalOpen && (
           <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
             <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
