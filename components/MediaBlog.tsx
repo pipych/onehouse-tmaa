@@ -43,7 +43,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [selectedPost, setSelectedPost] = useState<Post | null>(null); 
   const [isImageZoomOpen, setIsImageZoomOpen] = useState(false); 
   
-  // Управление контекстным меню и редактированием
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
@@ -63,7 +62,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     loadPosts();
   }, []);
 
-  // Сброс полей при закрытии редактора
   useEffect(() => {
     if (!isCreatingPost) {
       setNewPostTitle('');
@@ -74,7 +72,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [isCreatingPost]);
 
-  // Заполнение полей данными при редактировании
   useEffect(() => {
     if (isCreatingPost && editingPostId) {
       const postToEdit = posts.find(p => p.id === editingPostId);
@@ -102,7 +99,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  // Проверка прав (Автор или Админ)
   const canManagePost = (post: Post) => {
     if (!currentUser) return false;
     const isAdmin = currentUser.roles?.includes('admin');
@@ -223,11 +219,11 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col relative">
         
-        {/* Фикс: Липкая (Sticky) шапка статьи. Кнопка не улетает и не наползает на контент */}
-        <div className="sticky top-[80px] md:top-[20px] z-50 w-full flex items-center select-none py-3 mb-4 bg-[#090b0e]/95 backdrop-blur-md rounded-b-2xl">
+        {/* Фикс: Железобетонная липкая шапка. Всегда над страницей, текст уходит под неё */}
+        <div className="sticky top-[135px] md:top-[135px] z-[60] w-full flex items-center select-none py-3 bg-[#090b0e]/95 backdrop-blur-md rounded-b-2xl">
           <button 
             onClick={() => setSelectedPost(null)} 
-            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0"
+            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-md shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
@@ -251,7 +247,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </div>
             </div>
 
-            {/* Контекстное меню внутри открытого поста */}
+            {/* Контекстное меню */}
             {canManagePost(selectedPost) && (
               <div className="relative">
                 <button 
@@ -379,7 +375,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         {/* Превью YouTube */}
         {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
           <div className="w-full rounded-[24px] overflow-hidden bg-black/50 shadow-xl mx-1" style={{ marginBottom: '44px', aspectRatio: '16/9' }}>
-            <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen />
+            <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
           </div>
         )}
 
@@ -452,7 +448,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div className="flex flex-col items-center justify-center py-16 px-6 bg-[#14171c]/50 rounded-[32px] border border-white/5 shadow-inner mt-4 select-none">
               <div className="w-20 h-20 bg-black/40 border border-white/5 rounded-full flex items-center justify-center mb-5 shadow-lg"><Newspaper size={32} className="text-gray-500" /></div>
               <h3 className="text-lg font-black text-white mb-2 tracking-wide">Здесь пока пусто</h3>
-              <p className="text-sm text-gray-400 text-center max-w-[250px]">Станьте первым, кто опубликует новость или статью в блоге сервера!</p>
+              <p className="text-sm text-gray-400 text-center max-w-[250px]">Станьте первым, кто опубликует новость или статью в bloge сервера!</p>
             </div>
           ) : (
             posts.map(post => (
@@ -477,7 +473,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                     </div>
                   </div>
 
-                  {/* Кнопка три точки для ленты (Если есть права) */}
+                  {/* Кнопка три точки для ленты */}
                   {canManagePost(post) && (
                     <div className="relative">
                       <button 
@@ -500,13 +496,13 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 {/* Обложки 16:9 во фрейме с боковыми отступами */}
                 {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) ? (
                   <div className="px-5 md:px-6 w-full mb-2">
-                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
                       <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
                     </div>
                   </div>
                 ) : post.cover_url ? (
                   <div className="px-5 md:px-6 w-full mb-2">
-                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md relative" style={{ paddingBottom: '56.25%' }}>
                       <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
                     </div>
                   </div>
