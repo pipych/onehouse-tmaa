@@ -172,7 +172,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 pt-4 md:pt-10 px-2 md:px-0 relative">
         
         {/* Шапка: Кнопка Назад (слева) и Опубликовать (справа) */}
-        <div className="flex items-center justify-between mb-8 px-1">
+        <div className="flex items-center justify-between mb-14 px-1">
           <button 
             onClick={() => setIsCreatingPost(false)} 
             className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm"
@@ -184,17 +184,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button 
             onClick={publishPost} 
             disabled={isUploadingPostCover || !newPostTitle.trim()}
-            className="px-6 py-2.5 bg-[#c0ff00] text-black font-black text-xs md:text-sm uppercase tracking-wider rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale"
+            className="px-5 py-2.5 md:px-6 md:py-2.5 bg-[#c0ff00] text-black font-medium text-sm rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:grayscale"
           >
-            <Save size={16} className="hidden sm:block" /> Опубликовать
+            <Save size={16} /> Опубликовать
           </button>
         </div>
 
         {/* Раздел Вложений (Большие виджеты сверху) */}
-        <div className="mb-8">
-          <div className="text-[11px] font-black text-gray-500 mb-3 px-2 uppercase tracking-widest">Вложения</div>
+        <div className="mb-14">
+          <div className="text-[11px] font-black text-gray-500 mb-4 px-2 uppercase tracking-widest">Вложения</div>
           
-          <div className="grid grid-cols-2 gap-4 md:gap-5 px-1">
+          <div className="grid grid-cols-2 gap-4 md:gap-6 px-1">
             {/* Виджет 1: ОБЛОЖКА */}
             <label className={`relative flex flex-col items-center justify-center gap-2 h-36 md:h-48 rounded-[28px] border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostCoverUrl ? 'border-[#c0ff00]/40 shadow-[0_0_30px_rgba(192,255,0,0.15)]' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`}>
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
@@ -264,31 +264,31 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        {/* Заголовок (Перенесен под вложения) */}
+        {/* Заголовок */}
         <input 
           type="text" 
           placeholder="Яркий заголовок..." 
           value={newPostTitle} 
           onChange={e => setNewPostTitle(e.target.value)} 
-          className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-700 border-none outline-none mb-8 px-2"
+          className="w-full bg-transparent text-3xl md:text-5xl font-black text-white placeholder-gray-700 border-none outline-none mb-12 px-2"
         />
 
         {/* Превью прикрепленного YouTube */}
         {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
-          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 aspect-video bg-black/50 mb-10 shadow-xl mx-1">
+          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 aspect-video bg-black/50 mb-12 shadow-xl mx-1">
             <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen />
           </div>
         )}
 
         {/* Превью прикрепленной картинки */}
         {newPostCoverUrl && !newPostYoutubeUrl && (
-          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 max-h-[450px] bg-black/50 relative mb-10 shadow-xl flex justify-center items-center mx-1">
+          <div className="w-full rounded-[24px] overflow-hidden border border-white/10 max-h-[450px] bg-black/50 relative mb-12 shadow-xl flex justify-center items-center mx-1">
             <img src={newPostCoverUrl} alt="Cover preview" className="w-full h-auto object-cover" />
           </div>
         )}
 
         {/* Панель форматирования текста (Липкая) */}
-        <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-6 mx-1">
+        <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-8 mx-1">
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-[14px] transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-[14px] transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2.5 rounded-[14px] transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Strikethrough size={18}/></button>
