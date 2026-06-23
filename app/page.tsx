@@ -179,7 +179,6 @@ export default function Home() {
     } catch (e) {}
   };
 
-  // ИСПРАВЛЕНО: Безотказное применение заголовков H1 и H2
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
@@ -188,10 +187,8 @@ export default function Home() {
         
         if ((valLower === 'h1' && currentBlock.includes('h1')) || 
             (valLower === 'h2' && currentBlock.includes('h2'))) {
-          // Если уже заголовок - возвращаем в абзац
           document.execCommand(command, false, 'P');
         } else {
-          // Применяем чистый тег без угловых скобок (браузер сам разберется)
           document.execCommand(command, false, value);
         }
       } else {
@@ -279,9 +276,6 @@ export default function Home() {
       }, 50);
     }
   }, [currentMatchIndex, matches]);
-
-  const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
-  const prevMatch = () => setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length);
 
   const handleServerAction = async (action: 'start' | 'stop') => {
     setServerActionLoading(true);
@@ -955,9 +949,9 @@ export default function Home() {
             )}
 
             {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
-            {/* ИСПРАВЛЕНО: Поиск сужается на мобилках при скролле (pr-[105px]), чтобы не залазить под кнопку Профиль */}
+            {/* ИСПРАВЛЕНО: Отступ на мобилках увеличен до 135px, чтобы вообще не касаться кнопки профиля */}
             {activeDocument !== 'none' && !isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[105px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
+              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[135px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
                   <input
@@ -1187,7 +1181,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* ИСПРАВЛЕНО: МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (Пилюля, увеличенная) */}
+      {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
          ${showToolbar ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
       `}>
@@ -1293,6 +1287,7 @@ export default function Home() {
         <ArrowUp size={20} />
       </button>
 
+      {/* ИСПРАВЛЕНО: Стили H1 (сделан самым большим) и H2 переопределены через !important */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         
@@ -1316,8 +1311,10 @@ export default function Home() {
         .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); background-color: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(192, 255, 0, 0.1); }
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        .prose h1 { font-size: 1.5rem; font-weight: 800; color: #ffffff; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .prose h2 { font-size: 1.25rem; font-weight: 700; color: #c0ff00; margin-top: 0.8rem; margin-bottom: 0.4rem; }
+        
+        .prose h1 { font-size: 2rem !important; font-weight: 900 !important; color: #ffffff !important; margin-top: 1.5rem !important; margin-bottom: 0.75rem !important; line-height: 1.1 !important; }
+        .prose h2 { font-size: 1.5rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+        
         .prose p { margin-bottom: 0.75rem; color: #d1d5db; transition: all 0.3s ease; }
         .prose b, .prose strong { color: #ffffff; font-weight: 700; }
         .prose i, .prose em { color: #e5e7eb; font-style: italic; }
