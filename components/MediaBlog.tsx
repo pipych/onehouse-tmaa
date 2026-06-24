@@ -197,7 +197,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
         }
         setTimeout(() => {
-          if (editorRef.current) editorRef.current.innerHTML = postToEdit.content || '';
+          if (editorRef.current) {
+            editorRef.current.innerHTML = postToEdit.content || '';
+          }
         }, 60);
       }
     }
@@ -322,7 +324,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
-        {/* Карточка поста */}
+        {/* Главная карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -415,7 +417,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         {isImageZoomOpen && selectedPost.cover_url && (
           <div onClick={() => setIsImageZoomOpen(false)} className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in">
             <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white"><X size={24} /></button>
-            <img src={selectedPost.cover_url} className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
+            <img src={selectedPost.cover_url} alt="Full view" className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
           </div>
         )}
       </div>
@@ -434,7 +436,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0"><Send size={20} /></button>
         </div>
 
-        {/* Исправлено: Добавлен colorScheme: 'dark' для принудительного включения темной темы инпута на смартфонах */}
         <div className="w-full" style={{ marginBottom: '44px' }}>
           <label className="text-[11px] font-black text-gray-500 mb-2 px-1 uppercase tracking-widest select-none">Кастомная дата публикации (необязательно)</label>
           <input 
@@ -446,28 +447,59 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           />
         </div>
 
-        <div className="w-full" style={{ marginBottom: '54px' }}>
-          <div className="text-[11px] font-black text-gray-500 mb-4 px-1 uppercase tracking-widest select-none">Вложения</div>
-          <div className="grid grid-cols-2 gap-5 md:gap-6">
-            <label className={`relative flex flex-col items-center justify-center gap-2 border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostCoverUrl ? 'border-[#c0ff00]/40' : 'bg-[#14171c] border-white/5'}`} style={{ height: '160px', borderRadius: '32px' }}>
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
-              {newPostCoverUrl && <button onClick={(e) => { e.preventDefault(); setNewPostCoverUrl(''); }} className="absolute top-4 right-4 z-30 p-2 bg-black/60 hover:bg-red-500 rounded-full text-white backdrop-blur-md"><X size={16}/></button>}
-              {newPostCoverUrl && <><div className="absolute inset-0 z-0 bg-cover bg-center opacity-40 blur-md scale-110" style={{ backgroundImage: `url(${newPostCoverUrl})` }} /><div className="absolute inset-0 z-0 bg-gradient-to-t from-[#c0ff00]/20 to-[#090b0e]/50 opacity-80" /></>}
-              <div className="relative z-10 flex flex-col items-center pointer-events-none select-none">
-                {isUploadingPostCover ? <RefreshCw className="animate-spin text-[#c0ff00] mb-2" size={24} /> : newPostCoverUrl ? <div className="bg-[#c0ff00] text-black w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-md"><Check size={22} strokeWidth={3} /></div> : <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-2"><ImageIcon className="text-gray-400" size={22} /></div>}
-                <span className="text-xs font-bold text-gray-400">Фото</span>
-              </div>
+        {/* ИСПРАВЛЕНО: Теперь вложения в ряд горизонтальными пилюлями, без предпросмотра внутри кнопок */}
+        <div className="w-full" style={{ marginBottom: '44px' }}>
+          <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest select-none">Вложения</div>
+          <div className="flex flex-wrap items-center gap-3">
+            
+            {/* Пилюля Фото */}
+            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}>
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
+              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : newPostCoverUrl ? <Check size={14} className="text-[#c0ff00]" /> : <ImageIcon size={14} />}
+              <span>Фото</span>
+              {newPostCoverUrl && (
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setNewPostCoverUrl(''); }} 
+                  className="ml-1.5 p-0.5 hover:bg-red-500/20 rounded-full text-gray-400 hover:text-red-400 transition-colors z-20"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </label>
 
-            <div onClick={() => setIsYoutubeModalOpen(true)} className={`relative flex flex-col items-center justify-center gap-2 border transition-all cursor-pointer bg-[#14171c] border-white/5 hover:border-white/20 ${newPostYoutubeUrl ? 'border-[#c0ff00]/40' : ''}`} style={{ height: '160px', borderRadius: '32px' }}>
-              <Youtube className={newPostYoutubeUrl ? 'text-[#c0ff00]' : 'text-gray-400'} size={24} />
-              <span className="text-xs font-bold text-gray-400">YouTube</span>
-            </div>
+            {/* Пилюля YouTube */}
+            <button 
+              onClick={() => setIsYoutubeModalOpen(true)} 
+              className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+            >
+              {newPostYoutubeUrl ? <Check size={14} className="text-[#c0ff00]" /> : <Youtube size={14} />}
+              <span>YouTube</span>
+              {newPostYoutubeUrl && (
+                <span 
+                  onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} 
+                  className="ml-1.5 p-0.5 hover:bg-red-500/20 rounded-full text-gray-400 hover:text-red-400 transition-colors"
+                >
+                  <X size={12} />
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
         <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
         
+        {/* Полноразмерный предпросмотр вложений ниже по коду */}
+        {newPostYoutubeUrl && (
+          <div className="w-full rounded-[24px] overflow-hidden bg-black/50 shadow-xl mx-1" style={{ marginBottom: '44px', aspectRatio: '16/9' }}>
+            <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
+          </div>
+        )}
+        {newPostCoverUrl && !newPostYoutubeUrl && (
+          <div className="w-full rounded-[24px] overflow-hidden bg-black/50 relative shadow-xl flex justify-center items-center mx-1" style={{ marginBottom: '44px', aspectRatio: '16/9' }}>
+            <img src={newPostCoverUrl} alt="Cover preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        )}
+
         {/* Панель редактора */}
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-8 mx-1 select-none">
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
@@ -509,9 +541,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             .медиа
           </h2>
           {currentUser && (
-            <button onClick={() => setIsCreatingPost(true)} className="hidden md:flex w-12 h-12 bg-[#c0ff00] text-black rounded-full items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(192,255,0,0.25)]">
-              <Plus size={26} strokeWidth={2.5} />
-            </button>
+            <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90"><Plus size={26} /></button>
           )}
         </div>
 
@@ -588,17 +618,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
 
                   <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
-                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
+                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                       <Heart size={15} />
                       <span>0</span>
                     </button>
-                    <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono">
+                    <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono">
                       <MessageCircle size={15} />
                       <span>0</span>
                     </button>
                     <button 
                       onClick={(e) => handleSharePost(e, post.id)} 
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[100px]"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[100px]"
                     >
                       <Share2 size={15} />
                       <span>{copiedPostId === post.id ? 'Ссылка у вас!' : 'Поделиться'}</span>
