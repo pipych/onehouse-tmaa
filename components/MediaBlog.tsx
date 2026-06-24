@@ -28,7 +28,6 @@ interface Post {
   cover_url: string;
   youtube_url: string;
   created_at: string;
-  published_at: string | null;
   author?: Player;
 }
 
@@ -90,7 +89,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ФУНКЦИИ И ОБРАБОТЧИКИ (ГЛОБАЛЬНО НАВЕРХУ ДЛЯ TS)
+  // ВСЕ ВСПЛЫВАЮЩИЕ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
   // --------------------------------------------------------
   
   const getYoutubeEmbedUrl = (url: string) => {
@@ -126,75 +125,83 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
   };
 
+  // Безопасная загрузка лайков постов
   const loadLikesForPosts = async (postIds: string[]) => {
-    if (!postIds.length) return;
-    const { data: counts } = await supabase.from('post_likes').select('post_id');
-    let myLikes: string[] = [];
-    if (currentUser) {
-      const { data: userLikes } = await supabase.from('post_likes').select('post_id').eq('user_id', currentUser.id);
-      if (userLikes) myLikes = userLikes.map(l => l.post_id);
-    }
+    try {
+      if (!postIds.length) return;
+      const { data: counts } = await supabase.from('post_likes').select('post_id');
+      let myLikes: string[] = [];
+      if (currentUser) {
+        const { data: userLikes } = await supabase.from('post_likes').select('post_id').eq('user_id', currentUser.id);
+        if (userLikes) myLikes = userLikes.map(l => l.post_id);
+      }
 
-    const likesMap: Record<string, { count: number; liked: boolean }> = {};
-    postIds.forEach(id => {
-      const count = counts?.filter(c => c.post_id === id).length || 0;
-      likesMap[id] = { count, liked: myLikes.includes(id) };
-    });
-    setPostLikes(prev => ({ ...prev, ...likesMap }));
+      const likesMap: Record<string, { count: number; liked: boolean }> = {};
+      postIds.forEach(id => {
+        const count = counts?.filter(c => c.post_id === id).length || 0;
+        likesMap[id] = { count, liked: myLikes.includes(id) };
+      });
+      setPostLikes(prev => ({ ...prev, ...likesMap }));
+    } catch (e) {}
   };
 
   const handlePostLike = async (e: React.MouseEvent, postId: string) => {
     e.stopPropagation();
     if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
 
-    const isLiked = postLikes[postId]?.liked;
-    if (isLiked) {
-      await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
-      setPostLikes(prev => ({
-        ...prev,
-        [postId]: { count: Math.max(0, (prev[postId]?.count || 1) - 1), liked: false }
-      }));
-    } else {
-      await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
-      setPostLikes(prev => ({
-        ...prev,
-        [postId]: { count: (prev[postId]?.count || 0) + 1, liked: true }
-      }));
-    }
+    try {
+      const isLiked = postLikes[postId]?.liked;
+      if (isLiked) {
+        await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+        setPostLikes(prev => ({
+          ...prev,
+          [postId]: { count: Math.max(0, (prev[postId]?.count || 1) - 1), liked: false }
+        }));
+      } else {
+        await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
+        setPostLikes(prev => ({
+          ...prev,
+          [postId]: { count: (prev[postId]?.count || 0) + 1, liked: true }
+        }));
+      }
+    } catch (e) {}
   };
 
+  // Безопасная загрузка комментариев
   const loadCommentsAndTheirLikes = async (postId: string) => {
-    const { data: commentData } = await supabase
-      .from('comments')
-      .select('*, author:users(*)')
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
+    try {
+      const { data: commentData } = await supabase
+        .from('comments')
+        .select('*, author:users(*)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
 
-    if (commentData) {
-      const formattedComments = commentData.map((c: any) => {
-        let parentName = '';
-        if (c.parent_id) {
-          const parentComment = commentData.find((p: any) => p.id === c.parent_id);
-          parentName = parentComment?.author?.rp_name || 'Удалено';
+      if (commentData) {
+        const formattedComments = commentData.map((c: any) => {
+          let parentName = '';
+          if (c.parent_id) {
+            const parentComment = commentData.find((p: any) => p.id === c.parent_id);
+            parentName = parentComment?.author?.rp_name || 'Удалено';
+          }
+          return { ...c, parent_author_name: parentName };
+        });
+        setComments(formattedComments);
+
+        const { data: clCounts } = await supabase.from('comment_likes').select('comment_id');
+        let myCLikes: string[] = [];
+        if (currentUser) {
+          const { data: userCLikes } = await supabase.from('comment_likes').select('comment_id').eq('user_id', currentUser.id);
+          if (userCLikes) myCLikes = userCLikes.map(l => l.comment_id);
         }
-        return { ...c, parent_author_name: parentName };
-      });
-      setComments(formattedComments);
 
-      const { data: clCounts } = await supabase.from('comment_likes').select('comment_id');
-      let myCLikes: string[] = [];
-      if (currentUser) {
-        const { data: userCLikes } = await supabase.from('comment_likes').select('comment_id').eq('user_id', currentUser.id);
-        if (userCLikes) myCLikes = userCLikes.map(l => l.comment_id);
+        const clMap: Record<string, { count: number; liked: boolean }> = {};
+        commentData.forEach((c: any) => {
+          const count = clCounts?.filter(cl => cl.comment_id === c.id).length || 0;
+          clMap[c.id] = { count, liked: myCLikes.includes(c.id) };
+        });
+        setCommentLikes(clMap);
       }
-
-      const clMap: Record<string, { count: number; liked: boolean }> = {};
-      commentData.forEach((c: any) => {
-        const count = clCounts?.filter(cl => cl.comment_id === c.id).length || 0;
-        clMap[c.id] = { count, liked: myCLikes.includes(c.id) };
-      });
-      setCommentLikes(clMap);
-    }
+    } catch (e) {}
   };
 
   const handleSendComment = async (parentId: string | null = null) => {
@@ -202,65 +209,71 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     const text = parentId ? newReplyText : newCommentText;
     if (!text.trim() || !selectedPost) return;
 
-    const { error } = await supabase.from('comments').insert([{
-      post_id: selectedPost.id,
-      author_id: currentUser.id,
-      parent_id: parentId,
-      content: text.trim()
-    }]);
+    try {
+      const { error } = await supabase.from('comments').insert([{
+        post_id: selectedPost.id,
+        author_id: currentUser.id,
+        parent_id: parentId,
+        content: text.trim()
+      }]);
 
-    if (!error) {
-      if (parentId) {
-        setNewReplyText('');
-        setReplyingToId(null);
-      } else {
-        setNewCommentText('');
+      if (!error) {
+        if (parentId) {
+          setNewReplyText('');
+          setReplyingToId(null);
+        } else {
+          setNewCommentText('');
+        }
+        loadCommentsAndTheirLikes(selectedPost.id);
       }
-      loadCommentsAndTheirLikes(selectedPost.id);
-    }
+    } catch (e) {}
   };
 
   const handleCommentLike = async (commentId: string) => {
     if (!currentUser) return alert('Авторизуйтесь, чтобы оценивать комментарии!');
-    const isLiked = commentLikes[commentId]?.liked;
-
-    if (isLiked) {
-      await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id);
-      setCommentLikes(prev => ({
-        ...prev,
-        [commentId]: { count: Math.max(0, (prev[commentId]?.count || 1) - 1), liked: false }
-      }));
-    } else {
-      await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: currentUser.id }]);
-      setCommentLikes(prev => ({
-        ...prev,
-        [commentId]: { count: (prev[commentId]?.count || 0) + 1, liked: true }
-      }));
-    }
+    try {
+      const isLiked = commentLikes[commentId]?.liked;
+      if (isLiked) {
+        await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id);
+        setCommentLikes(prev => ({
+          ...prev,
+          [commentId]: { count: Math.max(0, (prev[commentId]?.count || 1) - 1), liked: false }
+        }));
+      } else {
+        await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: currentUser.id }]);
+        setCommentLikes(prev => ({
+          ...prev,
+          [commentId]: { count: (prev[commentId]?.count || 0) + 1, liked: true }
+        }));
+      }
+    } catch (e) {}
   };
 
+  // Гарантированная загрузка постов с сортировкой по родному created_at
   const fetchPosts = async (page: number, append: boolean = false) => {
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
 
-    const { data, error, count } = await supabase
-      .from('posts')
-      .select('*, author:users(*)', { count: 'exact' })
-      .order('published_at', { ascending: false })
-      .range(from, to);
+    try {
+      const { data, error, count } = await supabase
+        .from('posts')
+        .select('*, author:users(*)', { count: 'exact' })
+        .order('created_at', { ascending: false }) // Железобетонная сортировка без сбоев
+        .range(from, to);
 
-    if (data && !error) {
-      if (append) {
-        setPosts(prev => [...prev, ...data]);
-      } else {
-        setPosts(data);
+      if (data && !error) {
+        if (append) {
+          setPosts(prev => [...prev, ...data]);
+        } else {
+          setPosts(data);
+        }
+        if (count !== null) setTotalCount(count);
+        
+        const ids = data.map(p => p.id);
+        loadLikesForPosts(ids);
+        return data;
       }
-      if (count !== null) setTotalCount(count);
-      
-      const ids = data.map(p => p.id);
-      loadLikesForPosts(ids);
-      return data;
-    }
+    } catch (e) {}
     return [];
   };
 
@@ -323,7 +336,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       return;
     }
 
-    let finalPublishedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
+    // Запись кастомного времени прямо в дефолтное поле созданного поста
+    let finalCreatedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
 
     const postData = {
       author_id: currentUser.id,
@@ -331,7 +345,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       content: postContent,
       cover_url: newPostCoverUrl || null,
       youtube_url: newPostYoutubeUrl || null,
-      published_at: finalPublishedAt
+      created_at: finalCreatedAt
     };
 
     let error;
@@ -353,19 +367,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
-    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
-    
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (!error) {
-      setActiveMenuPostId(null);
-      handleClosePost();
-      fetchPosts(currentPage, false);
-    } else {
-      alert(`Ошибка при удалении: ${error.message}`);
-    }
-  };
-
   const loadMorePosts = () => {
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
@@ -375,42 +376,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const handlePageSelect = (pageIdx: number) => {
     setCurrentPage(pageIdx);
     fetchPosts(pageIdx, false);
-  };
-
-  const handleOpenPost = (post: Post) => {
-    setSelectedPost(post);
-    loadCommentsAndTheirLikes(post.id);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.set('post', post.id);
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  };
-
-  const handleClosePost = () => {
-    setSelectedPost(null);
-    setComments([]);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.delete('post');
-      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  };
-
-  const handleSharePost = (e: React.MouseEvent, postId: string) => {
-    e.stopPropagation(); 
-    if (typeof window !== 'undefined') {
-      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedPostId(postId);
-      
-      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
-        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-      }
-      setTimeout(() => setCopiedPostId(null), 2000);
-    }
   };
 
   const renderCommentBlock = (comment: BlogComment, isReply: boolean = false) => {
@@ -477,20 +442,28 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   };
 
-  // --------------------------------------------------------
-  // ЭФФЕКТЫ СИНХРОНИЗАЦИИ
-  // --------------------------------------------------------
   useEffect(() => {
-    if (!isCreatingPost) {
-      setNewPostTitle('');
-      setNewPostCoverUrl('');
-      setNewPostYoutubeUrl('');
-      setEditingPostId(null);
-      setNewPostPublishedAtInput('');
-      if (editorRef.current) editorRef.current.innerHTML = '';
-    }
-  }, [isCreatingPost]);
+    const initBlog = async () => {
+      const fetched = await fetchPosts(1, false);
 
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const postIdFromUrl = params.get('post');
+        if (postIdFromUrl) {
+          const targetPost = fetched.find(p => p.id === postIdFromUrl);
+          if (targetPost) {
+            handleOpenPost(targetPost);
+          } else {
+            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
+            if (data) handleOpenPost(data);
+          }
+        }
+      }
+    };
+    initBlog();
+  }, []);
+
+  // Синхронизация полей редактора
   useEffect(() => {
     if (isCreatingPost && editingPostId) {
       const postToEdit = posts.find(p => p.id === editingPostId);
@@ -498,8 +471,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         setNewPostTitle(postToEdit.title);
         setNewPostCoverUrl(postToEdit.cover_url || '');
         setNewPostYoutubeUrl(postToEdit.youtube_url || '');
-        if (postToEdit.published_at) {
-          const date = new Date(postToEdit.published_at);
+        if (postToEdit.created_at) {
+          const date = new Date(postToEdit.created_at);
           date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
           setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
         }
@@ -511,8 +484,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       }
     }
   }, [isCreatingPost, editingPostId, posts]);
-
-  const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
   // --------------------------------------------------------
   // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
@@ -527,13 +498,13 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
           <button 
             onClick={handleClosePost} 
-            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg shrink-0"
+            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white transition-all active:scale-90 shadow-lg shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
         </div>
 
-        {/* Главная карточка поста */}
+        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -545,12 +516,11 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
                 <div className="text-xs text-gray-500 font-medium mt-0.5">
                   <Clock size={12} className="inline mr-1" />
-                  {selectedPost.published_at ? new Date(selectedPost.published_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                  {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
                 </div>
               </div>
             </div>
 
-            {/* ИСПРАВЛЕНО: Теперь TS гарантированно находит canManagePost в области видимости */}
             {canManagePost(selectedPost) && (
               <div className="relative">
                 <button 
@@ -560,7 +530,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <MoreVertical size={20} />
                 </button>
                 {activeMenuPostId === selectedPost.id && (
-                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl animate-fade-in flex flex-col gap-0.5">
+                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
                     <button onClick={() => { setEditingPostId(selectedPost.id); setIsCreatingPost(true); setActiveMenuPostId(null); setSelectedPost(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
                     <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
                   </div>
@@ -598,7 +568,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </button>
               <button 
                 onClick={(e) => handleSharePost(e, selectedPost.id)} 
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[90px]"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono min-w-[90px]"
               >
                 <Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span>
               </button>
@@ -650,7 +620,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       </div>
                     )}
 
-                    {/* ИСПРАВЛЕНО: reply корректно маппится без ссылок на r */}
                     {hasReplies && isThreadOpen && (
                       <div className="pl-8 animate-fade-in">
                         {replies.map(reply => renderCommentBlock(reply, true))}
@@ -681,18 +650,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         <div className="w-full" style={{ marginBottom: '54px' }}>
           <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest select-none">Параметры публикации</div>
           <div className="flex flex-wrap items-center gap-3">
-            <div onClick={handleDatePillClick} className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
+            <div onClick={handleDatePillClick} className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400'}`}>
               <Clock size={14} /> <span>{formatPillDate(newPostPublishedAtInput)}</span>
               <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute pointer-events-none opacity-0 w-0 h-0" />
             </div>
             
-            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
-              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />}
-              <span>Фото</span>
+            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} />
+              <ImageIcon size={14} /> <span>Фото</span>
             </label>
 
-            <button onClick={() => setIsYoutubeModalOpen(true)} className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
+            <button onClick={() => setIsYoutubeModalOpen(true)} className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400'}`}>
               <Youtube size={14} /> <span>YouTube</span>
             </button>
           </div>
@@ -712,15 +680,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         )}
 
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-8 mx-1 select-none">
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2.5 rounded-full transition-all ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><Strikethrough size={18}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={18}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={18}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2.5 rounded-full transition-all ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={18}/></button>
           <div className="w-[2px] h-6 bg-white/10 mx-2 flex-shrink-0" />
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2.5 rounded-full transition-all ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><Heading1 size={18}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2.5 rounded-full transition-all ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><Heading2 size={18}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2.5 rounded-full transition-all ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading1 size={18}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2.5 rounded-full transition-all ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading2 size={18}/></button>
         </div>
 
-        <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+        <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
       </div>
     );
   }
@@ -733,12 +701,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
         <div className="flex items-center justify-between w-full select-none">
           <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
-            <Newspaper size={24} className="text-[#c0ff00]" />
-            .медиа
+            <Newspaper size={24} className="text-[#c0ff00]" /> .медиа
           </h2>
-          {currentUser && (
-            <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90"><Plus size={26} /></button>
-          )}
+          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
         </div>
 
         <div className="flex flex-col gap-8 pb-8">
@@ -759,14 +724,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               >
                 <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); if(post.author) onProfileClick(post.author); }}>
-                      <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} alt="author" className="w-full h-full object-cover" />
-                    </div>
+                    <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-12 h-12 rounded-full object-cover" />
                     <div className="flex-1 min-w-0">
                       <div className="text-base font-bold text-white tracking-wide truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
                         <Clock size={12} /> 
-                        {post.published_at ? new Date(post.published_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                        {post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
                       </div>
                     </div>
                   </div>
@@ -775,14 +738,14 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                     <div className="relative">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }}
-                        className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"
+                        className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white"
                       >
                         <MoreVertical size={20} />
                       </button>
                       {activeMenuPostId === post.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl animate-fade-in flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => { setEditingPostId(post.id); setIsCreatingPost(true); setActiveMenuPostId(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
-                          <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
+                          <button onClick={() => { setEditingPostId(post.id); setIsCreatingPost(true); setActiveMenuPostId(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                          <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400">Удалить</button>
                         </div>
                       )}
                     </div>
@@ -834,7 +797,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* СИСТЕМА 1: КНОПКА «ПОКАЗАТЬ ЕЩЕ» */}
+        {/* СИСТЕМА ПАГИНАЦИИ 1: ПОКАЗАТЬ ЕЩЕ */}
         {totalCount > posts.length && (
           <div className="flex justify-center mt-4 mb-6 select-none">
             <button onClick={loadMorePosts} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 hover:border-[#c0ff00]/30 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all active:scale-95 shadow-xl">
@@ -844,7 +807,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
-        {/* СИСТЕМА 2: СТАНДАРТНЫЕ НОМЕРА СТРАНИЦ */}
+        {/* СИСТЕМА ПАГИНАЦИИ 2: НОМЕРА СТРАНИЦ */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 select-none" style={{ marginTop: '24px' }}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
@@ -872,9 +835,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       {isYoutubeModalOpen && (
         <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
           <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={20}/></button>
+            <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20}/></button>
             <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
-            <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-600" />
+            <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none" />
             <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
           </div>
         </div>
