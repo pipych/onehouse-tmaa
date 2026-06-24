@@ -59,19 +59,14 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
+  // 1. Парсер ссылок YouTube
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null;
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   };
 
-  const stripHtml = (html: string) => {
-    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
-  };
-
+  // 2. Функция загрузки постов
   const loadPosts = async () => {
     const { data, error } = await supabase
       .from('posts')
@@ -85,6 +80,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return [];
   };
 
+  // 3. Загрузка файла обложки
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
     try {
       setLoadingState(true);
@@ -103,18 +99,23 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
+  // Инициализация роутинга постов
   useEffect(() => {
     const initBlog = async () => {
       const fetchedPosts = await loadPosts();
+
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const postIdFromUrl = params.get('post');
         if (postIdFromUrl) {
           const targetPost = fetchedPosts.find(p => p.id === postIdFromUrl);
-          if (targetPost) setSelectedPost(targetPost);
+          if (targetPost) {
+            setSelectedPost(targetPost);
+          }
         }
       }
     };
+
     initBlog();
   }, []);
 
@@ -144,22 +145,57 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
       navigator.clipboard.writeText(shareUrl);
       setCopiedPostId(postId);
+      
+      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+
       setTimeout(() => setCopiedPostId(null), 2000);
     }
   };
 
+  useEffect(() => {
+    if (!isCreatingPost) {
+      setNewPostTitle('');
+      setNewPostCoverUrl('');
+      setNewPostYoutubeUrl('');
+      setEditingPostId(null);
+      if (editorRef.current) editorRef.current.innerHTML = '';
+    }
+  }, [isCreatingPost]);
+
+  useEffect(() => {
+    if (isCreatingPost && editingPostId) {
+      const postToEdit = posts.find(p => p.id === editingPostId);
+      if (postToEdit) {
+        setNewPostTitle(postToEdit.title);
+        setNewPostCoverUrl(postToEdit.cover_url || '');
+        setNewPostYoutubeUrl(postToEdit.youtube_url || '');
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.innerHTML = postToEdit.content || '';
+          }
+        }, 60);
+      }
+    }
+  }, [isCreatingPost, editingPostId, posts]);
+
   const canManagePost = (post: Post) => {
     if (!currentUser) return false;
-    return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
+    const isAdmin = currentUser.roles?.includes('admin');
+    return post.author_id === currentUser.id || isAdmin;
   };
 
   const handleDeletePost = async (postId: string) => {
     if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
+    
     const { error } = await supabase.from('posts').delete().eq('id', postId);
     if (!error) {
       setActiveMenuPostId(null);
       handleClosePost();
       loadPosts();
+    } else {
+      alert(`Ошибка при удалении: ${error.message}`);
     }
   };
 
@@ -202,16 +238,44 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
   const publishPost = async () => {
     const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || !postContent.trim() || !currentUser) return alert('Заголовок и текст не могут быть пустыми!');
-    
-    const postData = { author_id: currentUser.id, title: newPostTitle, content: postContent, cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null };
 
-    if (editingPostId) await supabase.from('posts').update(postData).eq('id', editingPostId);
-    else await supabase.from('posts').insert([postData]);
-    
-    setIsCreatingPost(false);
-    setEditingPostId(null);
-    loadPosts();
+    if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
+      alert('Заголовок и текст не могут быть пустыми!');
+      return;
+    }
+
+    const postData = {
+      author_id: currentUser.id,
+      title: newPostTitle,
+      content: postContent,
+      cover_url: newPostCoverUrl || null,
+      youtube_url: newPostYoutubeUrl || null
+    };
+
+    let error;
+    if (editingPostId) {
+      const { error: updateError } = await supabase.from('posts').update(postData).eq('id', editingPostId);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('posts').insert([postData]);
+      error = insertError;
+    }
+
+    if (!error) {
+      setIsCreatingPost(false);
+      setEditingPostId(null);
+      loadPosts(); 
+    } else {
+      alert(`Ошибка сохранения: ${error.message}`);
+    }
+  };
+
+  // Вспомогательная функция очистки HTML для красивого вывода в ленте
+  const stripHtml = (html: string) => {
+    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
   };
 
   // --------------------------------------------------------
@@ -221,7 +285,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
         
-        {/* ИСПРАВЛЕНО: Жёсткие стили, которые гарантированно делают кнопку выше и убирают слипание */}
+        {/* Кнопка Назад */}
         <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
           <button 
             onClick={handleClosePost} 
@@ -375,12 +439,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </div>
             </label>
 
-            <div onClick={() => setIsYoutubeModalOpen(true)} className={`relative flex flex-col items-center justify-center gap-2 border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 shadow-[0_0_30px_rgba(192,255,0,0.15)] bg-gradient-to-tr from-[#14171c] to-[#c0ff00]/10' : 'bg-[#14171c] border-white/5 hover:border-white/20 hover:bg-[#1a1e24]'}`} style={{ height: '160px', borderRadius: '32px' }}>
-              {newPostYoutubeUrl && <button onClick={(e) => { e.stopPropagation(); setNewPostYoutubeUrl(''); }} className="absolute top-4 right-4 z-30 p-2 bg-black/40 hover:bg-red-500 rounded-full text-white transition-all active:scale-90 backdrop-blur-md"><X size={16}/></button>}
-              <div className="relative z-10 flex flex-col items-center pointer-events-none select-none">
-                {newPostYoutubeUrl ? <div className="bg-[#c0ff00] text-black w-11 h-11 rounded-full flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(192,255,0,0.4)]"><Check size={22} strokeWidth={3} /></div> : <div className="w-11 h-11 bg-white/5 rounded-full flex items-center justify-center mb-2 group-hover:bg-red-500/20 transition-colors"><Youtube className="text-gray-400 group-hover:text-red-500 transition-colors" size={22} /></div>}
-                <span className={`text-xs md:text-sm font-bold tracking-wide ${newPostYoutubeUrl ? 'text-[#c0ff00] drop-shadow-md' : 'text-gray-400 group-hover:text-white transition-colors'}`}>YouTube</span>
-              </div>
+            <div onClick={() => setIsYoutubeModalOpen(true)} className={`relative flex flex-col items-center justify-center gap-2 border transition-all cursor-pointer overflow-hidden active:scale-[0.98] group bg-[#14171c] border-white/5 hover:border-white/20 ${newPostYoutubeUrl ? 'border-[#c0ff00]/40' : ''}`} style={{ height: '160px', borderRadius: '32px' }}>
+              <Youtube className={newPostYoutubeUrl ? 'text-[#c0ff00]' : 'text-gray-400'} size={24} />
+              <span className="text-xs font-bold text-gray-400">YouTube</span>
             </div>
           </div>
         </div>
@@ -400,6 +461,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
+        {/* ПАНЕЛЬ ФОРМАТИРОВАНИЯ */}
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-8 mx-1 select-none" style={{ marginBottom: '40px' }}>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 text-gray-400 hover:text-white'}`}><Italic size={18}/></button>
@@ -415,6 +477,18 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         <div className="w-full px-1">
           <div ref={editorRef} contentEditable suppressContentEditableWarning onKeyUp={checkFormatting} onMouseUp={checkFormatting} onInput={checkFormatting} className="w-full min-h-[40vh] bg-transparent text-lg md:text-xl leading-relaxed text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
         </div>
+
+        {/* ИСПРАВЛЕНО: Перенесли модалку внутрь этого экрана, чтобы она рендерилась при клике на виджет */}
+        {isYoutubeModalOpen && (
+          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
+            <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={20}/></button>
+              <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
+              <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-600" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-[0_0_20px_rgba(192,255,0,0.15)] hover:bg-[#a8e600]">Сохранить ссылку</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -541,17 +615,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         >
           <Plus size={28} strokeWidth={2.5} />
         </button>
-      )}
-
-      {isYoutubeModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
-          <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={20}/></button>
-            <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
-            <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-600" />
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-[0_0_20px_rgba(192,255,0,0.15)] hover:bg-[#a8e600]">Сохранить ссылку</button>
-          </div>
-        </div>
       )}
     </>
   );
