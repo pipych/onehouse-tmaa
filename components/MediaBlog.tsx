@@ -61,6 +61,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [totalCount, setTotalCount] = useState(0);
 
   const editorRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null); // Реф для железного открытия календаря
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
@@ -445,22 +446,35 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0"><Send size={20} /></button>
         </div>
 
-        {/* ЖЕЛЕЗОБЕТОННЫЙ РЯД ПИЛЮЛЬ: Все настройки и вложения собраны в одну аккуратную строчку */}
+        {/* РЯД ПИЛЮЛЬ ВЛОЖЕНИЙ И ПАРАМЕТРОВ */}
         <div className="w-full" style={{ marginBottom: '54px' }}>
           <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest select-none">Параметры публикации</div>
           <div className="flex flex-wrap items-center gap-3">
             
-            {/* ИСПРАВЛЕНО: Дата теперь пилюля в одном ряду */}
-            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}>
+            {/* ФИКС: Пилюля Даты теперь со 100% срабатыванием через нативный Ref (.showPicker) */}
+            <div 
+              onClick={() => {
+                try {
+                  (dateInputRef.current as any)?.showPicker();
+                } catch (e) {
+                  dateInputRef.current?.click();
+                }
+              }}
+              className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+            >
               <Clock size={14} />
               <span>{formatPillDate(newPostPublishedAtInput)}</span>
+              
+              {/* Скрытый инпут, управляемый программно */}
               <input 
+                ref={dateInputRef}
                 type="datetime-local" 
                 value={newPostPublishedAtInput} 
                 onChange={e => setNewPostPublishedAtInput(e.target.value)} 
-                style={{ colorScheme: 'dark' }} 
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" 
+                onClick={(e) => e.stopPropagation()} 
+                style={{ colorScheme: 'dark', position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }} 
               />
+              
               {newPostPublishedAtInput && (
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setNewPostPublishedAtInput(''); }} 
@@ -469,9 +483,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <X size={12} />
                 </button>
               )}
-            </label>
+            </div>
             
-            {/* Пилюля Фото без встроенного превью */}
+            {/* Пилюля Фото */}
             <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}>
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
               {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />}
@@ -507,7 +521,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
         <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
         
-        {/* Полноразмерный качественный предпросмотр вложений ниже */}
+        {/* Предпросмотр вложений */}
         {newPostYoutubeUrl && (
           <div className="w-full rounded-[24px] overflow-hidden bg-black/50 shadow-xl mx-1" style={{ marginBottom: '44px', aspectRatio: '16/9' }}>
             <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
@@ -637,17 +651,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
 
                   <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
-                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
+                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-[0.93] text-xs font-bold font-mono">
                       <Heart size={15} />
                       <span>0</span>
                     </button>
-                    <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono">
+                    <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-[0.93] text-xs font-bold font-mono">
                       <MessageCircle size={15} />
                       <span>0</span>
                     </button>
                     <button 
                       onClick={(e) => handleSharePost(e, post.id)} 
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[100px]"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-[0.93] text-xs font-bold font-mono min-w-[100px]"
                     >
                       <Share2 size={15} />
                       <span>{copiedPostId === post.id ? 'Ссылка у вас!' : 'Поделиться'}</span>
