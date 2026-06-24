@@ -78,6 +78,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return tmp.textContent || tmp.innerText || "";
   };
 
+  const formatPillDate = (val: string) => {
+    if (!val) return 'Дата';
+    try {
+      return new Date(val).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return 'Дата';
+    }
+  };
+
   const fetchPosts = async (page: number, append: boolean = false) => {
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
@@ -436,26 +445,36 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0"><Send size={20} /></button>
         </div>
 
-        <div className="w-full" style={{ marginBottom: '44px' }}>
-          <label className="text-[11px] font-black text-gray-500 mb-2 px-1 uppercase tracking-widest select-none">Кастомная дата публикации (необязательно)</label>
-          <input 
-            type="datetime-local" 
-            value={newPostPublishedAtInput} 
-            onChange={e => setNewPostPublishedAtInput(e.target.value)} 
-            style={{ colorScheme: 'dark' }} 
-            className="w-full bg-[#14171c] border border-white/10 rounded-2xl p-4 text-sm text-white outline-none focus:border-[#c0ff00]/40 transition-all shadow-inner focus:ring-0" 
-          />
-        </div>
-
-        {/* ИСПРАВЛЕНО: Теперь вложения в ряд горизонтальными пилюлями, без предпросмотра внутри кнопок */}
-        <div className="w-full" style={{ marginBottom: '44px' }}>
-          <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest select-none">Вложения</div>
+        {/* ЖЕЛЕЗОБЕТОННЫЙ РЯД ПИЛЮЛЬ: Все настройки и вложения собраны в одну аккуратную строчку */}
+        <div className="w-full" style={{ marginBottom: '54px' }}>
+          <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest select-none">Параметры публикации</div>
           <div className="flex flex-wrap items-center gap-3">
             
-            {/* Пилюля Фото */}
+            {/* ИСПРАВЛЕНО: Дата теперь пилюля в одном ряду */}
+            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}>
+              <Clock size={14} />
+              <span>{formatPillDate(newPostPublishedAtInput)}</span>
+              <input 
+                type="datetime-local" 
+                value={newPostPublishedAtInput} 
+                onChange={e => setNewPostPublishedAtInput(e.target.value)} 
+                style={{ colorScheme: 'dark' }} 
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" 
+              />
+              {newPostPublishedAtInput && (
+                <button 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setNewPostPublishedAtInput(''); }} 
+                  className="ml-1.5 p-0.5 hover:bg-red-500/20 rounded-full text-gray-400 hover:text-red-400 transition-colors z-20"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </label>
+            
+            {/* Пилюля Фото без встроенного превью */}
             <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}>
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
-              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : newPostCoverUrl ? <Check size={14} className="text-[#c0ff00]" /> : <ImageIcon size={14} />}
+              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />}
               <span>Фото</span>
               {newPostCoverUrl && (
                 <button 
@@ -472,7 +491,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               onClick={() => setIsYoutubeModalOpen(true)} 
               className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all active:scale-95 text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
             >
-              {newPostYoutubeUrl ? <Check size={14} className="text-[#c0ff00]" /> : <Youtube size={14} />}
+              <Youtube size={14} />
               <span>YouTube</span>
               {newPostYoutubeUrl && (
                 <span 
@@ -488,7 +507,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
         <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
         
-        {/* Полноразмерный предпросмотр вложений ниже по коду */}
+        {/* Полноразмерный качественный предпросмотр вложений ниже */}
         {newPostYoutubeUrl && (
           <div className="w-full rounded-[24px] overflow-hidden bg-black/50 shadow-xl mx-1" style={{ marginBottom: '44px', aspectRatio: '16/9' }}>
             <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} />
@@ -513,15 +532,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2.5 rounded-full transition-all ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400 hover:text-white'}`}><AlignCenter size={18}/></button>
         </div>
 
-        <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+        <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
         
         {isYoutubeModalOpen && (
           <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
             <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
               <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={20}/></button>
               <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
-              <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-600" />
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-[0_0_20px_rgba(192,255,0,0.15)] hover:bg-[#a8e600]">Сохранить ссылку</button>
+              <input type="text" placeholder="Вставьте ссылку..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none focus:border-red-500/50 transition-all placeholder:text-gray-600" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
             </div>
           </div>
         )}
@@ -618,17 +637,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   </div>
 
                   <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
-                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
+                    <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-red-500/10 border border-white/5 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-95 text-xs font-bold font-mono">
                       <Heart size={15} />
                       <span>0</span>
                     </button>
-                    <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono">
+                    <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono">
                       <MessageCircle size={15} />
                       <span>0</span>
                     </button>
                     <button 
                       onClick={(e) => handleSharePost(e, post.id)} 
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[100px]"
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-[#c0ff00]/10 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[100px]"
                     >
                       <Share2 size={15} />
                       <span>{copiedPostId === post.id ? 'Ссылка у вас!' : 'Поделиться'}</span>
