@@ -110,6 +110,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return tmp.textContent || tmp.innerText || "";
   }
 
+  // Специфический ленивый лоадер для картинок
   function formatPillDate(val: string) {
     if (!val) return 'Дата';
     try {
@@ -125,7 +126,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }
 
-  // Ошибка исправлена: убрано лишнее слово перед объявлением функции canManagePost
   function canManagePost(post: Post) {
     if (!currentUser) return false;
     return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
@@ -510,9 +510,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   }
 
-  // --------------------------------------------------------
-  // ХУКИ И ИНИЦИАЛИЗАЦИЯ ПОСЛЕДОВАТЕЛЬНОСТИ
-  // --------------------------------------------------------
+  // Инициализация ленты постов при старте
   useEffect(() => {
     const initBlog = async () => {
       const fetched = await fetchPosts(1, false);
@@ -534,6 +532,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     initBlog();
   }, []);
 
+  // Очистка полей при закрытии редактора
   useEffect(() => {
     if (!isCreatingPost) {
       setNewPostTitle('');
@@ -545,6 +544,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [isCreatingPost]);
 
+  // Заполнение редактора при изменении статьи
   useEffect(() => {
     if (isCreatingPost && editingPostId) {
       const postToEdit = posts.find(p => p.id === editingPostId);
@@ -678,7 +678,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span>
           </h3>
 
-          <div className="flex gap-3 items-center mb-6">
+          {/* ИСПРАВЛЕНО: Добавлен жесткий нижний отступ style={{ marginBottom: '36px' }} для разделения поля ввода и комментариев */}
+          <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
             <input 
               type="text" 
               placeholder="Напишите свое мнение..." 
@@ -799,7 +800,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
             <Newspaper size={24} className="text-[#c0ff00]" /> .медиа
           </h2>
-          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
+          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90"><Plus size={26} /></button>}
         </div>
 
         <div className="flex flex-col gap-8 pb-8">
