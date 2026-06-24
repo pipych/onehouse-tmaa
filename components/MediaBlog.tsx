@@ -59,7 +59,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  // Вспомогательная функция для очистки HTML (для превью одной строкой)
   const stripHtml = (html: string) => {
     if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
     const tmp = document.createElement("DIV");
@@ -276,10 +275,14 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
   return (
     <>
+      {/* --------------------------------------------------------
+      СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
+      -------------------------------------------------------- */}
       {selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
           
-          <div className="mb-6 select-none">
+          {/* ИСПРАВЛЕНО: Увеличен отступ mb-8 md:mb-10, чтобы кнопка не прилипала к карточке поста */}
+          <div className="mb-8 md:mb-10 select-none flex">
             <button 
               onClick={handleClosePost} 
               className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 shadow-sm shrink-0"
@@ -359,6 +362,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
+          {/* КОММЕНТАРИИ */}
           <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
             <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
               <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -379,6 +383,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div className="text-center py-10 text-sm text-gray-500 font-medium select-none">Здесь пока нет обсуждений. Станьте первым!</div>
           </div>
 
+          {/* ПРОСМОТР ФУЛЛ КАРТИНКИ */}
           {isImageZoomOpen && selectedPost.cover_url && (
             <div onClick={() => setIsImageZoomOpen(false)} className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in">
               <button className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"><X size={24} /></button>
@@ -388,6 +393,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
 
+      {/* --------------------------------------------------------
+      ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА (ВСТРОЕННЫЙ)
+      -------------------------------------------------------- */}
       {isCreatingPost && !selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col" style={{ paddingTop: '24px' }}>
           
@@ -464,6 +472,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
 
+      {/* --------------------------------------------------------
+      ГЛАВНАЯ СТРАНИЦА БЛОГА (ЛЕНТА НОВОСТЕЙ)
+      -------------------------------------------------------- */}
       {!isCreatingPost && !selectedPost && (
         <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
           <div className="flex items-center justify-between w-full select-none">
@@ -544,7 +555,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
                     <div>
                       <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
-                      {/* Исправленное превью: чистый текст без тегов и строго одна строка */}
                       <p className="text-gray-400 text-sm leading-relaxed truncate">
                         {stripHtml(post.content)}
                       </p>
