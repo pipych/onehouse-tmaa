@@ -28,7 +28,6 @@ interface Post {
   cover_url: string;
   youtube_url: string;
   created_at: string;
-  published_at: string | null;
   author?: Player;
 }
 
@@ -56,7 +55,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   // 1. Все состояния (States)
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null); 
-  const [isImageZoomOpen, setIsImageZoomOpenOpen] = useState(false); 
+  const [isImageZoomOpen, setIsImageZoomOpen] = useState(false); 
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
@@ -82,7 +81,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [expandedThreads, setExpandedReplyThreads] = useState<Record<string, boolean>>({});
 
-  // 2. Вычисляемые значения (Идеальный Scope для totalPages)
+  // 2. Вычисляемые значения (Общая область видимости)
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
   // 3. Ссылки (Refs)
@@ -94,7 +93,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТРОГО ДО КЛИКОВ)
+  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
   
   const getYoutubeEmbedUrl = (url: string) => {
@@ -286,6 +285,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   };
 
+  // ИСПРАВЛЕНО: Теперь запрос идет строго по дефолтной колонке created_at
   const fetchPosts = async (page: number, append: boolean = false) => {
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
@@ -294,7 +294,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       const { data, error, count } = await supabase
         .from('posts')
         .select('*, author:users(*)', { count: 'exact' })
-        .order('published_at', { ascending: false })
+        .order('created_at', { ascending: false }) // Исправлено на created_at
         .range(from, to);
 
       if (data && !error) {
@@ -374,7 +374,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       return;
     }
 
-    let finalPublishedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
+    let finalCreatedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
 
     const postData = {
       author_id: currentUser.id,
@@ -382,7 +382,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       content: postContent,
       cover_url: newPostCoverUrl || null,
       youtube_url: newPostYoutubeUrl || null,
-      published_at: finalPublishedAt
+      created_at: finalCreatedAt // Изменяем дефолтное created_at
     };
 
     let error;
@@ -493,8 +493,29 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   };
 
   // --------------------------------------------------------
-  // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ
+  // ХУКИ И ЭФФЕКТЫ СИНХРОНИЗАЦИИДанных
   // --------------------------------------------------------
+  useEffect(() => {
+    const initBlog = async () => {
+      const fetched = await fetchPosts(1, false);
+
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const postIdFromUrl = params.get('post');
+        if (postIdFromUrl) {
+          const targetPost = fetched.find(p => p.id === postIdFromUrl);
+          if (targetPost) {
+            handleOpenPost(targetPost);
+          } else {
+            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
+            if (data) handleOpenPost(data);
+          }
+        }
+      }
+    };
+    initBlog();
+  }, []);
+
   useEffect(() => {
     if (!isCreatingPost) {
       setNewPostTitle('');
@@ -513,8 +534,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         setNewPostTitle(postToEdit.title);
         setNewPostCoverUrl(postToEdit.cover_url || '');
         setNewPostYoutubeUrl(postToEdit.youtube_url || '');
-        if (postToEdit.published_at) {
-          const date = new Date(postToEdit.published_at);
+        if (postToEdit.created_at) {
+          const date = new Date(postToEdit.created_at);
           date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
           setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
         }
@@ -528,13 +549,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   }, [isCreatingPost, editingPostId, posts]);
 
   // --------------------------------------------------------
-  // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА
+  // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
   // --------------------------------------------------------
   if (selectedPost) {
     const topLevelComments = comments.filter(c => !c.parent_id);
 
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
+        
+        {/* Кнопка Назад */}
         <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
           <button 
             onClick={handleClosePost} 
@@ -544,7 +567,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
+        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
+          
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={() => onProfileClick(selectedPost.author!)}>
@@ -554,7 +579,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
                 <div className="text-xs text-gray-500 font-medium mt-0.5">
                   <Clock size={12} className="inline mr-1" />
-                  {selectedPost.published_at ? new Date(selectedPost.published_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                  {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
                 </div>
               </div>
             </div>
@@ -580,13 +605,13 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           {selectedPost.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
               <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
+                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
               </div>
             </div>
           )}
           {selectedPost.cover_url && !selectedPost.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div onClick={() => setIsImageZoomOpenOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
+              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
                 <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
               </div>
             </div>
@@ -726,17 +751,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
 
         <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
-        
-        {isYoutubeModalOpen && (
-          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
-            <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20}/></button>
-              <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
-              <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none" />
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -752,7 +766,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <Newspaper size={24} className="text-[#c0ff00]" />
             .медиа
           </h2>
-          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
+          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90"><Plus size={26} /></button>}
         </div>
 
         <div className="flex flex-col gap-8 pb-8">
@@ -778,7 +792,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       <div className="text-base font-bold text-white tracking-wide truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
                         <Clock size={12} /> 
-                        {post.published_at ? new Date(post.published_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                        {post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
                       </div>
                     </div>
                   </div>
@@ -811,7 +825,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 {post.cover_url && !post.youtube_url && (
                   <div className="px-5 md:px-6 w-full mb-2">
                     <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
                     </div>
                   </div>
                 )}
@@ -879,6 +893,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         >
           <Plus size={28} strokeWidth={2.5} />
         </button>
+      )}
+
+      {isYoutubeModalOpen && (
+        <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
+          <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
+            <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20}/></button>
+            <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
+            <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none" />
+            <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
+          </div>
+        </div>
       )}
     </>
   );
