@@ -73,6 +73,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [totalCount, setTotalCount] = useState(0);
 
   const [postLikes, setPostLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
+  const [postCommentCounts, setPostCommentCounts] = useState<Record<string, number>>({}); // Счётчик комментариев для ленты
   const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
   const [comments, setComments] = useState<BlogComment[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
@@ -110,7 +111,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return tmp.textContent || tmp.innerText || "";
   }
 
-  // Специфический ленивый лоадер для картинок
   function formatPillDate(val: string) {
     if (!val) return 'Дата';
     try {
@@ -184,6 +184,24 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
+  // Динамическая загрузка реального количества комментариев для списка постов
+  async function loadCommentCounts(postIds: string[]) {
+    try {
+      if (!postIds.length) return;
+      const { data, error } = await supabase
+        .from('comments')
+        .select('post_id');
+
+      if (data && !error) {
+        const countsMap: Record<string, number> = {};
+        postIds.forEach(id => {
+          countsMap[id] = data.filter(c => c.post_id === id).length;
+        });
+        setPostCommentCounts(prev => ({ ...prev, ...countsMap }));
+      }
+    } catch (e) {}
+  }
+
   async function handlePostLike(e: React.MouseEvent, postId: string) {
     e.stopPropagation();
     if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
@@ -238,6 +256,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           clMap[c.id] = { count, liked: myCLikes.includes(c.id) };
         });
         setCommentLikes(clMap);
+        
+        // Синхронизируем общее количество комментов для ленты
+        setPostCommentCounts(prev => ({ ...prev, [postId]: formattedComments.length }));
       }
     } catch (e) {}
   }
@@ -308,6 +329,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         
         const ids = data.map(p => p.id);
         loadLikesForPosts(ids);
+        loadCommentCounts(ids); // Вызов подгрузки счетчиков комментариев
         return data;
       }
     } catch (e) {}
@@ -678,7 +700,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span>
           </h3>
 
-          {/* ИСПРАВЛЕНО: Добавлен жесткий нижний отступ style={{ marginBottom: '36px' }} для разделения поля ввода и комментариев */}
           <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
             <input 
               type="text" 
@@ -754,7 +775,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             
             <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
-              <ImageIcon size={14} /> <span>Фото</span>
+              <ImageIcon size={14} /> <span>Foto</span>
             </label>
 
             <button onClick={() => setIsYoutubeModalOpen(true)} className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
@@ -893,8 +914,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       <Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> 
                       <span>{postLikes[post.id]?.count || 0}</span>
                     </button>
+                    {/* ИСПРАВЛЕНО: Теперь выводится реальное количество комментариев из стейта postCommentCounts */}
                     <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono">
-                      <MessageCircle size={15} /> <span>0</span>
+                      <MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span>
                     </button>
                     <button 
                       onClick={(e) => handleSharePost(e, post.id)} 
