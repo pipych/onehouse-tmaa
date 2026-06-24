@@ -94,7 +94,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (ЖЕЛЕЗОБЕТОННЫЙ ВЫЗОВ В ЛЮБОЙ ТОЧКЕ СКОУПА)
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (ДЛЯ НАДЕЖНОЙ СБОРКИ TypeScript)
   // --------------------------------------------------------
   
   function getYoutubeEmbedUrl(url: string) {
@@ -125,7 +125,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }
 
-   Zarabotat function canManagePost(post: Post) {
+  // Ошибка исправлена: убрано лишнее слово перед объявлением функции canManagePost
+  function canManagePost(post: Post) {
     if (!currentUser) return false;
     return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
   }
@@ -574,6 +575,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
         
+        {/* Кнопка Назад */}
         <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
           <button 
             onClick={handleClosePost} 
@@ -583,6 +585,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
+        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -661,7 +664,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </button>
               <button 
                 onClick={(e) => handleSharePost(e, selectedPost.id)} 
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono min-w-[90px]"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[90px]"
               >
                 <Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span>
               </button>
