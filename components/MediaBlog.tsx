@@ -53,9 +53,10 @@ interface MediaBlogProps {
 export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
   const POSTS_PER_PAGE = 4;
   
+  // 1. Все состояния (States)
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null); 
-  const [isImageZoomOpen, setIsImageZoomOpen] = useState(false); 
+  const [isImageZoomOpen, setIsImageZoomOpenOpen] = useState(false); 
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
@@ -71,7 +72,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  // Состояния комментариев и лайков
   const [postLikes, setPostLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
   const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
   const [comments, setComments] = useState<BlogComment[]>([]);
@@ -82,6 +82,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [expandedThreads, setExpandedReplyThreads] = useState<Record<string, boolean>>({});
 
+  // 2. Вычисляемые значения (Идеальный Scope для totalPages)
+  const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
+
+  // 3. Ссылки (Refs)
   const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   
@@ -90,7 +94,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ФУНКЦИИ И ОБРАБОТЧИКИ (ТЕПЕРЬ СТРОГО НАВЕРХУ ДО РЕНДЕРА)
+  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТРОГО ДО КЛИКОВ)
   // --------------------------------------------------------
   
   const getYoutubeEmbedUrl = (url: string) => {
@@ -126,7 +130,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
   };
 
-  // Проверка активных стилей текста в редакторе
   const checkFormatting = () => {
     if (typeof document === 'undefined') return;
     try {
@@ -143,7 +146,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   };
 
-  // Выполнение команд стилизации текста
   const execEditorCommand = (command: string, value: string = '') => {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
@@ -426,7 +428,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     fetchPosts(pageIdx, false);
   };
 
-  // Рендер одиночного комментария
   const renderCommentBlock = (comment: BlogComment, isReply: boolean = false) => {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -491,29 +492,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   };
 
-  // Инициализация ленты постов при старте
-  useEffect(() => {
-    const initBlog = async () => {
-      const fetched = await fetchPosts(1, false);
-
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const postIdFromUrl = params.get('post');
-        if (postIdFromUrl) {
-          const targetPost = fetched.find(p => p.id === postIdFromUrl);
-          if (targetPost) {
-            handleOpenPost(targetPost);
-          } else {
-            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
-            if (data) handleOpenPost(data);
-          }
-        }
-      }
-    };
-    initBlog();
-  }, []);
-
-  // Очистка полей при закрытии редактора
+  // --------------------------------------------------------
+  // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ
+  // --------------------------------------------------------
   useEffect(() => {
     if (!isCreatingPost) {
       setNewPostTitle('');
@@ -525,7 +506,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [isCreatingPost]);
 
-  // Заполнение редактора при изменении статьи
   useEffect(() => {
     if (isCreatingPost && editingPostId) {
       const postToEdit = posts.find(p => p.id === editingPostId);
@@ -588,7 +568,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <MoreVertical size={20} />
                 </button>
                 {activeMenuPostId === selectedPost.id && (
-                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl animate-fade-in flex flex-col gap-0.5">
+                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
                     <button onClick={() => { setEditingPostId(selectedPost.id); setIsCreatingPost(true); setActiveMenuPostId(null); setSelectedPost(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
                     <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
                   </div>
@@ -606,7 +586,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
           {selectedPost.cover_url && !selectedPost.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
+              <div onClick={() => setIsImageZoomOpenOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
                 <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
               </div>
             </div>
@@ -736,7 +716,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
-        {/* ПАНЕЛЬ ФОРМАТИРОВАНИЯ (ТЕПЕРЬ ПРАВИЛЬНО ВИДИТ ФУНКЦИИ ВЫШЕ) */}
         <div className="sticky top-[80px] md:top-[20px] z-40 bg-[#1a1e24]/95 backdrop-blur-xl border border-white/10 p-2 rounded-[20px] flex items-center gap-1.5 overflow-x-auto no-scrollbar shadow-2xl mb-8 mx-1 select-none">
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2.5 rounded-full transition-all ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={18}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2.5 rounded-full transition-all ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={18}/></button>
@@ -747,6 +726,17 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
 
         <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+        
+        {isYoutubeModalOpen && (
+          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
+            <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20}/></button>
+              <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
+              <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -759,7 +749,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
         <div className="flex items-center justify-between w-full select-none">
           <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
-            <Newspaper size={24} className="text-[#c0ff00]" /> .медиа
+            <Newspaper size={24} className="text-[#c0ff00]" />
+            .медиа
           </h2>
           {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
         </div>
@@ -820,7 +811,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 {post.cover_url && !post.youtube_url && (
                   <div className="px-5 md:px-6 w-full mb-2">
                     <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
                     </div>
                   </div>
                 )}
@@ -888,17 +879,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         >
           <Plus size={28} strokeWidth={2.5} />
         </button>
-      )}
-
-      {isYoutubeModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
-          <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20}/></button>
-            <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
-            <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none" />
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
-          </div>
-        </div>
       )}
     </>
   );
