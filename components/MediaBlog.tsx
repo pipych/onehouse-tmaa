@@ -258,7 +258,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const publishPost = async () => {
     const postContent = editorRef.current?.innerHTML || '';
     if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
-      alert('Заголовок и text не могут быть пустыми!');
+      alert('Заголовок и текст не могут быть пустыми!');
       return;
     }
 
@@ -322,7 +322,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
-        {/* Главная карточка поста */}
+        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -415,7 +415,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         {isImageZoomOpen && selectedPost.cover_url && (
           <div onClick={() => setIsImageZoomOpen(false)} className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in">
             <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white"><X size={24} /></button>
-            <img src={selectedPost.cover_url} alt="Full view" className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
+            <img src={selectedPost.cover_url} className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
           </div>
         )}
       </div>
@@ -434,13 +434,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0"><Send size={20} /></button>
         </div>
 
+        {/* Исправлено: Добавлен colorScheme: 'dark' для принудительного включения темной темы инпута на смартфонах */}
         <div className="w-full" style={{ marginBottom: '44px' }}>
           <label className="text-[11px] font-black text-gray-500 mb-2 px-1 uppercase tracking-widest select-none">Кастомная дата публикации (необязательно)</label>
           <input 
             type="datetime-local" 
             value={newPostPublishedAtInput} 
             onChange={e => setNewPostPublishedAtInput(e.target.value)} 
-            className="w-full bg-[#14171c]/50 border border-white/5 rounded-2xl p-4 text-sm text-white outline-none focus:border-[#c0ff00]/40 transition-all shadow-inner focus:ring-0" 
+            style={{ colorScheme: 'dark' }} 
+            className="w-full bg-[#14171c] border border-white/10 rounded-2xl p-4 text-sm text-white outline-none focus:border-[#c0ff00]/40 transition-all shadow-inner focus:ring-0" 
           />
         </div>
 
