@@ -59,14 +59,20 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  // 1. Парсер ссылок YouTube
+  // Вспомогательная функция для очистки HTML (для превью одной строкой)
+  const stripHtml = (html: string) => {
+    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null;
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   };
 
-  // 2. Функция загрузки постов
   const loadPosts = async () => {
     const { data, error } = await supabase
       .from('posts')
@@ -80,7 +86,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return [];
   };
 
-  // 3. Исправлено: Подняли handleFileUpload наверх, чтобы инпуты её видели
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
     try {
       setLoadingState(true);
@@ -99,7 +104,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  // Инициализация роутинга постов
   useEffect(() => {
     const initBlog = async () => {
       const fetchedPosts = await loadPosts();
@@ -272,9 +276,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
   return (
     <>
-      {/* --------------------------------------------------------
-      СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
-      -------------------------------------------------------- */}
       {selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
           
@@ -358,7 +359,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </div>
           </div>
 
-          {/* КОММЕНТАРИИ */}
           <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
             <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2 select-none">
               <MessageCircle size={20} className="text-[#c0ff00]" />
@@ -379,7 +379,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div className="text-center py-10 text-sm text-gray-500 font-medium select-none">Здесь пока нет обсуждений. Станьте первым!</div>
           </div>
 
-          {/* ПРОСМОТР ФУЛЛ КАРТИНКИ */}
           {isImageZoomOpen && selectedPost.cover_url && (
             <div onClick={() => setIsImageZoomOpen(false)} className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out animate-fade-in">
               <button className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"><X size={24} /></button>
@@ -389,9 +388,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
 
-      {/* --------------------------------------------------------
-      ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА (ВСТРОЕННЫЙ)
-      -------------------------------------------------------- */}
       {isCreatingPost && !selectedPost && (
         <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col" style={{ paddingTop: '24px' }}>
           
@@ -412,7 +408,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             </button>
           </div>
 
-          {/* БЛОК ВЛОЖЕНИЙ */}
           <div className="w-full" style={{ marginBottom: '54px' }}>
             <div className="text-[11px] font-black text-gray-500 mb-4 px-1 uppercase tracking-widest select-none">Вложения</div>
             <div className="grid grid-cols-2 gap-5 md:gap-6">
@@ -469,9 +464,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
 
-      {/* --------------------------------------------------------
-      ГЛАВНАЯ СТРАНИЦА БЛОГА (ЛЕНТА НОВОСТЕЙ)
-      -------------------------------------------------------- */}
       {!isCreatingPost && !selectedPost && (
         <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
           <div className="flex items-center justify-between w-full select-none">
@@ -552,7 +544,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
                     <div>
                       <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
-                      <div className="prose prose-invert max-w-none text-gray-400 text-sm leading-relaxed break-words line-clamp-1 overflow-hidden" dangerouslySetInnerHTML={{ __html: post.content }} />
+                      {/* Исправленное превью: чистый текст без тегов и строго одна строка */}
+                      <p className="text-gray-400 text-sm leading-relaxed truncate">
+                        {stripHtml(post.content)}
+                      </p>
                     </div>
 
                     <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
@@ -581,7 +576,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
 
-      {/* МОБИЛЬНАЯ КНОПКА СОЗДАНИЯ ПОСТА */}
       {currentUser && !isCreatingPost && !selectedPost && (
         <button 
           onClick={() => setIsCreatingPost(true)}
@@ -591,7 +585,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </button>
       )}
 
-      {/* МОДАЛКА YOUTUBE */}
       {isYoutubeModalOpen && (
         <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
           <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
