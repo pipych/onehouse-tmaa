@@ -53,7 +53,7 @@ interface MediaBlogProps {
 export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
   const POSTS_PER_PAGE = 4;
   
-  // 1. Все состояния (States)
+  // Состояния (States)
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null); 
   const [isImageZoomOpen, setIsImageZoomOpen] = useState(false); 
@@ -82,10 +82,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [expandedThreads, setExpandedReplyThreads] = useState<Record<string, boolean>>({});
 
-  // 2. Вычисляемые значения (Scope для пагинации)
+  // Вычисляемые свойства глобального уровня
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
-  // 3. Ссылки (Refs)
+  // Ссылки (Refs)
   const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   
@@ -94,43 +94,43 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТРОГО НАВЕРХУ)
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (ЖЕЛЕЗОБЕТОННЫЙ ВЫЗОВ В ЛЮБОЙ ТОЧКЕ СКОУПА)
   // --------------------------------------------------------
   
-  const getYoutubeEmbedUrl = (url: string) => {
+  function getYoutubeEmbedUrl(url: string) {
     if (!url) return null;
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
-  };
+  }
 
-  const stripHtml = (html: string) => {
+  function stripHtml(html: string) {
     if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
     const tmp = document.createElement("DIV");
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || "";
-  };
+  }
 
-  const formatPillDate = (val: string) => {
+  function formatPillDate(val: string) {
     if (!val) return 'Дата';
     try {
       return new Date(val).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     } catch (e) {
       return 'Дата';
     }
-  };
+  }
 
-  const handleDatePillClick = () => {
+  function handleDatePillClick() {
     if (dateInputRef.current) {
       try { dateInputRef.current.showPicker(); } catch (e) { dateInputRef.current.click(); }
     }
-  };
+  }
 
-  const canManagePost = (post: Post) => {
+   Zarabotat function canManagePost(post: Post) {
     if (!currentUser) return false;
     return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
-  };
+  }
 
-  const checkFormatting = () => {
+  function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
       const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
@@ -144,9 +144,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         justifyCenter: document.queryCommandState('justifyCenter'),
       });
     } catch (e) {}
-  };
+  }
 
-  const execEditorCommand = (command: string, value: string = '') => {
+  function execEditorCommand(command: string, value: string = '') {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
         const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
@@ -162,9 +162,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       if (editorRef.current) editorRef.current.focus();
       setTimeout(checkFormatting, 50);
     }
-  };
+  }
 
-  const loadLikesForPosts = async (postIds: string[]) => {
+  async function loadLikesForPosts(postIds: string[]) {
     try {
       if (!postIds.length) return;
       const { data: counts } = await supabase.from('post_likes').select('post_id');
@@ -181,9 +181,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       });
       setPostLikes(prev => ({ ...prev, ...likesMap }));
     } catch (e) {}
-  };
+  }
 
-  const handlePostLike = async (e: React.MouseEvent, postId: string) => {
+  async function handlePostLike(e: React.MouseEvent, postId: string) {
     e.stopPropagation();
     if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
 
@@ -203,9 +203,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         }));
       }
     } catch (e) {}
-  };
+  }
 
-  const loadCommentsAndTheirLikes = async (postId: string) => {
+  async function loadCommentsAndTheirLikes(postId: string) {
     try {
       const { data: commentData } = await supabase
         .from('comments')
@@ -239,9 +239,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         setCommentLikes(clMap);
       }
     } catch (e) {}
-  };
+  }
 
-  const handleSendComment = async (parentId: string | null = null) => {
+  async function handleSendComment(parentId: string | null = null) {
     if (!currentUser) return alert('Только авторизованные игроки могут писать комментарии!');
     const text = parentId ? newReplyText : newCommentText;
     if (!text.trim() || !selectedPost) return;
@@ -264,9 +264,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         loadCommentsAndTheirLikes(selectedPost.id);
       }
     } catch (e) {}
-  };
+  }
 
-  const handleCommentLike = async (commentId: string) => {
+  async function handleCommentLike(commentId: string) {
     if (!currentUser) return alert('Авторизуйтесь, чтобы оценивать комментарии!');
     try {
       const isLiked = commentLikes[commentId]?.liked;
@@ -284,16 +284,16 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         }));
       }
     } catch (e) {}
-  };
+  }
 
-  const fetchPosts = async (page: number, append: boolean = false) => {
+  async function fetchPosts(page: number, append: boolean = false) {
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
 
     try {
       const { data, error, count } = await supabase
         .from('posts')
-        .select('*, author:users(*)')
+        .select('*, author:users(*)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -311,9 +311,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       }
     } catch (e) {}
     return [];
-  };
+  }
 
-  const handleOpenPost = (post: Post) => {
+  function handleOpenPost(post: Post) {
     setSelectedPost(post);
     loadCommentsAndTheirLikes(post.id);
     if (typeof window !== 'undefined') {
@@ -322,9 +322,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       window.history.pushState({ path: newUrl }, '', newUrl);
     }
-  };
+  }
 
-  const handleClosePost = () => {
+  function handleClosePost() {
     setSelectedPost(null);
     setComments([]);
     if (typeof window !== 'undefined') {
@@ -333,9 +333,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
       window.history.pushState({ path: newUrl }, '', newUrl);
     }
-  };
+  }
 
-  const handleSharePost = (e: React.MouseEvent, postId: string) => {
+  function handleSharePost(e: React.MouseEvent, postId: string) {
     e.stopPropagation(); 
     if (typeof window !== 'undefined') {
       const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
@@ -347,9 +347,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       }
       setTimeout(() => setCopiedPostId(null), 2000);
     }
-  };
+  }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
       const file = event.target.files?.[0];
@@ -365,9 +365,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } finally {
       setLoadingState(false);
     }
-  };
+  }
 
-  const publishPost = async () => {
+  async function publishPost() {
     const postContent = editorRef.current?.innerHTML || '';
     if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
       alert('Заголовок и текст не могут быть пустыми!');
@@ -402,21 +402,33 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } else {
       alert(`Ошибка сохранения: ${error.message}`);
     }
-  };
+  }
 
-  const loadMorePosts = () => {
+  async function handleDeletePost(postId: string) {
+    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
+    
+    const { error } = await supabase.from('posts').delete().eq('id', postId);
+    if (!error) {
+      setActiveMenuPostId(null);
+      handleClosePost();
+      fetchPosts(currentPage, false);
+    } else {
+      alert(`Ошибка при удалении: ${error.message}`);
+    }
+  }
+
+  function loadMorePosts() {
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
     fetchPosts(nextPage, true);
-  };
+  }
 
-  const handlePageSelect = (pageIdx: number) => {
+  function handlePageSelect(pageIdx: number) {
     setCurrentPage(pageIdx);
     fetchPosts(pageIdx, false);
-  };
+  }
 
-  // ИСПРАВЛЕНО: Полностью инлайновые жесткие стили для аватарок, ломающие любые глобальные баги верстки
-  const renderCommentBlock = (comment: BlogComment, isReply: boolean = false) => {
+  function renderCommentBlock(comment: BlogComment, isReply: boolean = false) {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
     
@@ -424,7 +436,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div key={comment.id} className={`flex gap-3 items-start group/comment ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
         
-        {/* ИСПРАВЛЕНО: Инлайновые стили с фиксированными пикселями гарантируют, что аватарка не раздуется */}
         <img 
           src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} 
           alt="avatar" 
@@ -496,9 +507,11 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       </div>
     );
-  };
+  }
 
-  // Инициализация ленты постов при старте
+  // --------------------------------------------------------
+  // ХУКИ И ИНИЦИАЛИЗАЦИЯ ПОСЛЕДОВАТЕЛЬНОСТИ
+  // --------------------------------------------------------
   useEffect(() => {
     const initBlog = async () => {
       const fetched = await fetchPosts(1, false);
@@ -520,7 +533,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     initBlog();
   }, []);
 
-  // Очистка полей при закрытии редактора
   useEffect(() => {
     if (!isCreatingPost) {
       setNewPostTitle('');
@@ -532,7 +544,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [isCreatingPost]);
 
-  // Заполнение редактора при изменении статьи
   useEffect(() => {
     if (isCreatingPost && editingPostId) {
       const postToEdit = posts.find(p => p.id === editingPostId);
@@ -563,7 +574,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
         
-        {/* Кнопка Назад */}
         <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
           <button 
             onClick={handleClosePost} 
@@ -573,7 +583,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
-        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -652,7 +661,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </button>
               <button 
                 onClick={(e) => handleSharePost(e, selectedPost.id)} 
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[90px]"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono min-w-[90px]"
               >
                 <Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span>
               </button>
