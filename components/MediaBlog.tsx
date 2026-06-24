@@ -94,7 +94,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
   
   const getYoutubeEmbedUrl = (url: string) => {
@@ -293,7 +293,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     try {
       const { data, error, count } = await supabase
         .from('posts')
-        .select('*, author:users(*)', { count: 'exact' })
+        .select('*, author:users(*)')
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -340,7 +340,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     if (typeof window !== 'undefined') {
       const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
       navigator.clipboard.writeText(shareUrl);
-      setCopiedPostId(copiedPostId);
+      setCopiedPostId(postId);
       
       if ((window as any).Telegram?.WebApp?.HapticFeedback) {
         (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -404,19 +404,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  const handleDeletePost = async (postId: string) => {
-    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
-    
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (!error) {
-      setActiveMenuPostId(null);
-      handleClosePost();
-      fetchPosts(currentPage, false);
-    } else {
-      alert(`Ошибка при удалении: ${error.message}`);
-    }
-  };
-
   const loadMorePosts = () => {
     const nextPage = currentPage + 1;
     setCurrentPage(nextPage);
@@ -428,7 +415,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     fetchPosts(pageIdx, false);
   };
 
-  // ИСПРАВЛЕНО: Безопасный рендер блока комментария с защитным div-контейнером для картинок
+  // ИСПРАВЛЕНО: Полностью инлайновые жесткие стили для аватарок, ломающие любые глобальные баги верстки
   const renderCommentBlock = (comment: BlogComment, isReply: boolean = false) => {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -437,12 +424,25 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div key={comment.id} className={`flex gap-3 items-start group/comment ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
         
-        {/* ИСПРАВЛЕНО: Обернули картинку в жесткий контейнер, чтобы её не разносило на весь экран */}
-        <div className="w-9 h-9 rounded-full overflow-hidden bg-black/50 border border-white/5 shrink-0 select-none">
-          <img src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="avatar" />
-        </div>
+        {/* ИСПРАВЛЕНО: Инлайновые стили с фиксированными пикселями гарантируют, что аватарка не раздуется */}
+        <img 
+          src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} 
+          alt="avatar" 
+          style={{
+            width: '36px',
+            height: '36px',
+            minWidth: '36px',
+            minHeight: '36px',
+            maxWidth: '36px',
+            maxHeight: '36px',
+            borderRadius: '50%',
+            objectFit: 'cover',
+            display: 'block',
+            flexShrink: 0
+          }}
+          className="border border-white/5 select-none"
+        />
         
-        {/* ИСПРАВЛЕНО: Добавили min-w-0, чтобы флекс-элемент правильно сжимался в границах экрана */}
         <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
           <div className="flex justify-between items-center mb-1 select-none">
             <span className="text-xs font-black text-white">{comment.author?.rp_name}</span>
@@ -578,13 +578,29 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={() => onProfileClick(selectedPost.author!)}>
-                <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="author" />
-              </div>
+              <img 
+                src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} 
+                alt="author" 
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  minWidth: '48px',
+                  minHeight: '48px',
+                  maxWidth: '48px',
+                  maxHeight: '48px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  flexShrink: 0,
+                  cursor: 'pointer'
+                }}
+                onClick={() => onProfileClick(selectedPost.author!)}
+                className="bg-black/50 border border-white/10"
+              />
               <div className="flex-1 min-w-0">
                 <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
-                <div className="text-xs text-gray-500 font-medium mt-0.5">
-                  <Clock size={12} className="inline mr-1" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
+                  <Clock size={12} /> 
                   {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
                 </div>
               </div>
@@ -618,7 +634,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           {selectedPost.cover_url && !selectedPost.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
               <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
-                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" alt="cover" />
               </div>
             </div>
           )}
@@ -792,10 +808,23 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               >
                 <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
                   <div className="flex items-center gap-4">
-                    {/* ИСПРАВЛЕНО: Безопасный контейнер для аватарки в ленте */}
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 shrink-0 select-none">
-                      <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="author" />
-                    </div>
+                    <img 
+                      src={post.author?.avatar_url || 'https://via.placeholder.com/150'} 
+                      alt="author" 
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        minWidth: '48px',
+                        minHeight: '48px',
+                        maxWidth: '48px',
+                        maxHeight: '48px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        display: 'block',
+                        flexShrink: 0
+                      }}
+                      className="bg-black/50 border border-white/10 select-none"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="text-base font-bold text-white tracking-wide truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
