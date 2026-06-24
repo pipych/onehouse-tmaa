@@ -28,6 +28,7 @@ interface Post {
   cover_url: string;
   youtube_url: string;
   created_at: string;
+  published_at: string | null;
   author?: Player;
 }
 
@@ -89,7 +90,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ВСПЛЫВАЮЩИЕ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+  // ГЛОБАЛЬНЫЕ ФУНКЦИИ И ОБРАБОТЧИКИ (ТЕПЕРЬ СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
   
   const getYoutubeEmbedUrl = (url: string) => {
@@ -125,7 +126,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return post.author_id === currentUser.id || currentUser.roles?.includes('admin');
   };
 
-  // Безопасная загрузка лайков постов
   const loadLikesForPosts = async (postIds: string[]) => {
     try {
       if (!postIds.length) return;
@@ -167,7 +167,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   };
 
-  // Безопасная загрузка комментариев
   const loadCommentsAndTheirLikes = async (postId: string) => {
     try {
       const { data: commentData } = await supabase
@@ -249,7 +248,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   };
 
-  // Гарантированная загрузка постов с сортировкой по родному created_at
   const fetchPosts = async (page: number, append: boolean = false) => {
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
@@ -258,7 +256,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       const { data, error, count } = await supabase
         .from('posts')
         .select('*, author:users(*)', { count: 'exact' })
-        .order('created_at', { ascending: false }) // Железобетонная сортировка без сбоев
+        .order('published_at', { ascending: false })
         .range(from, to);
 
       if (data && !error) {
@@ -276,6 +274,96 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
     return [];
   };
+
+  const handleOpenPost = (post: Post) => {
+    setSelectedPost(post);
+    loadCommentsAndTheirLikes(post.id);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('post', post.id);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    }
+  };
+
+  const handleClosePost = () => {
+    setSelectedPost(null);
+    setComments([]);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('post');
+      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    }
+  };
+
+  const handleSharePost = (e: React.MouseEvent, postId: string) => {
+    e.stopPropagation(); 
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedPostId(postId);
+      
+      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      setTimeout(() => setCopiedPostId(null), 2000);
+    }
+  };
+
+  // Инициализация роутинга и первичная загрузка данных (ТЕПЕРЬ ХОЙСТИНГ ОШИБКИ НЕТ!)
+  useEffect(() => {
+    const initBlog = async () => {
+      const fetched = await fetchPosts(1, false);
+
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const postIdFromUrl = params.get('post');
+        if (postIdFromUrl) {
+          const targetPost = fetched.find(p => p.id === postIdFromUrl);
+          if (targetPost) {
+            handleOpenPost(targetPost);
+          } else {
+            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
+            if (data) handleOpenPost(data);
+          }
+        }
+      }
+    };
+    initBlog();
+  }, []);
+
+  useEffect(() => {
+    if (!isCreatingPost) {
+      setNewPostTitle('');
+      setNewPostCoverUrl('');
+      setNewPostYoutubeUrl('');
+      setEditingPostId(null);
+      setNewPostPublishedAtInput('');
+      if (editorRef.current) editorRef.current.innerHTML = '';
+    }
+  }, [isCreatingPost]);
+
+  useEffect(() => {
+    if (isCreatingPost && editingPostId) {
+      const postToEdit = posts.find(p => p.id === editingPostId);
+      if (postToEdit) {
+        setNewPostTitle(postToEdit.title);
+        setNewPostCoverUrl(postToEdit.cover_url || '');
+        setNewPostYoutubeUrl(postToEdit.youtube_url || '');
+        if (postToEdit.published_at) {
+          const date = new Date(postToEdit.published_at);
+          date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+          setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
+        }
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.innerHTML = postToEdit.content || '';
+          }
+        }, 60);
+      }
+    }
+  }, [isCreatingPost, editingPostId, posts]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
     try {
@@ -295,40 +383,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   };
 
-  const checkFormatting = () => {
-    if (typeof document === 'undefined') return;
-    try {
-      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-      setFormats({
-        bold: document.queryCommandState('bold'),
-        italic: document.queryCommandState('italic'),
-        strikeThrough: document.queryCommandState('strikeThrough'),
-        h1: formatBlock.includes('h1'),
-        h2: formatBlock.includes('h2'),
-        justifyLeft: document.queryCommandState('justifyLeft'),
-        justifyCenter: document.queryCommandState('justifyCenter'),
-      });
-    } catch (e) {}
-  };
-
-  const execEditorCommand = (command: string, value: string = '') => {
-    if (typeof document !== 'undefined') {
-      if (command === 'formatBlock') {
-        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-        const valLower = value.toLowerCase();
-        if ((valLower === 'h1' && currentBlock.includes('h1')) || (valLower === 'h2' && currentBlock.includes('h2'))) {
-          document.execCommand(command, false, 'P');
-        } else {
-          document.execCommand(command, false, value);
-        }
-      } else {
-        document.execCommand(command, false, value);
-      }
-      if (editorRef.current) editorRef.current.focus();
-      setTimeout(checkFormatting, 50);
-    }
-  };
-
   const publishPost = async () => {
     const postContent = editorRef.current?.innerHTML || '';
     if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
@@ -336,8 +390,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       return;
     }
 
-    // Запись кастомного времени прямо в дефолтное поле созданного поста
-    let finalCreatedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
+    let finalPublishedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
 
     const postData = {
       author_id: currentUser.id,
@@ -345,7 +398,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       content: postContent,
       cover_url: newPostCoverUrl || null,
       youtube_url: newPostYoutubeUrl || null,
-      created_at: finalCreatedAt
+      published_at: finalPublishedAt
     };
 
     let error;
@@ -364,6 +417,19 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       fetchPosts(1, false); 
     } else {
       alert(`Ошибка сохранения: ${error.message}`);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
+    
+    const { error } = await supabase.from('posts').delete().eq('id', postId);
+    if (!error) {
+      setActiveMenuPostId(null);
+      handleClosePost();
+      fetchPosts(currentPage, false);
+    } else {
+      alert(`Ошибка при удалении: ${error.message}`);
     }
   };
 
@@ -442,49 +508,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   };
 
-  useEffect(() => {
-    const initBlog = async () => {
-      const fetched = await fetchPosts(1, false);
-
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const postIdFromUrl = params.get('post');
-        if (postIdFromUrl) {
-          const targetPost = fetched.find(p => p.id === postIdFromUrl);
-          if (targetPost) {
-            handleOpenPost(targetPost);
-          } else {
-            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
-            if (data) handleOpenPost(data);
-          }
-        }
-      }
-    };
-    initBlog();
-  }, []);
-
-  // Синхронизация полей редактора
-  useEffect(() => {
-    if (isCreatingPost && editingPostId) {
-      const postToEdit = posts.find(p => p.id === editingPostId);
-      if (postToEdit) {
-        setNewPostTitle(postToEdit.title);
-        setNewPostCoverUrl(postToEdit.cover_url || '');
-        setNewPostYoutubeUrl(postToEdit.youtube_url || '');
-        if (postToEdit.created_at) {
-          const date = new Date(postToEdit.created_at);
-          date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-          setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
-        }
-        setTimeout(() => {
-          if (editorRef.current) {
-            editorRef.current.innerHTML = postToEdit.content || '';
-          }
-        }, 60);
-      }
-    }
-  }, [isCreatingPost, editingPostId, posts]);
-
   // --------------------------------------------------------
   // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
   // --------------------------------------------------------
@@ -504,7 +527,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </button>
         </div>
 
-        {/* Карточка поста */}
+        {/* Главная карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
@@ -516,7 +539,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
                 <div className="text-xs text-gray-500 font-medium mt-0.5">
                   <Clock size={12} className="inline mr-1" />
-                  {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                  {selectedPost.published_at ? new Date(selectedPost.published_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
                 </div>
               </div>
             </div>
@@ -530,7 +553,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <MoreVertical size={20} />
                 </button>
                 {activeMenuPostId === selectedPost.id && (
-                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
+                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl animate-fade-in flex flex-col gap-0.5">
                     <button onClick={() => { setEditingPostId(selectedPost.id); setIsCreatingPost(true); setActiveMenuPostId(null); setSelectedPost(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
                     <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
                   </div>
@@ -568,7 +591,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               </button>
               <button 
                 onClick={(e) => handleSharePost(e, selectedPost.id)} 
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono min-w-[90px]"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] transition-all active:scale-95 text-xs font-bold font-mono min-w-[90px]"
               >
                 <Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span>
               </button>
@@ -650,17 +673,18 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         <div className="w-full" style={{ marginBottom: '54px' }}>
           <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest select-none">Параметры публикации</div>
           <div className="flex flex-wrap items-center gap-3">
-            <div onClick={handleDatePillClick} className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+            <div onClick={handleDatePillClick} className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostPublishedAtInput ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
               <Clock size={14} /> <span>{formatPillDate(newPostPublishedAtInput)}</span>
               <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute pointer-events-none opacity-0 w-0 h-0" />
             </div>
             
-            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400'}`}>
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} />
-              <ImageIcon size={14} /> <span>Фото</span>
+            <label className={`relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostCoverUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
+              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />}
+              <span>Фото</span>
             </label>
 
-            <button onClick={() => setIsYoutubeModalOpen(true)} className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+            <button onClick={() => setIsYoutubeModalOpen(true)} className={`flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer transition-all text-xs font-bold select-none ${newPostYoutubeUrl ? 'border-[#c0ff00]/40 bg-[#c0ff00]/10 text-[#c0ff00]' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'}`}>
               <Youtube size={14} /> <span>YouTube</span>
             </button>
           </div>
