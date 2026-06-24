@@ -28,6 +28,7 @@ interface Post {
   cover_url: string;
   youtube_url: string;
   created_at: string;
+  published_at: string | null;
   author?: Player;
 }
 
@@ -81,7 +82,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [expandedThreads, setExpandedReplyThreads] = useState<Record<string, boolean>>({});
 
-  // 2. Вычисляемые значения (Общая область видимости)
+  // 2. Вычисляемые значения (Scope для пагинации)
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
   // 3. Ссылки (Refs)
@@ -93,7 +94,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (СТРОГО НАВЕРХУ)
+  // ВСЕ ОБРАБОТЧИКИ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
   // --------------------------------------------------------
   
   const getYoutubeEmbedUrl = (url: string) => {
@@ -285,7 +286,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   };
 
-  // ИСПРАВЛЕНО: Теперь запрос идет строго по дефолтной колонке created_at
   const fetchPosts = async (page: number, append: boolean = false) => {
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
@@ -294,7 +294,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       const { data, error, count } = await supabase
         .from('posts')
         .select('*, author:users(*)', { count: 'exact' })
-        .order('created_at', { ascending: false }) // Исправлено на created_at
+        .order('created_at', { ascending: false })
         .range(from, to);
 
       if (data && !error) {
@@ -340,7 +340,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     if (typeof window !== 'undefined') {
       const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
       navigator.clipboard.writeText(shareUrl);
-      setCopiedPostId(postId);
+      setCopiedPostId(copiedPostId);
       
       if ((window as any).Telegram?.WebApp?.HapticFeedback) {
         (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -382,7 +382,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       content: postContent,
       cover_url: newPostCoverUrl || null,
       youtube_url: newPostYoutubeUrl || null,
-      created_at: finalCreatedAt // Изменяем дефолтное created_at
+      created_at: finalCreatedAt
     };
 
     let error;
@@ -428,6 +428,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     fetchPosts(pageIdx, false);
   };
 
+  // ИСПРАВЛЕНО: Безопасный рендер блока комментария с защитным div-контейнером для картинок
   const renderCommentBlock = (comment: BlogComment, isReply: boolean = false) => {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -435,10 +436,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return (
       <div key={comment.id} className={`flex gap-3 items-start group/comment ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
-        <img src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-9 h-9 rounded-full object-cover border border-white/5 shrink-0" />
         
-        <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative">
-          <div className="flex justify-between items-center mb-1">
+        {/* ИСПРАВЛЕНО: Обернули картинку в жесткий контейнер, чтобы её не разносило на весь экран */}
+        <div className="w-9 h-9 rounded-full overflow-hidden bg-black/50 border border-white/5 shrink-0 select-none">
+          <img src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="avatar" />
+        </div>
+        
+        {/* ИСПРАВЛЕНО: Добавили min-w-0, чтобы флекс-элемент правильно сжимался в границах экрана */}
+        <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
+          <div className="flex justify-between items-center mb-1 select-none">
             <span className="text-xs font-black text-white">{comment.author?.rp_name}</span>
             <span className="text-[10px] text-gray-500 font-mono">{new Date(comment.created_at).toLocaleDateString('ru-RU')}</span>
           </div>
@@ -492,9 +498,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   };
 
-  // --------------------------------------------------------
-  // ХУКИ И ЭФФЕКТЫ СИНХРОНИЗАЦИИДанных
-  // --------------------------------------------------------
+  // Инициализация ленты постов при старте
   useEffect(() => {
     const initBlog = async () => {
       const fetched = await fetchPosts(1, false);
@@ -516,6 +520,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     initBlog();
   }, []);
 
+  // Очистка полей при закрытии редактора
   useEffect(() => {
     if (!isCreatingPost) {
       setNewPostTitle('');
@@ -527,6 +532,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [isCreatingPost]);
 
+  // Заполнение редактора при изменении статьи
   useEffect(() => {
     if (isCreatingPost && editingPostId) {
       const postToEdit = posts.find(p => p.id === editingPostId);
@@ -573,7 +579,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 flex-shrink-0 cursor-pointer" onClick={() => onProfileClick(selectedPost.author!)}>
-                <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
+                <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="author" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
@@ -605,7 +611,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           {selectedPost.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
               <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
+                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
               </div>
             </div>
           )}
@@ -763,10 +769,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
         <div className="flex items-center justify-between w-full select-none">
           <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
-            <Newspaper size={24} className="text-[#c0ff00]" />
-            .медиа
+            <Newspaper size={24} className="text-[#c0ff00]" /> .медиа
           </h2>
-          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90"><Plus size={26} /></button>}
+          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
         </div>
 
         <div className="flex flex-col gap-8 pb-8">
@@ -787,7 +792,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               >
                 <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
                   <div className="flex items-center gap-4">
-                    <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-12 h-12 rounded-full object-cover" />
+                    {/* ИСПРАВЛЕНО: Безопасный контейнер для аватарки в ленте */}
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-black/50 border border-white/10 shrink-0 select-none">
+                      <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="author" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-base font-bold text-white tracking-wide truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
