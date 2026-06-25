@@ -98,7 +98,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (СТРОГО НАВЕРХУ)
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ И ОБРАБОТЧИКИ ДАННЫХ
   // --------------------------------------------------------
   
   function convertToWebP(file: File): Promise<Blob> {
@@ -215,7 +215,163 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }, 100);
   }
 
-  // ЗАКРЕПЛЕНО: Функция отрисовки блоков и ветвей комментариев
+  async function loadLikesForPosts(postIds: string[]) {
+    try {
+      if (!postIds.length) return;
+      const { data: counts } = await supabase.from('post_likes').select('post_id').in('post_id', postIds);
+      let myLikes: string[] = [];
+      if (currentUser) {
+        const { data: userLikes } = await supabase.from('post_likes').select('post_id').eq('user_id', currentUser.id).in('post_id', postIds);
+        if (userLikes) myLikes = userLikes.map(l => l.post_id);
+      }
+
+      const likesMap: Record<string, { count: number; liked: boolean }> = {};
+      postIds.forEach(id => {
+        const count = counts?.filter(c => c.post_id === id).length || 0;
+        likesMap[id] = { count, liked: myLikes.includes(id) };
+      });
+      setPostLikes(prev => ({ ...prev, ...likesMap }));
+    } catch (e) {}
+  }
+
+  async function loadCommentCounts(postIds: string[]) {
+    try {
+      if (!postIds.length) return;
+      const { data, error } = await supabase.from('comments').select('post_id').in('post_id', postIds);
+      if (data && !error) {
+        const countsMap: Record<string, number> = {};
+        postIds.forEach(id => {
+          countsMap[id] = data.filter(c => c.post_id === id).length;
+        });
+        setPostCommentCounts(prev => ({ ...prev, ...countsMap }));
+      }
+    } catch (e) {}
+  }
+
+  async function handlePostLike(e: React.MouseEvent, postId: string) {
+    e.stopPropagation();
+    if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
+
+    try {
+      const isLiked = postLikes[postId]?.liked;
+      if (isLiked) {
+        const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+        if (error) return alert(`Ошибка: ${error.message}`);
+        setPostLikes(prev => ({
+          ...prev,
+          [postId]: { count: Math.max(0, (prev[postId]?.count || 1) - 1), liked: false }
+        }));
+      } else {
+        const { error } = await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
+        if (error) return alert(`Ошибка: ${error.message}`);
+        setPostLikes(prev => ({
+          ...prev,
+          [postId]: { count: (prev[postId]?.count || 0) + 1, liked: true }
+        }));
+      }
+    } catch (e) {}
+  }
+
+  // СНАЧАЛА ИНИЦИАЛИЗИРУЕМ ОБРАБОТЧИКИ ОЦЕНОК КОММЕНТАРИЕВ ДЛЯ ТОЧНОГО ХОЙСТИНГА
+  async function handleCommentLike(commentId: string) {
+    if (!currentUser) return alert('Авторизуйтесь, чтобы оценивать комментарии!');
+    try {
+      const isLiked = commentLikes[commentId]?.liked;
+      if (isLiked) {
+        const { error } = await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id);
+        if (error) return alert(`Ошибка: ${error.message}`);
+        setCommentLikes(prev => ({
+          ...prev,
+          [commentId]: { count: Math.max(0, (prev[commentId]?.count || 1) - 1), liked: false }
+        }));
+      } else {
+        const { error } = await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: currentUser.id }]);
+        if (error) return alert(`Ошибка: ${error.message}`);
+        setCommentLikes(prev => ({
+          ...prev,
+          [commentId]: { count: (prev[commentId]?.count || 0) + 1, liked: true }
+        }));
+      }
+    } catch (e) {}
+  }
+
+  async function loadCommentsAndTheirLikes(postId: string) {
+    try {
+      const { data: commentData } = await supabase
+        .from('comments')
+        .select('*, author:users(*)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+
+      if (commentData) {
+        const formattedComments = commentData.map((c: any) => {
+          let parentName = '';
+          if (c.parent_id) {
+            const parentComment = commentData.find((p: any) => p.id === c.parent_id);
+            parentName = parentComment?.author?.rp_name || 'Удалено';
+          }
+          return { ...c, parent_author_name: parentName };
+        });
+        setComments(formattedComments);
+        setPostCommentCounts(prev => ({ ...prev, [postId]: formattedComments.length }));
+
+        // Подгружаем лайки для каждого комментария
+        const { data: clCounts } = await supabase.from('comment_likes').select('comment_id');
+        let myCLikes: string[] = [];
+        if (currentUser) {
+          const { data: userCLikes } = await supabase.from('comment_likes').select('comment_id').eq('user_id', currentUser.id);
+          if (userCLikes) myCLikes = userCLikes.map(l => l.comment_id);
+        }
+
+        const clMap: Record<string, { count: number; liked: boolean }> = {};
+        commentData.forEach((c: any) => {
+          const count = clCounts?.filter(cl => cl.comment_id === c.id).length || 0;
+          clMap[c.id] = { count, liked: myCLikes.includes(c.id) };
+        });
+        setCommentLikes(clMap);
+      }
+
+      const { data: likesData } = await supabase.from('post_likes').select('user_id').eq('post_id', postId);
+      if (likesData) {
+        setPostLikes(prev => ({
+          ...prev,
+          [postId]: { 
+            count: likesData.length, 
+            liked: currentUser ? likesData.some(l => l.user_id === currentUser.id) : false 
+          }
+        }));
+      }
+    } catch (e) {}
+  }
+
+  async function handleSendComment(parentId: string | null = null) {
+    if (!currentUser) return alert('Только авторизованные игроки могут писать комментарии!');
+    const text = parentId ? newReplyText : newCommentText;
+    if (!text.trim() || !selectedPost) return;
+
+    try {
+      const { error } = await supabase.from('comments').insert([{
+        post_id: selectedPost.id,
+        author_id: currentUser.id,
+        parent_id: parentId,
+        content: text.trim()
+      }]);
+
+      if (!error) {
+        if (parentId) {
+          setNewReplyText('');
+          setReplyingToId(null);
+        } else {
+          setNewCommentText('');
+        }
+        loadCommentsAndTheirLikes(selectedPost.id);
+      } else {
+        alert(`Не удалось отправить комментарий: ${error.message}`);
+      }
+    } catch (e) {}
+  }
+
+  // ТЕПЕРЬ ОПРЕДЕЛЯЕМ ОТРИСОВКУ, КОГДА ВСЕ ПРЕДЫДУЩИЕ ФУНКЦИИ ЖЕЛЕЗНО ИНИЦИАЛИЗИРОВАНЫ
   function renderCommentBlock(comment: BlogComment, isReply: boolean = false) {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -297,95 +453,146 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   }
 
-  async function loadLikesForPosts(postIds: string[]) {
-    try {
-      if (!postIds.length) return;
-      const { data: counts } = await supabase.from('post_likes').select('post_id').in('post_id', postIds);
-      let myLikes: string[] = [];
-      if (currentUser) {
-        const { data: userLikes } = await supabase.from('post_likes').select('post_id').eq('user_id', currentUser.id).in('post_id', postIds);
-        if (userLikes) myLikes = userLikes.map(l => l.post_id);
-      }
+  async function fetchPosts(page: number, append: boolean = false) {
+    const from = (page - 1) * POSTS_PER_PAGE;
+    const to = page * POSTS_PER_PAGE - 1;
 
-      const likesMap: Record<string, { count: number; liked: boolean }> = {};
-      postIds.forEach(id => {
-        const count = counts?.filter(c => c.post_id === id).length || 0;
-        likesMap[id] = { count, liked: myLikes.includes(id) };
-      });
-      setPostLikes(prev => ({ ...prev, ...likesMap }));
-    } catch (e) {}
-  }
-
-  async function loadCommentCounts(postIds: string[]) {
     try {
-      if (!postIds.length) return;
-      const { data, error } = await supabase.from('comments').select('post_id').in('post_id', postIds);
+      const { data, error, count } = await supabase
+        .from('posts')
+        .select('*, author:users(*)', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
       if (data && !error) {
-        const countsMap: Record<string, number> = {};
-        postIds.forEach(id => {
-          countsMap[id] = data.filter(c => c.post_id === id).length;
-        });
-        setPostCommentCounts(prev => ({ ...prev, ...countsMap }));
+        if (append) {
+          setPosts(prev => [...prev, ...data]);
+        } else {
+          setPosts(data);
+        }
+        if (count !== null) setTotalCount(count);
+        return data;
       }
     } catch (e) {}
+    return [];
   }
 
-  async function handlePostLike(e: React.MouseEvent, postId: string) {
-    e.stopPropagation();
-    if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
-
-    try {
-      const isLiked = postLikes[postId]?.liked;
-      if (isLiked) {
-        const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
-        if (error) return alert(`Ошибка: ${error.message}`);
-        setPostLikes(prev => ({
-          ...prev,
-          [postId]: { count: Math.max(0, (prev[postId]?.count || 1) - 1), liked: false }
-        }));
-      } else {
-        const { error } = await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
-        if (error) return alert(`Ошибка: ${error.message}`);
-        setPostLikes(prev => ({
-          ...prev,
-          [postId]: { count: (prev[postId]?.count || 0) + 1, liked: true }
-        }));
-      }
-    } catch (e) {}
+  function handleOpenPost(post: Post) {
+    setSelectedPost(post);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('post', post.id);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    }
   }
 
-  async function loadCommentsAndTheirLikes(postId: string) {
+  function handleClosePost() {
+    setSelectedPost(null);
+    setComments([]);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('post');
+      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    }
+  }
+
+  function handleSharePost(e: React.MouseEvent, postId: string) {
+    e.stopPropagation(); 
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedPostId(postId);
+      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      setTimeout(() => setCopiedPostId(null), 2000);
+    }
+  }
+
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
-      const { data: commentData } = await supabase
-        .from('comments')
-        .select('*, author:users(*)')
-        .eq('post_id', postId)
-        .order('created_at', { ascending: true });
+      setLoadingState(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-      if (commentData) {
-        const formattedComments = commentData.map((c: any) => {
-          let parentName = '';
-          if (c.parent_id) {
-            const parentComment = commentData.find((p: any) => p.id === c.parent_id);
-            parentName = parentComment?.author?.rp_name || 'Удалено';
-          }
-          return { ...c, parent_author_name: parentName };
-        });
-        setComments(formattedComments);
-        setPostCommentCounts(prev => ({ ...prev, [postId]: formattedComments.length }));
-      }
+      const webpBlob = await convertToWebP(file);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
 
-      const { data: likesData } = await supabase.from('post_likes').select('user_id').eq('post_id', postId);
-      if (likesData) {
-        setPostLikes(prev => ({
-          ...prev,
-          [postId]: { 
-            count: likesData.length, 
-            liked: currentUser ? likesData.some(l => l.user_id === currentUser.id) : false 
-          }
-        }));
-      }
-    } catch (e) {}
+      const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, {
+        contentType: 'image/webp'
+      });
+      
+      if (error) return alert(`Ошибка загрузки: ${error.message}`);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      if (urlData) setUrlCallback(urlData.publicUrl);
+    } catch (e: any) {
+      alert(`Сбой при загрузке: ${e.message}`);
+    } finally {
+      setLoadingState(false);
+    }
+  }
+
+  async function publishPost() {
+    const postContent = editorRef.current?.innerHTML || '';
+    if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
+      alert('Заголовок и текст не могут быть пустыми!');
+      return;
+    }
+
+    let finalCreatedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
+
+    const postData = {
+      author_id: currentUser.id,
+      title: newPostTitle,
+      content: postContent,
+      cover_url: newPostCoverUrl || null,
+      youtube_url: newPostYoutubeUrl || null,
+      created_at: finalCreatedAt
+    };
+
+    let error;
+    if (editingPostId) {
+      const { error: updateError } = await supabase.from('posts').update(postData).eq('id', editingPostId);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('posts').insert([postData]);
+      error = insertError;
+    }
+
+    if (!error) {
+      setIsCreatingPost(false);
+      setEditingPostId(null);
+      setCurrentPage(1);
+      fetchPosts(1, false); 
+    } else {
+      alert(`Ошибка сохранения: ${error.message}`);
+    }
+  }
+
+  async function handleDeletePost(postId: string) {
+    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
+    
+    const { error } = await supabase.from('posts').delete().eq('id', postId);
+    if (!error) {
+      setActiveMenuPostId(null);
+      handleClosePost();
+      fetchPosts(currentPage, false);
+    } else {
+      alert(`Ошибка при удалении: ${error.message}`);
+    }
+  }
+
+  function loadMorePosts() {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchPosts(nextPage, true);
+  }
+
+  function handlePageSelect(pageIdx: number) {
+    setCurrentPage(pageIdx);
+    fetchPosts(pageIdx, false);
   }
 
   // СИСТЕМА СИНХРОНИЗАЦИИ И ЭФФЕКТОВ
