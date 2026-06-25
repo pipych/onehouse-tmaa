@@ -130,7 +130,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   }
 
-  // Специфический ленивый лоадер для картинок
   function stripHtml(html: string) {
     if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
     const tmp = document.createElement("DIV");
@@ -190,6 +189,28 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       if (editorRef.current) editorRef.current.focus();
       setTimeout(checkFormatting, 50);
     }
+  }
+
+  // ИСПРАВЛЕНО: Прямая передача контента статьи в редактор без багов и просадок состояний
+  function handleStartEdit(post: Post) {
+    setEditingPostId(post.id);
+    setNewPostTitle(post.title);
+    setNewPostCoverUrl(post.cover_url || '');
+    setNewPostYoutubeUrl(post.youtube_url || '');
+    if (post.created_at) {
+      const date = new Date(post.created_at);
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
+    }
+    setIsCreatingPost(true);
+    setActiveMenuPostId(null);
+    setSelectedPost(null); 
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = post.content || '';
+        checkFormatting();
+      }
+    }, 100);
   }
 
   async function loadLikesForPosts(postIds: string[]) {
@@ -565,38 +586,38 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   }
 
-  // Первичный вызов загрузки постов
+  // Инициализация данных
   useEffect(() => {
-    fetchPosts(1, false);
+    const initBlog = async () => {
+      const fetched = await fetchPosts(1, false);
+
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const postIdFromUrl = params.get('post');
+        if (postIdFromUrl) {
+          const targetPost = fetched.find(p => p.id === postIdFromUrl);
+          if (targetPost) {
+            handleOpenPost(targetPost);
+          } else {
+            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
+            if (data) handleOpenPost(data);
+          }
+        }
+      }
+    };
+    initBlog();
   }, []);
 
-  // Реактивный хук для синхронизации лайков и счетчиков
   useEffect(() => {
-    if (posts.length > 0) {
-      const ids = posts.map(p => p.id);
-      loadLikesForPosts(ids);
-      loadCommentCounts(ids);
+    if (!isCreatingPost) {
+      setNewPostTitle('');
+      setNewPostCoverUrl('');
+      setNewPostYoutubeUrl('');
+      setEditingPostId(null);
+      setNewPostPublishedAtInput('');
+      if (editorRef.current) editorRef.current.innerHTML = '';
     }
-  }, [posts, currentUser]);
-
-  // Реактивный хук для подгрузки обсуждений
-  useEffect(() => {
-    if (selectedPost) {
-      loadCommentsAndTheirLikes(selectedPost.id);
-    }
-  }, [selectedPost, currentUser]);
-
-  // Роутинг из URL ссылок
-  useEffect(() => {
-    if (typeof window !== 'undefined' && posts.length > 0) {
-      const params = new URLSearchParams(window.location.search);
-      const postIdFromUrl = params.get('post');
-      if (postIdFromUrl) {
-        const targetPost = posts.find(p => p.id === postIdFromUrl);
-        if (targetPost) handleOpenPost(targetPost);
-      }
-    }
-  }, [posts]);
+  }, [isCreatingPost]);
 
   // --------------------------------------------------------
   // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
@@ -657,7 +678,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 </button>
                 {activeMenuPostId === selectedPost.id && (
                   <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
-                    <button onClick={() => { setEditingPostId(selectedPost.id); setIsCreatingPost(true); setActiveMenuPostId(null); setSelectedPost(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
+                    <button onClick={() => handleStartEdit(selectedPost)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
                     <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
                   </div>
                 )}
@@ -722,12 +743,27 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   }
 
   // --------------------------------------------------------
-  // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА
+  // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА (СО ВСЕМИ ПРАВКАМИ)
   // --------------------------------------------------------
   if (isCreatingPost && !selectedPost) {
     return (
-      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col pt-6">
+      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col pt-6 relative">
         
+        {/* ИСПРАВЛЕНО: Адаптивная панель форматирования контента статьи */}
+        <div className="fixed z-50 bottom-4 left-4 right-4 md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto flex items-center justify-center pointer-events-none">
+          <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 pointer-events-auto w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-center">
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={14}/></button>
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={14}/></button>
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={14}/></button>
+            <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading1 size={14}/></button>
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading2 size={14}/></button>
+            <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={14}/></button>
+            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={14}/></button>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
           <button onClick={() => setIsCreatingPost(false)} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white transition-all active:scale-95 shadow-sm shrink-0"><ArrowLeft size={20} /></button>
           <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0"><Send size={20} /></button>
@@ -743,7 +779,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span>
             </label>
             
-            {/* ИСПРАВЛЕНО: Добавлены классы text-xs font-bold select-none cursor-pointer, убирающие визуальный баг кнопки */}
+            {/* ИСПРАВЛЕНО: Полностью выровнен стиль, шрифт и размер пилюли кнопки YouTube */}
             <button 
               onClick={() => setIsYoutubeModalOpen(true)} 
               className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 hover:text-white text-xs font-bold select-none cursor-pointer outline-none"
@@ -753,11 +789,21 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         </div>
 
-        <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
+        <input type="text" style={{ fontFamily: 'inherit' }} placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
         {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative mb-8" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="Cover preview" /></div>}
-        <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+        
+        {/* ИСПРАВЛЕНО: Добавлены листенеры checkFormatting для реактивного отслеживания стилей в редакторе */}
+        <div 
+          ref={editorRef} 
+          contentEditable 
+          onKeyUp={checkFormatting}
+          onMouseUp={checkFormatting}
+          onInput={checkFormatting}
+          className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" 
+          data-placeholder="Текст вашей статьи..." 
+        />
 
-        {/* ИСПРАВЛЕНО (ГЛАВНАЯ КОРРЕКЦИЯ): Модальное окно перенесено внутрь скоупа экрана создания поста, теперь оно гарантированно работает */}
+        {/* ИСПРАВЛЕНО: Модальное окно YouTube успешно перемещено внутрь скоупа редактора и работает без сбоев */}
         {isYoutubeModalOpen && (
           <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
             <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
@@ -806,7 +852,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                       <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                       {activeMenuPostId === post.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => { setEditingPostId(post.id); setIsCreatingPost(true); setActiveMenuPostId(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                          <button onClick={() => handleStartEdit(post)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
                           <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400">Удалить</button>
                         </div>
                       )}
