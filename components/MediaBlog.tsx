@@ -130,6 +130,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   }
 
+  // Специфический ленивый лоадер для картинок
   function stripHtml(html: string) {
     if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
     const tmp = document.createElement("DIV");
@@ -224,7 +225,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
-  // ИСПРАВЛЕНО: Добавлены алерты ошибок для выявления блокировок базы данных
   async function handlePostLike(e: React.MouseEvent, postId: string) {
     e.stopPropagation();
     if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
@@ -570,7 +570,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     fetchPosts(1, false);
   }, []);
 
-  // ИСПРАВЛЕНО: Реактивный хук для синхронизации лайков и счетчиков (убирает баг Race Condition)
+  // Реактивный хук для синхронизации лайков и счетчиков
   useEffect(() => {
     if (posts.length > 0) {
       const ids = posts.map(p => p.id);
@@ -579,7 +579,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [posts, currentUser]);
 
-  // ИСПРАВЛЕНО: Реактивный хук для подгрузки обсуждений при URL-переходах и обновлении юзера
+  // Реактивный хук для подгрузки обсуждений
   useEffect(() => {
     if (selectedPost) {
       loadCommentsAndTheirLikes(selectedPost.id);
@@ -737,14 +737,37 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest">Параметры публикации</div>
           <div className="flex flex-wrap items-center gap-3">
             <div onClick={handleDatePillClick} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold select-none bg-white/5 border-white/10 text-gray-400 hover:text-white"><Clock size={14} /> <span>{formatPillDate(newPostPublishedAtInput)}</span><input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute pointer-events-none opacity-0 w-0 h-0" /></div>
-            <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold select-none bg-white/5 border-white/10 text-gray-400 hover:text-white"><input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />{isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span></label>
-            <button onClick={() => setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 hover:text-white"><Youtube size={14} /> <span>YouTube</span></button>
+            
+            <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold select-none bg-white/5 border-white/10 text-gray-400 hover:text-white">
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />
+              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span>
+            </label>
+            
+            {/* ИСПРАВЛЕНО: Добавлены классы text-xs font-bold select-none cursor-pointer, убирающие визуальный баг кнопки */}
+            <button 
+              onClick={() => setIsYoutubeModalOpen(true)} 
+              className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 hover:text-white text-xs font-bold select-none cursor-pointer outline-none"
+            >
+              <Youtube size={14} /> <span>YouTube</span>
+            </button>
           </div>
         </div>
 
         <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
         {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative mb-8" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="Cover preview" /></div>}
         <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+
+        {/* ИСПРАВЛЕНО (ГЛАВНАЯ КОРРЕКЦИЯ): Модальное окно перенесено внутрь скоупа экрана создания поста, теперь оно гарантированно работает */}
+        {isYoutubeModalOpen && (
+          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4 animate-fade-in">
+            <div className="bg-[#14171c] border border-white/10 p-6 md:p-8 rounded-[32px] w-full max-w-md shadow-2xl relative flex flex-col gap-6">
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white"><X size={20}/></button>
+              <div className="flex items-center gap-3 select-none"><div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500"><Youtube size={24} /></div><h3 className="text-xl font-black text-white">Видео с YouTube</h3></div>
+              <input type="text" placeholder="Вставьте ссылку сюда..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm font-medium text-white outline-none" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black text-sm uppercase tracking-wider py-4 rounded-2xl active:scale-95 transition-all shadow-md">Сохранить ссылку</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -826,7 +849,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* ИСПРАВЛЕНО: Кнопка «Показать еще» принудительно отображается через сравнение текущей страницы и максимума */}
+        {/* Кнопка «Показать еще» */}
         {currentPage < totalPages && (
           <div className="flex justify-center mt-2 mb-4 select-none">
             <button onClick={loadMorePosts} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 hover:border-[#c0ff00]/30 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all active:scale-95 shadow-xl">
@@ -836,7 +859,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           </div>
         )}
 
-        {/* СИСТЕМА ПАГИНАЦИИ 2: СТАНДАРТНЫЕ НОМЕРА СТРАНИЦ */}
+        {/* Номера страниц */}
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 select-none" style={{ marginTop: '16px' }}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
