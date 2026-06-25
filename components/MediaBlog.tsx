@@ -95,7 +95,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ
+  // НАДЁЖНЫЕ ХОЙСТИНГ-ФУНКЦИИ
   // --------------------------------------------------------
   
   function convertToWebP(file: File): Promise<Blob> {
@@ -557,7 +557,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   }
 
-  // Инициализация данных
+  // Инициализация данных при старте
   useEffect(() => {
     const initBlog = async () => {
       const fetched = await fetchPosts(1, false);
@@ -807,7 +807,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   )}
                 </div>
 
-                {/* ИСПРАВЛЕНО: Добавлен рендеринг YouTube плееров прямо в карточки постов главной ленты */}
+                {/* Рендеринг YouTube плееров в карточках ленты */}
                 {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) && (
                   <div className="px-5 md:px-6 w-full mb-2">
                     <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
@@ -830,8 +830,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 )}
 
                 <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
-                  <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
+                  </div>
                   <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                     <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
                     <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
@@ -842,9 +844,19 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* СИСТЕМА ПАГИНАЦИИ */}
+        {/* ВОЗВРАЩЕНО НА МЕСТО: СИСТЕМА ПАГИНАЦИИ 1: КНОПКА «ПОКАЗАТЬ ЕЩЕ» */}
+        {totalCount > posts.length && (
+          <div className="flex justify-center mt-2 mb-4 select-none">
+            <button onClick={loadMorePosts} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 hover:border-[#c0ff00]/30 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all active:scale-95 shadow-xl">
+              <RefreshCw size={14} className="animate-pulse text-[#c0ff00]" />
+              <span>Показать еще</span>
+            </button>
+          </div>
+        )}
+
+        {/* СИСТЕМА ПАГИНАЦИИ 2: СТАНДАРТНЫЕ НОМЕРА СТРАНИЦ */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 select-none" style={{ marginTop: '24px' }}>
+          <div className="flex justify-center items-center gap-2 select-none" style={{ marginTop: '16px' }}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
               <button key={pageNum} onClick={() => handlePageSelect(pageNum)} className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-black transition-all ${currentPage === pageNum ? 'bg-[#c0ff00] text-black shadow-md scale-105' : 'bg-white/5 text-gray-500 hover:text-white'}`}>{pageNum}</button>
             ))}
