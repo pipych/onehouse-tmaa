@@ -109,7 +109,7 @@ export default function Home() {
   const viewRef = useRef<HTMLDivElement>(null);
 
   // --------------------------------------------------------
-  // ИСПРАВЛЕНО: БАЗОВЫЕ ХЕЛПЕРЫ И НАВИГАЦИЯ НА САМОМ ВЕРХУ КОМПОНЕНТА
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
 
   function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') {
@@ -135,6 +135,11 @@ export default function Home() {
     if (!url) return null;
     const parts = url.split('/public/avatars/');
     return parts.length > 1 ? parts[1] : null;
+  }
+
+  // ИСПРАВЛЕНО: Объединена и зафиксирована нативная функция скролла наверх страницы
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function convertToWebP(file: File): Promise<Blob> {
@@ -163,6 +168,22 @@ export default function Home() {
     });
   }
 
+  async function fetchServerStatus() {
+    setIsServerLoading(true);
+    try {
+      const res = await fetch('/api/exaroton');
+      const data = await res.json();
+      if (data.success) {
+        setServerInfo(data.data.server || data.data);
+        setCredits(data.data.credits ?? null);
+      }
+    } catch (e) {
+      console.error('Ошибка получения статуса сервера:', e);
+    } finally {
+      setIsServerLoading(false);
+    }
+  }
+
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -173,30 +194,6 @@ export default function Home() {
       default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
     }
   }
-
-  // 4. Вычисляемые константы (Scope)
-  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
-  const setActiveTab = handleTabChange;
-  const isAdmin = dbUser?.roles.includes('admin');
-  const canEditConstitution = dbUser?.roles.some(r => {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
-    return found ? found.canEditConstitution : false;
-  });
-  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
-  
-  const sortedPlayers = players
-    .filter((player) => player.tg_id !== dbUser?.tg_id)
-    .sort((a, b) => {
-      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
-      if (aDead && !bDead) return 1;
-      if (!aDead && bDead) return -1;
-      return a.rp_name.localeCompare(b.rp_name);
-    });
-
-  // --------------------------------------------------------
-  // ФУНКЦИОНАЛЬНЫЕ ОБРАБОТЧИКИ ДАННЫХ БЭКЕНДА
-  // --------------------------------------------------------
 
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию старых изображений и ПОЛНОЕ удаление не-WebP оригиналов из хранилища?')) return;
@@ -332,26 +329,6 @@ export default function Home() {
     }
   }
 
-  function scrollToTopAction() {
-    scrollToTop();
-  }
-
-  async function fetchServerStatus() {
-    setIsServerLoading(true);
-    try {
-      const res = await fetch('/api/exaroton');
-      const data = await res.json();
-      if (data.success) {
-        setServerInfo(data.data.server || data.data);
-        setCredits(data.data.credits ?? null);
-      }
-    } catch (e) {
-      console.error('Ошибка получения статуса сервера:', e);
-    } finally {
-      setIsServerLoading(false);
-    }
-  }
-
   function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
@@ -385,9 +362,6 @@ export default function Home() {
       setTimeout(checkFormatting, 50);
     }
   }
-
-  function nextMatch() { setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
-  function prevMatch() { setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
 
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
@@ -552,6 +526,26 @@ export default function Home() {
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
     }
   }
+
+  // 4. Вычисляемые константы (Scope)
+  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+  const setActiveTab = handleTabChange;
+  const isAdmin = dbUser?.roles.includes('admin');
+  const canEditConstitution = dbUser?.roles.some(r => {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
+    return found ? found.canEditConstitution : false;
+  });
+  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+  
+  const sortedPlayers = players
+    .filter((player) => player.tg_id !== dbUser?.tg_id)
+    .sort((a, b) => {
+      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
+      if (aDead && !bDead) return 1;
+      if (!aDead && bDead) return -1;
+      return a.rp_name.localeCompare(b.rp_name);
+    });
 
   // --------------------------------------------------------
   // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ ДАННЫХ
@@ -1168,7 +1162,7 @@ export default function Home() {
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
            <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" /></div>
-           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
+           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
          </button>
        )}
 
@@ -1181,8 +1175,8 @@ export default function Home() {
        </nav>
       </aside>
 
-      {/* КНОПКА "НАВЕРХ" */}
-      <button onClick={scrollToTopAction} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
+      {/* ИСПРАВЛЕНО: Кнопка напрямую вызывает итоговую функцию scrollToTop */}
+      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
