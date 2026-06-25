@@ -42,8 +42,6 @@ interface CustomRole {
 }
 
 export default function Home() {
-  const POSTS_PER_PAGE = 4;
-  
   // 1. Все состояния (States)
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
@@ -108,25 +106,6 @@ export default function Home() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // 3. Вычисляемые константы (Scope)
-  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
-  const isAdmin = dbUser?.roles.includes('admin');
-  const canEditConstitution = dbUser?.roles.some(r => {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
-    return found ? found.canEditConstitution : false;
-  });
-  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
-  
-  const sortedPlayers = players
-    .filter((player) => player.tg_id !== dbUser?.tg_id)
-    .sort((a, b) => {
-      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
-      if (aDead && !bDead) return 1;
-      if (!aDead && bDead) return -1;
-      return a.rp_name.localeCompare(b.rp_name);
-    });
-
   // --------------------------------------------------------
   // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
@@ -170,6 +149,27 @@ export default function Home() {
 
   function isDead(roles: string[]) {
     return roles.some(r => r.toLowerCase() === 'мёртв');
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ВОЗВРАЩЕНО: Функция получения актуального статуса игрового сервера
+  async function fetchServerStatus() {
+    setIsServerLoading(true);
+    try {
+      const res = await fetch('/api/exaroton');
+      const data = await res.json();
+      if (data.success) {
+        setServerInfo(data.data.server || data.data);
+        setCredits(data.data.credits ?? null);
+      }
+    } catch (e) {
+      console.error('Ошибка получения статуса сервера:', e);
+    } finally {
+      setIsServerLoading(false);
+    }
   }
 
   function getServerStatusText(statusCode: number) {
@@ -270,8 +270,6 @@ export default function Home() {
       }
 
       setMigrationProgress('Запуск тотальной зачистки бакета от остаточных PNG/JPEG...');
-      
-      // ИСПРАВЛЕНО: Передан пустой путь к корню папки бакета '' первым аргументом, чтобы избежать ошибки типов в TypeScript
       const { data: allStorageFiles, error: listError } = await supabase.storage.from('avatars').list('', { limit: 1000 });
       
       let deletedDanglingCount = 0;
@@ -352,6 +350,9 @@ export default function Home() {
       setTimeout(checkFormatting, 50);
     }
   }
+
+  function nextMatch() { setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
+  function prevMatch() { setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
 
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
@@ -516,6 +517,25 @@ export default function Home() {
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
     }
   }
+
+  // 4. Вычисляемые константы (Scope)
+  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+  const isAdmin = dbUser?.roles.includes('admin');
+  const canEditConstitution = dbUser?.roles.some(r => {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
+    return found ? found.canEditConstitution : false;
+  });
+  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+  
+  const sortedPlayers = players
+    .filter((player) => player.tg_id !== dbUser?.tg_id)
+    .sort((a, b) => {
+      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
+      if (aDead && !bDead) return 1;
+      if (!aDead && bDead) return -1;
+      return a.rp_name.localeCompare(b.rp_name);
+    });
 
   // --------------------------------------------------------
   // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ ДАННЫХ
@@ -905,10 +925,10 @@ export default function Home() {
                 <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={18} />{activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}</h2>
               </div>
               {activeDocument !== 'none' && canEditConstitution && !isEditing && (
-                <button onClick={() => HillsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
+                <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
               )}
             </div>
-            {/* Вспомогательный скоуп */}
+
             {activeDocument === 'none' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mt-6 w-full">
                 <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('constitution')}>
