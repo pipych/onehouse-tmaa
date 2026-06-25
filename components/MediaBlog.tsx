@@ -98,7 +98,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАДЁЖНЫЕ ФУНКЦИИ С ИСПРАВЛЕННЫМ ХОЙСТИНГОМ И НАВИГАЦИЕЙ
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
   
   function convertToWebP(file: File): Promise<Blob> {
@@ -215,6 +215,88 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }, 100);
   }
 
+  // ВОЗВРАЩЕНО НА МЕСТО: Функция отрисовки блоков и ветвей комментариев обсуждения
+  function renderCommentBlock(comment: BlogComment, isReply: boolean = false) {
+    const isLongText = comment.content.length > 75;
+    const isExpanded = expandedComments[comment.id];
+    
+    return (
+      <div key={comment.id} className={`flex gap-3 items-start group/comment ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
+        {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
+        
+        <img 
+          src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} 
+          alt="avatar" 
+          style={{
+            width: '36px',
+            height: '36px',
+            minWidth: '36px',
+            minHeight: '36px',
+            maxWidth: '36px',
+            maxHeight: '36px',
+            borderRadius: '50%',
+            objectFit: 'cover',
+            display: 'block',
+            flexShrink: 0
+          }}
+          className="border border-white/5 select-none"
+        />
+        
+        <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
+          <div className="flex justify-between items-center mb-1 select-none">
+            <span className="text-xs font-black text-white">{comment.author?.rp_name}</span>
+            <span className="text-[10px] text-gray-500 font-mono">{new Date(comment.created_at).toLocaleDateString('ru-RU')}</span>
+          </div>
+
+          <div className="text-sm text-gray-300 break-words leading-relaxed pr-6">
+            {comment.parent_id && <span className="text-[#c0ff00] font-bold mr-1.5">@{comment.parent_author_name}</span>}
+            <span className={isLongText && !isExpanded ? 'line-clamp-1' : ''}>{comment.content}</span>
+          </div>
+
+          {isLongText && (
+            <button 
+              onClick={() => setExpandedComments(prev => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+              className="absolute right-2 bottom-2 p-1 bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"
+            >
+              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+          )}
+
+          <div className="flex items-center gap-3 mt-2 select-none text-[11px] font-bold">
+            <button 
+              onClick={() => handleCommentLike(comment.id)} 
+              className={`flex items-center gap-1 transition-colors ${commentLikes[comment.id]?.liked ? 'text-red-400' : 'text-gray-500 hover:text-red-400'}`}
+            >
+              <Heart size={12} fill={commentLikes[comment.id]?.liked ? "currentColor" : "none"} />
+              <span>{commentLikes[comment.id]?.count || 0}</span>
+            </button>
+
+            {!isReply && currentUser && (
+              <button onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)} className="text-gray-500 hover:text-[#c0ff00]">
+                Ответить
+              </button>
+            )}
+          </div>
+
+          {replyingToId === comment.id && (
+            <div className="mt-3 flex gap-2 items-center animate-fade-in">
+              <input 
+                type="text" 
+                placeholder={`Ответ для ${comment.author?.rp_name}...`}
+                value={newReplyText}
+                onChange={e => setNewReplyText(e.target.value)}
+                className="w-full bg-black/40 border border-white/5 rounded-full p-2 px-4 text-xs text-white outline-none focus:border-[#c0ff00]/40"
+              />
+              <button onClick={() => handleSendComment(comment.id)} className="w-8 h-8 rounded-full bg-[#c0ff00] text-black flex items-center justify-center shrink-0 active:scale-90 transition-transform">
+                <Send size={12} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   async function loadLikesForPosts(postIds: string[]) {
     try {
       if (!postIds.length) return;
@@ -272,7 +354,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
-  // ИСПРАВЛЕНО: Полностью автономная и изолированная подгрузка счетчиков обсуждения и лайков для детального вида
   async function loadCommentsAndTheirLikes(postId: string) {
     try {
       const { data: commentData } = await supabase
@@ -441,7 +522,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   async function publishPost() {
     const postContent = editorRef.current?.innerHTML || '';
     if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
-      alert('Заголовок и text не могут быть пустыми!');
+      alert('Заголовок и текст не могут быть пустыми!');
       return;
     }
 
@@ -518,7 +599,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }
   }, [selectedPost, currentUser]);
 
-  // ИСПРАВЛЕНО: Слушатель выделения текста для Medium-панели форматирования над клавиатурой
   useEffect(() => {
     const handleSelectionChange = () => {
       if (typeof window === 'undefined') return;
@@ -549,100 +629,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   }, [posts]);
 
   // --------------------------------------------------------
-  // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
-  // --------------------------------------------------------
-  if (selectedPost) {
-    const topLevelComments = comments.filter(c => !c.parent_id);
-
-    return (
-      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
-        <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
-          <button onClick={handleClosePost} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg shrink-0"><ArrowLeft size={20} /></button>
-        </div>
-
-        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
-          <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
-            <div className="flex items-center gap-4">
-              <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} alt="author" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onClick={() => onProfileClick(selectedPost.author!)} className="bg-black/50 border border-white/10 cursor-pointer" />
-              <div className="flex-1 min-w-0">
-                <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
-              </div>
-            </div>
-            {canManagePost(selectedPost) && (
-              <div className="relative">
-                <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === selectedPost.id ? null : selectedPost.id); }} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"><MoreVertical size={20} /></button>
-                {activeMenuPostId === selectedPost.id && (
-                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
-                    <button onClick={() => handleStartEdit(selectedPost)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
-                    <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {selectedPost.youtube_url && (
-            <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
-              </div>
-            </div>
-          )}
-          {selectedPost.cover_url && !selectedPost.youtube_url && (
-            <div className="px-5 md:px-6 w-full mb-4">
-              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
-                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" alt="cover" />
-              </div>
-            </div>
-          )}
-
-          <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
-            <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{selectedPost.title}</h1>
-            <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
-            <div className="flex items-center justify-start gap-3 mt-2 select-none">
-              <button onClick={(e) => handlePostLike(e, selectedPost.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[selectedPost.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[selectedPost.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[selectedPost.id]?.count || 0}</span></button>
-              <button onClick={(e) => handleSharePost(e, selectedPost.id)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold"><Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span></button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
-          <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({postCommentCounts[selectedPost.id] || 0})</span></h3>
-          <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
-            <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 placeholder:text-gray-600 shadow-inner" />
-            <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90"><Send size={18} /></button>
-          </div>
-
-          <div className="divide-y divide-white/5">
-            {topLevelComments.map(mainComment => {
-              const replies = comments.filter(r => r.parent_id === mainComment.id);
-              return (
-                <div key={mainComment.id} className="pb-4">
-                  {renderCommentBlock(mainComment, false)}
-                  {replies.length > 0 && (
-                    <div className="pl-12 mt-2">
-                      <button onClick={() => setExpandedReplyThreads(prev => ({ ...prev, [mainComment.id]: !prev[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full"><span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span></button>
-                    </div>
-                  )}
-                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderCommentBlock(reply, true))}</div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --------------------------------------------------------
-  // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА (С ОПТИМИЗИРОВАННЫМ ИНТЕРФЕЙСОМ)
+  // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА
   // --------------------------------------------------------
   if (isCreatingPost && !selectedPost) {
     return (
       <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col pt-6 relative">
         
-        {/* ИСПРАВЛЕНО: Всплывающая панель форматирования ТОЛЬКО при выделении текста (Снизу на мобильных над клавиатурой, сверху на ПК) */}
         {isTextSelected && (
           <div className="fixed bottom-28 left-4 right-4 md:bottom-auto md:absolute md:-top-14 md:left-1/2 md:-translate-x-1/2 z-[9999] flex items-center justify-center pointer-events-none animate-fade-in">
             <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 pointer-events-auto w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-center">
@@ -682,7 +674,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
         <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
         
-        {/* ИСПРАВЛЕНО: Возвращен и сгруппирован интерактивный предпросмотр медиаконтента (Обложка + YouTube плеер) */}
         <div className="space-y-4 mb-8">
           {newPostCoverUrl && (
             <div className="w-full rounded-[24px] overflow-hidden relative" style={{ aspectRatio: '16/9' }}>
