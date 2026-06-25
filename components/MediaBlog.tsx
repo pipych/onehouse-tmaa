@@ -95,10 +95,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ
+  // НАДЁЖНЫЕ ФУНКЦИИ С ИСПРАВЛЕННЫМ ХОЙСТИНГОМ ФУНКЦИЙ НАВИГАЦИИ
   // --------------------------------------------------------
   
-  // Новая функция: Конвертация любого изображения в WebP blob на клиенте
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -117,7 +116,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
             else reject(new Error('Ошибка конвертации в WebP'));
-          }, 'image/webp', 0.85); // Качество сжатия 85%
+          }, 'image/webp', 0.85);
         };
         img.onerror = (error) => reject(error);
       };
@@ -357,14 +356,49 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return [];
   }
 
-  // ИСПРАВЛЕНО: Теперь загрузка файла перехватывает изображение, конвертирует в WebP и отправляет в Supabase
+  // ВОЗВРАЩЕНО НА МЕСТО: Функции навигации постов, которые выпали в прошлой итерации
+  function handleOpenPost(post: Post) {
+    setSelectedPost(post);
+    loadCommentsAndTheirLikes(post.id);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('post', post.id);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    }
+  }
+
+  function handleClosePost() {
+    setSelectedPost(null);
+    setComments([]);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('post');
+      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    }
+  }
+
+  function handleSharePost(e: React.MouseEvent, postId: string) {
+    e.stopPropagation(); 
+    if (typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedPostId(postId);
+      
+      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      setTimeout(() => setCopiedPostId(null), 2000);
+    }
+  }
+
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Конвертируем файл в формат WebP прямо на клиенте
       const webpBlob = await convertToWebP(file);
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
 
@@ -524,6 +558,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   }
 
+  // Инициализация данных
   useEffect(() => {
     const initBlog = async () => {
       const fetched = await fetchPosts(1, false);
@@ -545,150 +580,258 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     initBlog();
   }, []);
 
+  useEffect(() => {
+    if (!isCreatingPost) {
+      setNewPostTitle('');
+      setNewPostCoverUrl('');
+      setNewPostYoutubeUrl('');
+      setEditingPostId(null);
+      setNewPostPublishedAtInput('');
+      if (editorRef.current) editorRef.current.innerHTML = '';
+    }
+  }, [isCreatingPost]);
+
+  useEffect(() => {
+    if (isCreatingPost && editingPostId) {
+      const postToEdit = posts.find(p => p.id === editingPostId);
+      if (postToEdit) {
+        setNewPostTitle(postToEdit.title);
+        setNewPostCoverUrl(postToEdit.cover_url || '');
+        setNewPostYoutubeUrl(postToEdit.youtube_url || '');
+        if (postToEdit.created_at) {
+          const date = new Date(postToEdit.created_at);
+          date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+          setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
+        }
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.innerHTML = postToEdit.content || '';
+          }
+        }, 60);
+      }
+    }
+  }, [isCreatingPost, editingPostId, posts]);
+
+  // --------------------------------------------------------
+  // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
+  // --------------------------------------------------------
+  if (selectedPost) {
+    const topLevelComments = comments.filter(c => !c.parent_id);
+
+    return (
+      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
+        
+        {/* Кнопка Назад */}
+        <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
+          <button 
+            onClick={handleClosePost} 
+            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg shrink-0"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        </div>
+
+        {/* Карточка поста */}
+        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
+          
+          <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
+            <div className="flex items-center gap-4">
+              <img 
+                src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} 
+                alt="author" 
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  minWidth: '48px',
+                  minHeight: '48px',
+                  maxWidth: '48px',
+                  maxHeight: '48px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  flexShrink: 0,
+                  cursor: 'pointer'
+                }}
+                onClick={() => onProfileClick(selectedPost.author!)}
+                className="bg-black/50 border border-white/10"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
+                  <Clock size={12} /> 
+                  {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                </div>
+              </div>
+            </div>
+
+            {canManagePost(selectedPost) && (
+              <div className="relative">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === selectedPost.id ? null : selectedPost.id); }}
+                  className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"
+                >
+                  <MoreVertical size={20} />
+                </button>
+                {activeMenuPostId === selectedPost.id && (
+                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
+                    <button onClick={() => { setEditingPostId(selectedPost.id); setIsCreatingPost(true); setActiveMenuPostId(null); setSelectedPost(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
+                    <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {selectedPost.youtube_url && (
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
+              </div>
+            </div>
+          )}
+          {selectedPost.cover_url && !selectedPost.youtube_url && (
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
+                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" alt="cover" />
+              </div>
+            </div>
+          )}
+
+          <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
+            <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{selectedPost.title}</h1>
+            <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
+            <div className="flex items-center justify-start gap-3 mt-2 select-none">
+              <button onClick={(e) => handlePostLike(e, selectedPost.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[selectedPost.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[selectedPost.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[selectedPost.id]?.count || 0}</span></button>
+              <button onClick={(e) => handleSharePost(e, selectedPost.id)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold"><Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span></button>
+            </div>
+          </div>
+        </div>
+
+        {/* БЛОК НАСТОЯЩИХ КОММЕНТАРИЕВ И ТРЕДОВ */}
+        <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
+          <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span></h3>
+          <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
+            <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 placeholder:text-gray-600 shadow-inner" />
+            <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90"><Send size={18} /></button>
+          </div>
+
+          <div className="divide-y divide-white/5">
+            {topLevelComments.map(mainComment => {
+              const replies = comments.filter(r => r.parent_id === mainComment.id);
+              return (
+                <div key={mainComment.id} className="pb-4">
+                  {renderCommentBlock(mainComment, false)}
+                  {replies.length > 0 && (
+                    <div className="pl-12 mt-2">
+                      <button onClick={() => setExpandedReplyThreads(prev => ({ ...prev, [mainComment.id]: !prev[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full">
+                        <span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
+                      </button>
+                    </div>
+                  )}
+                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderCommentBlock(reply, true))}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --------------------------------------------------------
+  // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА
+  // --------------------------------------------------------
+  if (isCreatingPost && !selectedPost) {
+    return (
+      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col pt-6">
+        
+        <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
+          <button onClick={() => setIsCreatingPost(false)} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white transition-all active:scale-95 shadow-sm shrink-0"><ArrowLeft size={20} /></button>
+          <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-[0_0_30px_rgba(192,255,0,0.35)] hover:scale-105 active:scale-95 transition-all shrink-0"><Send size={20} /></button>
+        </div>
+
+        <div className="w-full" style={{ marginBottom: '54px' }}>
+          <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest">Параметры публикации</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div onClick={handleDatePillClick} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold select-none bg-white/5 border-white/10 text-gray-400 hover:text-white"><Clock size={14} /> <span>{formatPillDate(newPostPublishedAtInput)}</span><input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute pointer-events-none opacity-0 w-0 h-0" /></div>
+            <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold select-none bg-white/5 border-white/10 text-gray-400 hover:text-white"><input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} disabled={isUploadingPostCover} />{isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span></label>
+            <button onClick={() => setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 hover:text-white"><Youtube size={14} /> <span>YouTube</span></button>
+          </div>
+        </div>
+
+        <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
+        {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative mb-8" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="Cover preview" /></div>}
+        <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none break-words pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+      </div>
+    );
+  }
+
+  // --------------------------------------------------------
+  // ГЛАВНАЯ СТРАНИЦА БЛОГА (ЛЕНТА НОВОСТЕЙ)
+  // --------------------------------------------------------
   return (
     <>
-      {/* ЭКРАН ОТДЕЛЬНОГО ПОСТА */}
-      {selectedPost && (
-        <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
-          <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
-            <button onClick={handleClosePost} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white transition-all active:scale-90 shadow-lg shrink-0"><ArrowLeft size={20} /></button>
-          </div>
-
-          <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
-            <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
-              <div className="flex items-center gap-4">
-                <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} onClick={() => onProfileClick(selectedPost.author!)} className="bg-black/50 border border-white/10 cursor-pointer" alt="avatar" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
-                </div>
-              </div>
-              {canManagePost(selectedPost) && <button onClick={() => handleDeletePost(selectedPost.id)} className="p-2 text-red-400 hover:text-red-300 text-xs font-bold bg-red-500/10 rounded-xl">Удалить</button>}
-            </div>
-
-            {selectedPost.youtube_url && (
-              <div className="px-5 md:px-6 w-full mb-4">
-                <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                  <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
-                </div>
-              </div>
-            )}
-            {selectedPost.cover_url && !selectedPost.youtube_url && (
-              <div className="px-5 md:px-6 w-full mb-4">
-                <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
-                  <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" loading="lazy" alt="cover" />
-                </div>
-              </div>
-            )}
-
-            <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
-              <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{selectedPost.title}</h1>
-              <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
-              <div className="flex items-center justify-start gap-3 mt-2 select-none">
-                <button onClick={(e) => handlePostLike(e, selectedPost.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[selectedPost.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[selectedPost.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[selectedPost.id]?.count || 0}</span></button>
-                <button onClick={(e) => handleSharePost(e, selectedPost.id)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold"><Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span></button>
-              </div>
-            </div>
-          </div>
-
-          {/* КОММЕНТАРИИ */}
-          <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
-            <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span></h3>
-            <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
-              <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 placeholder:text-gray-600 shadow-inner" />
-              <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90"><Send size={18} /></button>
-            </div>
-
-            <div className="divide-y divide-white/5">
-              {comments.filter(c => !c.parent_id).map(mainComment => {
-                const replies = comments.filter(r => r.parent_id === mainComment.id);
-                return (
-                  <div key={mainComment.id} className="pb-4">
-                    {renderCommentBlock(mainComment, false)}
-                    {replies.length > 0 && (
-                      <div className="pl-12 mt-2">
-                        <button onClick={() => setExpandedReplyThreads(prev => ({ ...prev, [mainComment.id]: !prev[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full">
-                          <span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
-                        </button>
-                      </div>
-                    )}
-                    {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderCommentBlock(reply, true))}</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+      <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
+        <div className="flex items-center justify-between w-full select-none">
+          <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
+          {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90"><Plus size={26} /></button>}
         </div>
-      )}
 
-      {/* РЕДАКТОР СТАТЬИ */}
-      {isCreatingPost && !selectedPost && (
-        <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col pt-6">
-          <div className="flex items-center justify-between w-full select-none" style={{ marginBottom: '48px' }}>
-            <button onClick={() => setIsCreatingPost(false)} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white transition-all"><ArrowLeft size={20} /></button>
-            <button onClick={publishPost} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-lg"><Send size={20} /></button>
-          </div>
-
-          <div className="w-full" style={{ marginBottom: '54px' }}>
-            <div className="text-[11px] font-black text-gray-500 mb-3 px-1 uppercase tracking-widest">Параметры</div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div onClick={handleDatePillClick} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer bg-white/5 border-white/10 text-gray-400"><Clock size={14} /> <span>{formatPillDate(newPostPublishedAtInput)}</span><input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute pointer-events-none opacity-0 w-0 h-0" /></div>
-              <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer bg-white/5 border-white/10 text-gray-400"><input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setNewPostCoverUrl, setIsUploadingPostCover)} /><ImageIcon size={14} /> <span>Фото</span></label>
-              <button onClick={() => setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400"><Youtube size={14} /> <span>YouTube</span></button>
+        <div className="flex flex-col gap-8 pb-8">
+          {posts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-6 bg-[#14171c]/50 rounded-[32px] border border-white/5 shadow-inner mt-4 select-none">
+              <div className="w-20 h-20 bg-black/40 border border-white/5 rounded-full flex items-center justify-center mb-5 shadow-lg flex-shrink-0"><Newspaper size={32} className="text-gray-500" /></div>
+              <h3 className="text-lg font-black text-white mb-2 tracking-wide">Здесь пока пусто</h3>
+              <p className="text-sm text-gray-400 text-center max-w-[250px]">Станьте первым, кто опубликует новость!</p>
             </div>
-          </div>
-
-          <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none mb-8" />
-          {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative mb-8" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="Cover preview" /></div>}
-          <div ref={editorRef} contentEditable className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none focus:outline-none" data-placeholder="Текст вашей статьи..." />
-        </div>
-      )}
-
-      {/* ГЛАВНАЯ ЛЕНТА */}
-      {!isCreatingPost && !selectedPost && (
-        <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
-          <div className="flex items-center justify-between w-full select-none">
-            <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
-            {currentUser && <button onClick={() => setIsCreatingPost(true)} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
-          </div>
-
-          <div className="flex flex-col gap-8 pb-8">
-            {posts.map(post => (
+          ) : (
+            posts.map(post => (
               <div key={post.id} onClick={() => handleOpenPost(post)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
-                <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
+                <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
                   <div className="flex items-center gap-4">
                     <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} className="bg-black/50 border border-white/10" alt="author" />
-                    <div>
-                      <div className="text-base font-bold text-white truncate">{post.author?.rp_name}</div>
-                      <div className="text-xs text-gray-500 font-medium">{post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU') : ''}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-base font-bold text-white tracking-wide truncate">{post.author?.rp_name || 'Неизвестный'}</div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {post.created_at ? new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
                     </div>
                   </div>
+                  {canManagePost(post) && (
+                    <div className="relative">
+                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
+                      {activeMenuPostId === post.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => { setEditingPostId(post.id); setIsCreatingPost(true); setActiveMenuPostId(null); }} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                          <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400">Удалить</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {post.cover_url && <div className="px-5 md:px-6 w-full mb-2"><div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" /></div></div>}
 
                 <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
-                  <h3 className="text-2xl font-black text-white mb-2 truncate">{post.title}</h3>
-                  <p className="text-gray-400 text-sm truncate">{stripHtml(post.content)}</p>
-                  <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={e => e.stopPropagation()}>
+                  <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
+                  <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
                     <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
                     <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* ПАГИНАЦИЯ */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 py-4">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                <button key={pageNum} onClick={() => handlePageSelect(pageNum)} className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-black ${currentPage === pageNum ? 'bg-[#c0ff00] text-black shadow-md scale-105' : 'bg-white/5 text-gray-500 hover:text-white'}`}>{pageNum}</button>
-              ))}
-            </div>
+            ))
           )}
         </div>
-      )}
+
+        {/* СИСТЕМА ПАГИНАЦИИ */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 select-none" style={{ marginTop: '24px' }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+              <button key={pageNum} onClick={() => handlePageSelect(pageNum)} className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-black transition-all ${currentPage === pageNum ? 'bg-[#c0ff00] text-black shadow-md scale-105' : 'bg-white/5 text-gray-500 hover:text-white'}`}>{pageNum}</button>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 }
