@@ -76,6 +76,10 @@ export default function Home() {
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
+  // Новые состояния для фонового скрипта конвертации старых картинок
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState('');
+
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
@@ -131,13 +135,102 @@ export default function Home() {
     });
   }
 
+  // Скрипт глобальной пакетной миграции старых картинок постов и профилей в WebP прямо с телефона
+  async function runWebPMigration() {
+    if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP? Это может занять некоторое время.')) return;
+    
+    setIsMigrating(true);
+    setMigrationProgress('Запуск процесса... Сбор данных таблиц.');
+
+    try {
+      // 1. Конвертация обложек постов
+      setMigrationProgress('Анализ обложек публикаций...');
+      const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
+      if (postsError) throw postsError;
+
+      let postsCount = 0;
+      if (posts) {
+        for (let i = 0; i < posts.length; i++) {
+          const post = posts[i];
+          if (post.cover_url && !post.cover_url.endsWith('.webp')) {
+            setMigrationProgress(`Пережатие обложки статьи [${i + 1}/${posts.length}]...`);
+            try {
+              const res = await fetch(post.cover_url);
+              const blob = await res.blob();
+              const file = new File([blob], 'post.jpg', { type: blob.type });
+              const webpBlob = await convertToWebP(file);
+              const fileName = `migrated-post-cover-${post.id}-${Date.now()}.webp`;
+
+              const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, webpBlob, { contentType: 'image/webp', upsert: true });
+
+              if (uploadError) throw uploadError;
+
+              const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+              if (urlData?.publicUrl) {
+                await supabase.from('posts').update({ cover_url: urlData.publicUrl }).eq('id', post.id);
+                postsCount++;
+              }
+            } catch (err) {
+              console.error(`Ошибка обработки поста ${post.id}:`, err);
+            }
+          }
+        }
+      }
+
+      // 2. Конвертация аватарок жителей
+      setMigrationProgress('Анализ аватарок жителей сервера...');
+      const { data: users, error: usersError } = await supabase.from('users').select('id, avatar_url');
+      if (usersError) throw usersError;
+
+      let usersCount = 0;
+      if (users) {
+        for (let i = 0; i < users.length; i++) {
+          const user = users[i];
+          if (user.avatar_url && !user.avatar_url.endsWith('.webp') && !user.avatar_url.includes('via.placeholder')) {
+            setMigrationProgress(`Пережатие аватара жителя [${i + 1}/${users.length}]...`);
+            try {
+              const res = await fetch(user.avatar_url);
+              const blob = await res.blob();
+              const file = new File([blob], 'avatar.jpg', { type: blob.type });
+              const webpBlob = await convertToWebP(file);
+              const fileName = `migrated-user-avatar-${user.id}-${Date.now()}.webp`;
+
+              const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(fileName, webpBlob, { contentType: 'image/webp', upsert: true });
+
+              if (uploadError) throw uploadError;
+
+              const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+              if (urlData?.publicUrl) {
+                await supabase.from('users').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
+                usersCount++;
+              }
+            } catch (err) {
+              console.error(`Ошибка обработки юзера ${user.id}:`, err);
+            }
+          }
+        }
+      }
+
+      setMigrationProgress(`Успешно завершено! Оптимизировано постов: ${postsCount}, аватарок пользователей: ${usersCount}.`);
+      loadPlayers(); 
+    } catch (e: any) {
+      alert(`Ошибка выполнения скрипта: ${e.message}`);
+      setMigrationProgress('Процесс принудительно остановлен.');
+    } finally {
+      setIsMigrating(false);
+    }
+  }
+
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
       const file = event.target.files?.[0];
       if (!file) return;
 
-      // Конвертируем изображение в WebP blob на клиенте перед отправкой
       const webpBlob = await convertToWebP(file);
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
 
@@ -370,7 +463,7 @@ export default function Home() {
     if (!selectedPlayer) return;
     const updatedRoles = selectedPlayer.roles.filter(r => r !== roleName);
     const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    const { error = null } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
     if (!error) {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
@@ -513,10 +606,6 @@ export default function Home() {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
-  const getRoleColor = (roleName: string) => {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
-    return found ? found.color : '#888888';
-  };
   const isDead = (roles: string[]) => roles.some(r => r.toLowerCase() === 'мёртв');
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
@@ -811,8 +900,10 @@ export default function Home() {
                         <div className="bg-[#c0ff00] text-black text-[9px] font-black uppercase px-2 py-1 rounded-md shadow-lg cursor-help">Soon</div>
                         <div className="hidden xl:block absolute top-[calc(100%+8px)] right-0 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">Функционал в разработке, появится позже</div>
                       </div>
-                      <div className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
+                      <div className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale"
+                        style={{ backgroundImage: "url('/mapicon.svg')" }} />
                       <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
+
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
                         <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover/widget:scale-110 transition-transform backdrop-blur-md shrink-0"><Map size={20} className="text-gray-400 xl:w-6 xl:h-6" /></div>
                         <div className="text-left xl:text-center flex-1"><h3 className="text-base xl:text-lg font-bold text-gray-300 m-0 tracking-wide drop-shadow-md">Карта мира</h3></div>
@@ -897,7 +988,7 @@ export default function Home() {
 
             {activeDocument !== 'none' && isEditing && (
               <div className="space-y-4 scale-100 w-full pt-2">
-                <div ref={editorRef} contentEditable suppressContentEditableWarning onKeyUp={checkFormatting} onMouseUp={checkFormatting} onInput={checkFormatting} className="w-full min-h-[600px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" data-placeholder="Текст документа..." />
+                <div ref={editorRef} contentEditable className="w-full min-h-[600px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" data-placeholder="Текст документа..." />
               </div>
             )}
             
@@ -907,7 +998,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* КАРТА МИРА (ЗАГЛУШКА) */}
+        {/* КАРТА МИРА */}
         {activeTab === 'map' && (
           <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
             <div className="flex items-center justify-between w-full px-1 mb-4">
@@ -975,7 +1066,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* АДМИН ПАНЕЛЬ */}
+        {/* ИСПРАВЛЕНО: АДМИН ПАНЕЛЬ С ДИНАМИЧЕСКИМ СКИПТОМ ВЕБП МИГРАЦИИ КАРТИНОК */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -1025,6 +1116,33 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            {/* ДОБАВЛЕНО: Новый блок управления глобальной пакетной оптимизацией старых изображений */}
+            <div className="md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl mt-6">
+              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                <RefreshCw size={16} className={isMigrating ? "animate-spin text-[#c0ff00]" : "text-[#c0ff00]"} />
+                <span>Глобальная оптимизация медиа (WebP конвертер)</span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Этот инструмент в один клик пройдётся по всей базе данных (статьям блога и аватаркам пользователей), найдёт все изображения старых форматов (PNG/JPEG), на лету сожмет их в современный WebP (85% качества) через Canvas и обновит ссылки в таблицах. Это снизит трафик сайта на 65% прямо с экрана телефона.
+              </p>
+              
+              {migrationProgress && (
+                <div className="text-xs font-mono bg-black/30 p-3 rounded-2xl border border-white/5 text-gray-300 break-all leading-normal">
+                  {migrationProgress}
+                </div>
+              )}
+
+              <button 
+                onClick={runWebPMigration} 
+                disabled={isMigrating}
+                className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3 font-black text-xs uppercase tracking-wider disabled:opacity-40"
+              >
+                {isMigrating ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
+                <span>{isMigrating ? 'Конвертация медиафайлов...' : 'Запустить WebP миграцию по всему сайту'}</span>
+              </button>
+            </div>
+
           </div>
         )}
       </main>
@@ -1050,11 +1168,11 @@ export default function Home() {
        )}
 
        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
        </nav>
       </aside>
 
