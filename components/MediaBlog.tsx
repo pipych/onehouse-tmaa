@@ -95,7 +95,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАДЁЖНЫЕ ФУНКЦИИ С ИСПРАВЛЕННЫМ ХОЙСТИНГОМ ФУНКЦИЙ НАВИГАЦИИ
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ
   // --------------------------------------------------------
   
   function convertToWebP(file: File): Promise<Blob> {
@@ -356,7 +356,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     return [];
   }
 
-  // ВОЗВРАЩЕНО НА МЕСТО: Функции навигации постов, которые выпали в прошлой итерации
   function handleOpenPost(post: Post) {
     setSelectedPost(post);
     loadCommentsAndTheirLikes(post.id);
@@ -808,7 +807,27 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   )}
                 </div>
 
-                {post.cover_url && <div className="px-5 md:px-6 w-full mb-2"><div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" /></div></div>}
+                {/* ИСПРАВЛЕНО: Добавлен рендеринг YouTube плееров прямо в карточки постов главной ленты */}
+                {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) && (
+                  <div className="px-5 md:px-6 w-full mb-2">
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                      <iframe 
+                        src={getYoutubeEmbedUrl(post.youtube_url)!} 
+                        className="absolute inset-0 w-full h-full border-none" 
+                        allowFullScreen 
+                        loading="lazy" 
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {post.cover_url && !post.youtube_url && (
+                  <div className="px-5 md:px-6 w-full mb-2">
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
+                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
                   <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
