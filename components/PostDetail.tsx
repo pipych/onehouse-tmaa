@@ -170,9 +170,8 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   }
 
   return (
-    // ИСПРАВЛЕНО: fixed inset-0 делает страницу полноэкранной, убирая резкие срезы размытий по бокам на мобильных устройствах
-    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
-      {/* ИСПРАВЛЕНО: Внутренний контейнер max-w-3xl центрирует элементы и удерживает их на своих местах */}
+    // ИСПРАВЛЕНО: Добавлены overflow-y-auto и h-full, чтобы страница прокручивалась на мобилках
+    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto h-full p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in touch-pan-y">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
         {/* Кнопка Назад */}
@@ -205,14 +204,14 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
 
           {post.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
               </div>
             </div>
           )}
           {post.cover_url && !post.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
                 <img src={post.cover_url} className="absolute inset-0 w-full h-full object-cover" loading="lazy" alt="cover" />
               </div>
             </div>
