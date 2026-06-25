@@ -152,9 +152,8 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
   }, []);
 
   return (
-    // ИСПРАВЛЕНО: fixed inset-0 разворачивает рабочую область редактора на весь физический экран
-    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in">
-      {/* ИСПРАВЛЕНО: Коробка max-w-3xl удерживает поля ввода и элементы управления на своих местах */}
+    // ИСПРАВЛЕНО: Добавлены overflow-y-auto и h-full для разблокировки прокрутки редактора
+    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto h-full p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in touch-pan-y">
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
         
         <div className="flex items-between justify-between w-full mb-12">
