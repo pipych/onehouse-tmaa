@@ -169,12 +169,15 @@ export default function Home() {
 
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP? Это может занять некоторое время.')) return;
+    
     setIsMigrating(true);
     setMigrationProgress('Запуск процесса... Сбор данных таблиц.');
+
     try {
       setMigrationProgress('Анализ обложек публикаций...');
       const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
       if (postsError) throw postsError;
+
       let postsCount = 0;
       if (posts) {
         for (let i = 0; i < posts.length; i++) {
@@ -198,9 +201,11 @@ export default function Home() {
           }
         }
       }
+
       setMigrationProgress('Анализ аватарок жителей сервера...');
       const { data: users, error: usersError } = await supabase.from('users').select('id, avatar_url');
       if (usersError) throw usersError;
+
       let usersCount = 0;
       if (users) {
         for (let i = 0; i < users.length; i++) {
@@ -224,8 +229,56 @@ export default function Home() {
           }
         }
       }
-      setMigrationProgress(`Успешно завершено! Оптимизировано постов: ${postsCount}, аватарок пользователей: ${usersCount}.`);
-      loadPlayers();
+
+      // ✅ НОВЫЙ БЛОК: чистка хранилища от не-WebP файлов
+      setMigrationProgress('Сканирование хранилища на наличие старых форматов...');
+      
+      const nonWebpExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.svg'];
+      let deletedCount = 0;
+      let pageOffset = 0;
+      const pageSize = 100;
+
+      // Собираем все ссылки которые сейчас используются в БД
+      const activeUrls = new Set<string>();
+      if (posts) posts.forEach(p => { if (p.cover_url) activeUrls.add(p.cover_url); });
+      if (users) users.forEach(u => { if (u.avatar_url) activeUrls.add(u.avatar_url); });
+
+      while (true) {
+        const { data: storageFiles, error: listError } = await supabase.storage
+          .from('avatars')
+          .list('', { limit: pageSize, offset: pageOffset });
+
+        if (listError) { console.error('Ошибка чтения хранилища:', listError); break; }
+        if (!storageFiles || storageFiles.length === 0) break;
+
+        const filesToDelete = storageFiles.filter(file => {
+          const nameLower = file.name.toLowerCase();
+          const isOldFormat = nonWebpExtensions.some(ext => nameLower.endsWith(ext));
+          if (!isOldFormat) return false;
+
+          // Проверяем что файл НЕ используется в БД
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(file.name);
+          const isActive = activeUrls.has(urlData?.publicUrl || '');
+          return !isActive;
+        });
+
+        if (filesToDelete.length > 0) {
+          const pathsToDelete = filesToDelete.map(f => f.name);
+          setMigrationProgress(`Удаление ${pathsToDelete.length} старых файлов из хранилища...`);
+          const { error: deleteError } = await supabase.storage.from('avatars').remove(pathsToDelete);
+          if (deleteError) {
+            console.error('Ошибка удаления файлов:', deleteError);
+          } else {
+            deletedCount += pathsToDelete.length;
+          }
+        }
+
+        if (storageFiles.length < pageSize) break;
+        pageOffset += pageSize;
+      }
+
+      setMigrationProgress(`✅ Готово! Конвертировано постов: ${postsCount}, аватарок: ${usersCount}. Удалено старых файлов из хранилища: ${deletedCount}.`);
+      loadPlayers(); 
     } catch (e: any) {
       alert(`Ошибка выполнения скрипта: ${e.message}`);
       setMigrationProgress('Процесс принудительно остановлен.');
