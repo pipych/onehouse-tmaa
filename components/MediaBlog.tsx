@@ -95,7 +95,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   });
 
   // --------------------------------------------------------
-  // НАДЁЖНЫЕ ХОЙСТИНГ-ФУНКЦИИ
+  // НАДЁЖНЫЕ ФУНКЦИИ С ИСПРАВЛЕННЫМ ХОЙСТИНГОМ И НАВИГАЦИЕЙ
   // --------------------------------------------------------
   
   function convertToWebP(file: File): Promise<Blob> {
@@ -656,10 +656,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
               />
               <div className="flex-1 min-w-0">
                 <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
-                  <Clock size={12} /> 
-                  {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
-                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
               </div>
             </div>
 
@@ -830,11 +827,9 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 )}
 
                 <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
-                  <div>
-                    <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
-                  </div>
-                  <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-2xl font-black text-white mb-2 leading-tight truncate">{post.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
+                  <div className="flex items-center justify-start gap-3 bg-transparent select-none" onClick={(e) => { e.stopPropagation(); }}>
                     <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
                     <button onClick={() => handleOpenPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
                   </div>
@@ -844,8 +839,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* ВОЗВРАЩЕНО НА МЕСТО: СИСТЕМА ПАГИНАЦИИ 1: КНОПКА «ПОКАЗАТЬ ЕЩЕ» */}
-        {totalCount > posts.length && (
+        {/* ИСПРАВЛЕНО: Теперь используется железное условие currentPage < totalPages для стопроцентного отображения кнопки */}
+        {currentPage < totalPages && (
           <div className="flex justify-center mt-2 mb-4 select-none">
             <button onClick={loadMorePosts} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 hover:border-[#c0ff00]/30 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all active:scale-95 shadow-xl">
               <RefreshCw size={14} className="animate-pulse text-[#c0ff00]" />
