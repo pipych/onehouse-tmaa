@@ -162,7 +162,6 @@ export default function Home() {
     return found ? found.color : '#888888';
   }
 
-  // Вспомогательный хелпер для вычленения имени файла из длинной публичной ссылки Supabase
   function getStoragePathFromUrl(url: string) {
     if (!url) return null;
     const parts = url.split('/public/avatars/');
@@ -184,7 +183,6 @@ export default function Home() {
     }
   }
 
-  // ИСПРАВЛЕНО: Скрипт теперь удаляет старые файлы при миграции, а в конце чистит весь бакет от мусора
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию старых изображений и ПОЛНОЕ удаление не-WebP оригиналов из хранилища?')) return;
     
@@ -195,7 +193,6 @@ export default function Home() {
       let postsCount = 0;
       let usersCount = 0;
 
-      // 1. Конвертация обложек постов + удаление оригиналов
       setMigrationProgress('Анализ обложек публикаций...');
       const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
       if (postsError) throw postsError;
@@ -223,8 +220,6 @@ export default function Home() {
               if (urlData?.publicUrl) {
                 await supabase.from('posts').update({ cover_url: urlData.publicUrl }).eq('id', post.id);
                 postsCount++;
-                
-                // Удаляем старый PNG/JPEG файл из хранилища
                 if (oldPath) {
                   await supabase.storage.from('avatars').remove([oldPath]);
                 }
@@ -236,7 +231,6 @@ export default function Home() {
         }
       }
 
-      // 2. Конвертация аватарок жителей + удаление оригиналов
       setMigrationProgress('Анализ аватарок жителей сервера...');
       const { data: users, error: usersError } = await supabase.from('users').select('id, avatar_url');
       if (usersError) throw usersError;
@@ -264,8 +258,6 @@ export default function Home() {
               if (urlData?.publicUrl) {
                 await supabase.from('users').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
                 usersCount++;
-
-                // Удаляем старый PNG/JPEG файл из хранилища
                 if (oldPath) {
                   await supabase.storage.from('avatars').remove([oldPath]);
                 }
@@ -277,9 +269,10 @@ export default function Home() {
         }
       }
 
-      // 3. ТОТАЛЬНАЯ СВИП-ЗАЧИСТКА: Находим и чистим вообще все оставшиеся файлы не-WebP
       setMigrationProgress('Запуск тотальной зачистки бакета от остаточных PNG/JPEG...');
-      const { data: allStorageFiles, error: listError } = await supabase.storage.from('avatars').list({ limit: 1000 });
+      
+      // ИСПРАВЛЕНО: Передан пустой путь к корню папки бакета '' первым аргументом, чтобы избежать ошибки типов в TypeScript
+      const { data: allStorageFiles, error: listError } = await supabase.storage.from('avatars').list('', { limit: 1000 });
       
       let deletedDanglingCount = 0;
       if (allStorageFiles && !listError) {
@@ -303,10 +296,6 @@ export default function Home() {
     }
   }
 
-  async function handleMarginSearch(val: string) {
-    setSearchQuery(val);
-  }
-
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
@@ -327,22 +316,6 @@ export default function Home() {
       alert(`Сбой при загрузке: ${e.message}`);
     } finally {
       setLoadingState(false);
-    }
-  }
-
-  async function fetchServerStatus() {
-    setIsServerLoading(true);
-    try {
-      const res = await fetch('/api/exaroton');
-      const data = await res.json();
-      if (data.success) {
-        setServerInfo(data.data.server || data.data);
-        setCredits(data.data.credits ?? null);
-      }
-    } catch (e) {
-      console.error('Ошибка получения статуса сервера:', e);
-    } finally {
-      setIsServerLoading(false);
     }
   }
 
@@ -379,9 +352,6 @@ export default function Home() {
       setTimeout(checkFormatting, 50);
     }
   }
-
-  function nextMatch() { setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
-  function prevMatch() { setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
 
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
@@ -935,10 +905,10 @@ export default function Home() {
                 <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={18} />{activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}</h2>
               </div>
               {activeDocument !== 'none' && canEditConstitution && !isEditing && (
-                <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
+                <button onClick={() => HillsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
               )}
             </div>
-
+            {/* Вспомогательный скоуп */}
             {activeDocument === 'none' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mt-6 w-full">
                 <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('constitution')}>
@@ -1167,11 +1137,11 @@ export default function Home() {
        )}
 
        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
        </nav>
       </aside>
 
