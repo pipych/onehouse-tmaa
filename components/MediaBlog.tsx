@@ -6,7 +6,8 @@ import {
   Newspaper, Clock, Heart, MessageCircle, Image as ImageIcon, 
   Youtube, X, Send, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, Plus, ArrowLeft,
-  MoreVertical, Share2, RefreshCw, CornerDownRight
+  MoreVertical, Share2, CornerDownRight, RefreshCw,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 
 interface Player {
@@ -450,148 +451,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
-  async function fetchPosts(page: number, append: boolean = false) {
-    const from = (page - 1) * POSTS_PER_PAGE;
-    const to = page * POSTS_PER_PAGE - 1;
-
-    try {
-      const { data, error, count } = await supabase
-        .from('posts')
-        .select('*, author:users(*)', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (data && !error) {
-        if (append) {
-          setPosts(prev => [...prev, ...data]);
-        } else {
-          setPosts(data);
-        }
-        if (count !== null) setTotalCount(count);
-        return data;
-      }
-    } catch (e) {}
-    return [];
-  }
-
-  function handleOpenPost(post: Post) {
-    setSelectedPost(post);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.set('post', post.id);
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  }
-
-  function handleClosePost() {
-    setSelectedPost(null);
-    setComments([]);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.delete('post');
-      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  }
-
-  function handleSharePost(e: React.MouseEvent, postId: string) {
-    e.stopPropagation(); 
-    if (typeof window !== 'undefined') {
-      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedPostId(postId);
-      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
-        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-      }
-      setTimeout(() => setCopiedPostId(null), 2000);
-    }
-  }
-
-  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
-    try {
-      setLoadingState(true);
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const webpBlob = await convertToWebP(file);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
-
-      const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, {
-        contentType: 'image/webp'
-      });
-      
-      if (error) return alert(`Ошибка загрузки: ${error.message}`);
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      if (urlData) setUrlCallback(urlData.publicUrl);
-    } catch (e: any) {
-      alert(`Сбой при загрузке: ${e.message}`);
-    } finally {
-      setLoadingState(false);
-    }
-  }
-
-  async function publishPost() {
-    const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
-      alert('Заголовок и текст не могут быть пустыми!');
-      return;
-    }
-
-    let finalCreatedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
-
-    const postData = {
-      author_id: currentUser.id,
-      title: newPostTitle,
-      content: postContent,
-      cover_url: newPostCoverUrl || null,
-      youtube_url: newPostYoutubeUrl || null,
-      created_at: finalCreatedAt
-    };
-
-    let error;
-    if (editingPostId) {
-      const { error: updateError } = await supabase.from('posts').update(postData).eq('id', editingPostId);
-      error = updateError;
-    } else {
-      const { error: insertError } = await supabase.from('posts').insert([postData]);
-      error = insertError;
-    }
-
-    if (!error) {
-      setIsCreatingPost(false);
-      setEditingPostId(null);
-      setCurrentPage(1);
-      fetchPosts(1, false); 
-    } else {
-      alert(`Ошибка сохранения: ${error.message}`);
-    }
-  }
-
-  async function handleDeletePost(postId: string) {
-    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
-    
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (!error) {
-      setActiveMenuPostId(null);
-      handleClosePost();
-      fetchPosts(currentPage, false);
-    } else {
-      alert(`Ошибка при удалении: ${error.message}`);
-    }
-  }
-
-  function loadMorePosts() {
-    const nextPage = currentPage + 1;
-    setCurrentPage(nextPage);
-    fetchPosts(nextPage, true);
-  }
-
-  function handlePageSelect(pageIdx: number) {
-    setCurrentPage(pageIdx);
-    fetchPosts(pageIdx, false);
-  }
-
   // СИСТЕМА СИНХРОНИЗАЦИИ И ЭФФЕКТОВ
   useEffect(() => {
     fetchPosts(1, false);
@@ -707,7 +566,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({postCommentCounts[selectedPost.id] || 0})</span></h3>
             <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
               <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 placeholder:text-gray-600 shadow-inner" />
-              <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90"><Send size={18} /></button>
+              <div onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90 cursor-pointer"><Send size={18} /></div>
             </div>
 
             <div className="divide-y divide-white/5">
@@ -879,7 +738,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
 
-      {/* ИСПРАВЛЕНО (ГЛАВНЫЙ КОРНЕВОЙ ФИКС): Панель форматирования полностью отвязана от трансформированных блоков Next.js */}
+      {/* Панель форматирования */}
       {isCreatingPost && !selectedPost && isTextSelected && (
         <div className="fixed bottom-24 left-0 right-0 z-[99999] flex items-center justify-center px-4 pointer-events-none animate-fade-in">
           <div className="p-2 bg-[#14171c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-1.5 pointer-events-auto w-full max-w-sm overflow-x-auto no-scrollbar justify-around">
