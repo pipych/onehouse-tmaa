@@ -101,42 +101,65 @@ export default function Home() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
-      setShowScrollTop(window.scrollY > window.innerHeight * 1.5);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // --------------------------------------------------------
+  // НАДЁЖНЫЕ ФУНКЦИИ С ПОДДЕРЖКОЙ АВТО-КОНВЕРТАЦИИ В WEBP
+  // --------------------------------------------------------
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  function convertToWebP(file: File): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Не удалось создать контекст Canvas'));
+          
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Ошибка конвертации в WebP'));
+          }, 'image/webp', 0.85);
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  }
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const tg = (window as any).Telegram?.WebApp;
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
+    try {
+      setLoadingState(true);
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    if (tg && tg.initDataUnsafe?.user?.id) {
-      tg.ready();
-      tg.expand(); 
-      if (typeof tg.requestFullscreen === 'function') {
-        tg.requestFullscreen();
-      }
-      if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
-      if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
-      
-      const userFromTg = tg.initDataUnsafe.user;
-      setTgUser(userFromTg);
-      checkUserInDb(userFromTg.id);
-    } else {
-      setError('Пожалуйста, откройте приложение внутри Telegram.');
-      setLoading(false);
+      // Конвертируем изображение в WebP blob на клиенте перед отправкой
+      const webpBlob = await convertToWebP(file);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
+
+      const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, {
+        contentType: 'image/webp'
+      });
+
+      if (error) return alert(`Ошибка загрузки: ${error.message}`);
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      if (urlData) setUrlCallback(urlData.publicUrl);
+    } catch (e: any) {
+      alert(`Сбой при загрузке: ${e.message}`);
+    } finally {
+      setLoadingState(false);
     }
-  }, []);
+  }
 
-  const fetchServerStatus = async () => {
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function fetchServerStatus() {
     setIsServerLoading(true);
     try {
       const res = await fetch('/api/exaroton');
@@ -150,7 +173,249 @@ export default function Home() {
     } finally {
       setIsServerLoading(false);
     }
-  };
+  }
+
+  function checkFormatting() {
+    if (typeof document === 'undefined') return;
+    try {
+      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+      setFormats({
+        bold: document.queryCommandState('bold'),
+        italic: document.queryCommandState('italic'),
+        strikeThrough: document.queryCommandState('strikeThrough'),
+        h1: formatBlock.includes('h1'),
+        h2: formatBlock.includes('h2'),
+        justifyLeft: document.queryCommandState('justifyLeft'),
+        justifyCenter: document.queryCommandState('justifyCenter'),
+      });
+    } catch (e) {}
+  }
+
+  function execEditorCommand(command: string, value: string = '') {
+    if (typeof document !== 'undefined') {
+      if (command === 'formatBlock') {
+        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
+        const valLower = value.toLowerCase();
+        if ((valLower === 'h1' && currentBlock.includes('h1')) || (valLower === 'h2' && currentBlock.includes('h2'))) {
+          document.execCommand(command, false, 'P');
+        } else {
+          document.execCommand(command, false, value);
+        }
+      } else {
+        document.execCommand(command, false, value);
+      }
+      if (editorRef.current) editorRef.current.focus();
+      setTimeout(checkFormatting, 50);
+    }
+  }
+
+  function nextMatch() { setCurrentPageMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
+  function prevMatch() { setCurrentPageMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
+  const setCurrentPageMatchIndex = setCurrentMatchIndex;
+
+  async function handleServerAction(action: 'start' | 'stop') {
+    setServerActionLoading(true);
+    try {
+      const res = await fetch('/api/exaroton', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+      const data = await res.json();
+      if (data.success) setTimeout(fetchServerStatus, 3000);
+      else alert('Не удалось выполнить действие: ' + (data.error || 'Неизвестная ошибка'));
+    } catch (e) {
+      alert('Ошибка при отправке команды');
+    } finally {
+      setServerActionLoading(false);
+    }
+  }
+
+  function copyToClipboard(text: string) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+    }
+  }
+
+  async function checkUserInDb(tgId: number) {
+    try {
+      const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
+      if (dbError || !user) {
+        setError(`Пользователь с TG ID ${tgId} не найден в базе Supabase.`);
+      } else {
+        setDbUser(user);
+        setNewRpName(user.rp_name);
+        setNewAvatarUrl(user.avatar_url);
+        loadRoles();
+        loadPlayers();
+        loadConstitution();
+      }
+    } catch (e: any) {
+      setError(`Ошибка базы данных: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadRoles() {
+    const { data } = await supabase.from('roles').select('*').order('name');
+    if (data) {
+      setCustomRoles(data.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        color: r.color,
+        canEditConstitution: r.can_edit_constitution
+      })));
+    }
+  }
+
+  async function loadPlayers() {
+    const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
+    if (data) setPlayers(data);
+  }
+
+  async function loadConstitution() {
+    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]);
+    if (data) {
+      const constDoc = data.find((d: any) => d.id === 1);
+      const cmdDoc = data.find((d: any) => d.id === 2);
+      if (constDoc) setConstitutionText(constDoc.content || '');
+      if (cmdDoc) setCommandmentsText(cmdDoc.content || '');
+    }
+  }
+
+  async function saveDocument() {
+    if (!editorRef.current || activeDocument === 'none') return;
+    const updatedContent = editorRef.current.innerHTML;
+    const docId = activeDocument === 'constitution' ? 1 : 2;
+    const { error } = await supabase.from('constitution').upsert({ id: docId, content: updatedContent });
+    if (!error) {
+      if (activeDocument === 'constitution') setConstitutionText(updatedContent);
+      else setCommandmentsText(updatedContent);
+      setIsEditing(false);
+    } else {
+      alert(`Ошибка сохранения. Ошибка: ${error.message}`);
+    }
+  }
+
+  async function saveProfileData() {
+    if (!selectedPlayer || !newRpName.trim()) return;
+    const { error } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
+    if (!error) {
+      const updatedUser = { ...selectedPlayer, rp_name: newRpName, avatar_url: newAvatarUrl };
+      setSelectedPlayer(updatedUser);
+      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedUser);
+      setIsEditingProfile(false);
+      loadPlayers();
+    } else {
+      alert(`Ошибка при сохранении: ${error.message}`);
+    }
+  }
+
+  async function handleAddPlayer() {
+    const tgIdNum = parseInt(addTgId);
+    if (isNaN(tgIdNum) || !addRpName.trim() || !addMcNickname.trim()) return;
+    const { error } = await supabase.from('users').insert([{
+      tg_id: tgIdNum, tg_username: addTgUsername || 'unknown', mc_nickname: addMcNickname, rp_name: addRpName, avatar_url: addAvatarUrl || 'https://via.placeholder.com/150', roles: addRoles, party: addParty || 'Нет партии'
+    }]);
+    if (error) {
+      alert(`Ошибка: ${error.message}`);
+    } else {
+      setAddTgId(''); setAddTgUsername(''); setAddMcNickname(''); setAddRpName(''); setAddAvatarUrl(''); setAddParty(''); loadPlayers();
+    }
+  }
+
+  async function handleCreateRole() {
+    if (!newRoleName.trim()) return;
+    const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
+    const { error } = await supabase.from('roles').insert([newRole]);
+    if (!error) {
+      setNewRoleName('');
+      setNewRolePerm(false);
+      loadRoles();
+    } else {
+      alert(`Ошибка: Имя роли должно быть уникальным`);
+    }
+  }
+
+  function handleRoleChange(id: string, field: string, value: any) {
+    setCustomRoles(roles => roles.map(r => r.id === id ? { ...r, [field]: value } : r));
+  }
+
+  async function saveRoleToDb(role: CustomRole) {
+    if (!role.id) return;
+    await supabase.from('roles').update({
+      name: role.name,
+      color: role.color,
+      can_edit_constitution: role.canEditConstitution
+    }).eq('id', role.id);
+  }
+
+  async function handleAddRoleToUser(roleName: string) {
+    if (!selectedPlayer || selectedPlayer.roles.includes(roleName)) return;
+    const updatedRoles = [...selectedPlayer.roles, roleName];
+    const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
+    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    if (!error) {
+      setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
+      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
+      setShowRoleSelector(false);
+    }
+  }
+
+  async function handleRemoveRoleFromUser(roleName: string) {
+    if (!selectedPlayer) return;
+    const updatedRoles = selectedPlayer.roles.filter(r => r !== roleName);
+    const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
+    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    if (!error) {
+      setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
+      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
+    }
+  }
+
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') {
+    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
+    setActiveTab(tab);
+    setActiveDocument('none'); 
+    setIsEditing(false);
+    setSearchQuery('');
+  }
+
+  // --------------------------------------------------------
+  // ЭФФЕКТЫ И ПОДПИСКИ СЛУШАТЕЛЕЙ
+  // --------------------------------------------------------
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+      setShowScrollTop(window.scrollY > window.innerHeight * 1.5);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const tg = (window as any).Telegram?.WebApp;
+
+    if (tg && tg.initDataUnsafe?.user?.id) {
+      tg.ready();
+      tg.expand(); 
+      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
+      if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
+      if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
+      
+      setTgUser(tg.initDataUnsafe.user);
+      checkUserInDb(tg.initDataUnsafe.user.id);
+    } else {
+      setError('Пожалуйста, откройте приложение внутри Telegram.');
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'profile') {
@@ -165,43 +430,6 @@ export default function Home() {
       editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
     }
   }, [isEditing, activeDocument]);
-
-  const checkFormatting = () => {
-    if (typeof document === 'undefined') return;
-    try {
-      const formatBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-      setFormats({
-        bold: document.queryCommandState('bold'),
-        italic: document.queryCommandState('italic'),
-        strikeThrough: document.queryCommandState('strikeThrough'),
-        h1: formatBlock.includes('h1'),
-        h2: formatBlock.includes('h2'),
-        justifyLeft: document.queryCommandState('justifyLeft'),
-        justifyCenter: document.queryCommandState('justifyCenter'),
-      });
-    } catch (e) {}
-  };
-
-  const execEditorCommand = (command: string, value: string = '') => {
-    if (typeof document !== 'undefined') {
-      if (command === 'formatBlock') {
-        const currentBlock = document.queryCommandValue('formatBlock')?.toLowerCase() || '';
-        const valLower = value.toLowerCase();
-        
-        if ((valLower === 'h1' && currentBlock.includes('h1')) || 
-            (valLower === 'h2' && currentBlock.includes('h2'))) {
-          document.execCommand(command, false, 'P');
-        } else {
-          document.execCommand(command, false, value);
-        }
-      } else {
-        document.execCommand(command, false, value);
-      }
-      
-      if (editorRef.current) editorRef.current.focus();
-      setTimeout(checkFormatting, 50);
-    }
-  };
 
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
 
@@ -227,7 +455,6 @@ export default function Home() {
     const query = searchQuery.toLowerCase().trim();
     const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const fuzzyRegex = new RegExp(safeQuery.split('').join('.*?'), 'i');
-
     const foundIndices: number[] = [];
 
     children.forEach((child, index) => {
@@ -280,219 +507,17 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
-  const nextMatch = () => setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1);
-  const prevMatch = () => setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length);
-
-  const handleServerAction = async (action: 'start' | 'stop') => {
-    setServerActionLoading(true);
-    try {
-      const res = await fetch('/api/exaroton', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-      });
-      const data = await res.json();
-      if (data.success) setTimeout(fetchServerStatus, 3000);
-      else alert('Не удалось выполнить действие: ' + (data.error || 'Неизвестная ошибка'));
-    } catch (e) {
-      alert('Ошибка при отправке команды');
-    } finally {
-      setServerActionLoading(false);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
-        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-      }
-    }
-  };
-
-  const checkUserInDb = async (tgId: number) => {
-    try {
-      const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
-      if (dbError || !user) {
-        setError(`Пользователь с TG ID ${tgId} не найден в базе Supabase.`);
-      } else {
-        setDbUser(user);
-        setNewRpName(user.rp_name);
-        setNewAvatarUrl(user.avatar_url);
-        loadRoles();
-        loadPlayers();
-        loadConstitution();
-      }
-    } catch (e: any) {
-      setError(`Ошибка базы данных: ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadRoles = async () => {
-    const { data } = await supabase.from('roles').select('*').order('name');
-    if (data) {
-      setCustomRoles(data.map((r: any) => ({
-        id: r.id,
-        name: r.name,
-        color: r.color,
-        canEditConstitution: r.can_edit_constitution
-      })));
-    }
-  };
-
-  const loadPlayers = async () => {
-    const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
-    if (data) setPlayers(data);
-  };
-
-  const loadConstitution = async () => {
-    const { data, error } = await supabase.from('constitution').select('*').in('id', [1, 2]);
-    if (data) {
-      const constDoc = data.find((d: any) => d.id === 1);
-      const cmdDoc = data.find((d: any) => d.id === 2);
-      if (constDoc) setConstitutionText(constDoc.content || '');
-      if (cmdDoc) setCommandmentsText(cmdDoc.content || '');
-    }
-  };
-
-  const saveDocument = async () => {
-    if (!editorRef.current || activeDocument === 'none') return;
-    
-    const updatedContent = editorRef.current.innerHTML;
-    const docId = activeDocument === 'constitution' ? 1 : 2;
-    
-    const { error } = await supabase.from('constitution').upsert({ id: docId, content: updatedContent });
-    
-    if (!error) {
-      if (activeDocument === 'constitution') {
-        setConstitutionText(updatedContent);
-      } else {
-        setCommandmentsText(updatedContent);
-      }
-      setIsEditing(false);
-    } else {
-      alert(`Ошибка сохранения. Ошибка: ${error.message}`);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) => {
-    try {
-      setLoadingState(true);
-      const file = event.target.files?.[0];
-      if (!file) return;
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
-      if (error) return alert(`Ошибка загрузки: ${error.message}`);
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      if (urlData) setUrlCallback(urlData.publicUrl);
-    } catch (e: any) {
-      alert(`Сбой при загрузке: ${e.message}`);
-    } finally {
-      setLoadingState(false);
-    }
-  };
-
-  const saveProfileData = async () => {
-    if (!selectedPlayer || !newRpName.trim()) return;
-    const { error } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
-    if (!error) {
-      const updatedUser = { ...selectedPlayer, rp_name: newRpName, avatar_url: newAvatarUrl };
-      setSelectedPlayer(updatedUser);
-      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedUser);
-      setIsEditingProfile(false);
-      loadPlayers();
-    } else {
-      alert(`Ошибка при сохранении: ${error.message}`);
-    }
-  };
-
-  const handleAddPlayer = async () => {
-    const tgIdNum = parseInt(addTgId);
-    if (isNaN(tgIdNum) || !addRpName.trim() || !addMcNickname.trim()) return;
-    const { error } = await supabase.from('users').insert([{
-      tg_id: tgIdNum, tg_username: addTgUsername || 'unknown', mc_nickname: addMcNickname, rp_name: addRpName, avatar_url: addAvatarUrl || 'https://via.placeholder.com/150', roles: addRoles, party: addParty || 'Нет партии'
-    }]);
-    if (error) {
-      alert(`Ошибка: ${error.message}`);
-    } else {
-      setAddTgId(''); setAddTgUsername(''); setAddMcNickname(''); setAddRpName(''); setAddAvatarUrl(''); setAddParty(''); loadPlayers();
-    }
-  };
-
-  const handleCreateRole = async () => {
-    if (!newRoleName.trim()) return;
-    const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
-    const { error } = await supabase.from('roles').insert([newRole]);
-    if (!error) {
-      setNewRoleName('');
-      setNewRolePerm(false);
-      loadRoles();
-    } else {
-      alert(`Ошибка: Имя роли должно быть уникальным`);
-    }
-  };
-
-  const handleRoleChange = (id: string, field: string, value: any) => {
-    setCustomRoles(roles => roles.map(r => r.id === id ? { ...r, [field]: value } : r));
-  };
-
-  const saveRoleToDb = async (role: CustomRole) => {
-    if (!role.id) return;
-    await supabase.from('roles').update({
-      name: role.name,
-      color: role.color,
-      can_edit_constitution: role.canEditConstitution
-    }).eq('id', role.id);
-  };
-
-  const handleAddRoleToUser = async (roleName: string) => {
-    if (!selectedPlayer || selectedPlayer.roles.includes(roleName)) return;
-    const updatedRoles = [...selectedPlayer.roles, roleName];
-    const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
-    if (!error) {
-      setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
-      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
-      setShowRoleSelector(false);
-    }
-  };
-
-  const handleRemoveRoleFromUser = async (roleName: string) => {
-    if (!selectedPlayer) return;
-    const updatedRoles = selectedPlayer.roles.filter(r => r !== roleName);
-    const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
-    if (!error) {
-      setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
-      if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
-    }
-  };
-
-  const handleTabChange = (tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') => {
-    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
-    setActiveTab(tab);
-    setActiveDocument('none'); 
-    setIsEditing(false);
-    setSearchQuery('');
-  };
-
+  // Вычисляемые логические флаги
   const isAdmin = dbUser?.roles.includes('admin');
-
   const canEditConstitution = dbUser?.roles.some(r => {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
-
   const getRoleColor = (roleName: string) => {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   };
-
   const isDead = (roles: string[]) => roles.some(r => r.toLowerCase() === 'мёртв');
-
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
   const sortedPlayers = players
@@ -542,10 +567,7 @@ export default function Home() {
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
-      {/* ФОН ДЛЯ ТЕЛЕФОНОВ */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
-      
-      {/* ЖИВЫЕ ОБОИ ДЛЯ ПК */}
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
           <source src="/bg-video.mp4" type="video/mp4" />
@@ -554,10 +576,9 @@ export default function Home() {
       </div>
 
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
-      
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {/* Модальное окно справки для Мобилок */}
+      {/* Модальное окно справки */}
       {showTooltip !== 'none' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:hidden" onClick={() => setShowTooltip('none')}>
           <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
@@ -577,15 +598,12 @@ export default function Home() {
 
       {/* Верхний док управления */}
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
-        
-        {/* Кнопка сохранения */}
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
           </button>
         </div>
 
-        {/* Кнопка Профиля (Только на телефонах) */}
         {dbUser && !selectedPlayer && !isCreatingPost && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
@@ -612,15 +630,15 @@ export default function Home() {
         md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto 
       `}>
         <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 pointer-events-auto w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-center">
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Bold size={14}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Italic size={14}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Strikethrough size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={14}/></button>
           <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading1 size={14}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><Heading2 size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading1 size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading2 size={14}/></button>
           <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignLeft size={14}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'hover:bg-white/5 hover:text-[#c0ff00]'}`}><AlignCenter size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={14}/></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={14}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-xl md:rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
         </div>
       </div>
@@ -691,10 +709,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* ГЛАВНЫЙ КОНТЕЙНЕР (Без скрытия!) */}
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР */}
       <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col">
-        
-        {/* ГЛАВНАЯ (Виджет Сервера, Конституция, Карта) */}
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full animate-fade-in">
             <div className="flex items-center justify-between w-full px-1">
@@ -705,10 +721,8 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
-              
               {/* СЕРВЕР ВИДЖЕТ */}
               <div className="w-full xl:max-w-[480px] space-y-4">
-                 {/* Заголовок и кнопка обновления */}
                  <div className="flex items-center justify-between w-full px-1">
                     <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
                       <Server size={18} className="text-[#c0ff00]" />
@@ -719,13 +733,9 @@ export default function Home() {
                     </button>
                  </div>
 
-                 {/* Карточка */}
                  <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
                     {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
-                    
                     <div className="relative z-10 flex flex-col gap-4">
-                      
-                      {/* Состояние */}
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
@@ -741,7 +751,6 @@ export default function Home() {
                         )}
                       </div>
 
-                      {/* Информационная сетка */}
                       <div className="space-y-2">
                         <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                           <div className="min-w-0 flex-1">
@@ -773,54 +782,23 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* Кнопки */}
                       <div className="flex gap-2 pt-1">
-                        <button 
-                          onClick={() => handleServerAction('start')}
-                          disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)}
-                          className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"
-                        >
-                          <Play size={14} className="fill-current" />
-                          <span>Включить</span>
-                        </button>
-                        <button 
-                          onClick={() => handleServerAction('stop')}
-                          disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)}
-                          className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
-                        >
-                          <Square size={14} className="fill-current" />
-                          <span>Выключить</span>
-                        </button>
+                        <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"><Play size={14} className="fill-current" /><span>Включить</span></button>
+                        <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"><Square size={14} className="fill-current" /><span>Выключить</span></button>
                       </div>
-
                     </div>
                  </div>
               </div>
 
-              {/* ПРАВАЯ КОЛОНКА (ВИДЖЕТЫ КОНСТИТУЦИИ И КАРТЫ) */}
+              {/* ВИДЖЕТЫ КОНСТИТУЦИИ И КАРТЫ */}
               <div className="w-full xl:max-w-[320px] shrink-0 space-y-4">
                  <div className="hidden xl:block h-[26px]"></div> 
-                 
                  <div className="flex flex-col sm:flex-row xl:flex-col gap-4 w-full">
-                   
-                   {/* ВИДЖЕТ КОНСТИТУЦИИ */}
-                   <div 
-                      onClick={() => {
-                        setActiveTab('constitution');
-                        setActiveDocument('constitution');
-                      }}
-                      className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1"
-                    >
-                      <div 
-                        className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat"
-                        style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} 
-                      />
+                   <div onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }} className="group relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1">
+                      <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
                       <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
-
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
-                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0">
-                          <BookOpen size={20} className="text-[#c0ff00] xl:w-6 xl:h-6" />
-                        </div>
+                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0"><BookOpen size={20} className="text-[#c0ff00] xl:w-6 xl:h-6" /></div>
                         <div className="text-left xl:text-center flex-1">
                           <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Конституция</h3>
                           <p className="text-[10px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые законы</p>
@@ -828,44 +806,25 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* ВИДЖЕТ КАРТЫ С ПЛАШКОЙ SOON */}
-                    <div 
-                      onClick={() => handleTabChange('map')}
-                      className="group/widget relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1"
-                    >
-                      {/* ПЛАШКА SOON С ПОДСКАЗКОЙ */}
+                    <div onClick={() => handleTabChange('map')} className="group/widget relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 hover:border-[#c0ff00]/40 transition-all cursor-pointer shadow-xl flex flex-row xl:flex-col items-center justify-start xl:justify-center w-full h-[110px] xl:h-[180px] p-5 flex-1">
                       <div className="absolute top-4 right-4 z-30 group/badge">
                         <div className="bg-[#c0ff00] text-black text-[9px] font-black uppercase px-2 py-1 rounded-md shadow-lg cursor-help">Soon</div>
-                        <div className="hidden xl:block absolute top-[calc(100%+8px)] right-0 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">
-                          Функционал в разработке, появится позже
-                        </div>
+                        <div className="hidden xl:block absolute top-[calc(100%+8px)] right-0 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">Функционал в разработке, появится позже</div>
                       </div>
-
-                      {/* ФОНОВАЯ КАРТИНКА (mapicon.svg) */}
-                      <div 
-                        className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale"
-                        style={{ backgroundImage: "url('/mapicon.svg')" }} 
-                      />
+                      <div className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
                       <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
-
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
-                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover/widget:scale-110 transition-transform backdrop-blur-md shrink-0">
-                          <Map size={20} className="text-gray-400 xl:w-6 xl:h-6" />
-                        </div>
-                        <div className="text-left xl:text-center flex-1">
-                          <h3 className="text-base xl:text-lg font-bold text-gray-300 m-0 tracking-wide drop-shadow-md">Карта мира</h3>
-                        </div>
+                        <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover/widget:scale-110 transition-transform backdrop-blur-md shrink-0"><Map size={20} className="text-gray-400 xl:w-6 xl:h-6" /></div>
+                        <div className="text-left xl:text-center flex-1"><h3 className="text-base xl:text-lg font-bold text-gray-300 m-0 tracking-wide drop-shadow-md">Карта мира</h3></div>
                       </div>
                     </div>
-
                  </div>
               </div>
-
             </div>
           </div>
         )}
 
-        {/* --- ПОДКЛЮЧАЕМ НОВЫЙ КОМПОНЕНТ БЛОГА --- */}
+        {/* ВКЛАДКА МЕДИА БЛОГА */}
         {activeTab === 'media' && (
           <MediaBlog 
             currentUser={dbUser} 
@@ -881,178 +840,82 @@ export default function Home() {
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 {activeDocument !== 'none' && !isEditing && (
-                  <button 
-                    onClick={() => setActiveDocument('none')} 
-                    className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 shadow-md"
-                  >
-                    <ArrowLeft size={16} />
-                  </button>
+                  <button onClick={() => setActiveDocument('none')} className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 shadow-md"><ArrowLeft size={16} /></button>
                 )}
-                <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide flex items-center gap-2">
-                  <BookOpen size={18} />
-                  {activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}
-                </h2>
+                <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={18} />{activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}</h2>
               </div>
-
               {activeDocument !== 'none' && canEditConstitution && !isEditing && (
                 <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
               )}
             </div>
 
-            {/* МЕНЮ ВЫБОРА ДОКУМЕНТОВ */}
             {activeDocument === 'none' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mt-6 w-full">
-                
-                {/* Виджет: Конституция */}
                 <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('constitution')}>
-                  {/* Tooltip для ПК */}
-                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">
-                    Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.
-                  </div>
-
+                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.</div>
                   <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-[#c0ff00]/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
-                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat"
-                      style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
+                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
-                    
-                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
-                      <Info size={16} />
-                    </button>
-                    
-                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-[#c0ff00] transition-colors shadow-lg backdrop-blur-sm">
-                      <Info size={18} />
-                    </div>
-
-                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
-                      <div className="text-left md:text-center flex-1">
-                        <h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3>
-                        <p className="text-[10px] md:text-sm text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p>
-                      </div>
-                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden"><Info size={16} /></button>
+                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-[#c0ff00] transition-colors shadow-lg backdrop-blur-sm"><Info size={18} /></div>
+                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full"><div className="text-left md:text-center flex-1"><h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3><p className="text-[10px] md:text-sm text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p></div></div>
                   </div>
                 </div>
 
-                {/* Виджет: Заповеди дома */}
                 <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('commandments')}>
-                  {/* Tooltip для ПК */}
-                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">
-                    Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Никакое оправдание под предлогом РП не принимается, все кто нарушат — дураки.
-                  </div>
-
+                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Rules apply.</div>
                   <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-red-500/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
-                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat"
-                      style={{ backgroundImage: "url('/zapovedi.gif')", imageRendering: "pixelated" }} />
+                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat" style={{ backgroundImage: "url('/zapovedi.gif')", imageRendering: "pixelated" }} />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
-                    
-                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden">
-                      <Info size={16} />
-                    </button>
-                    
-                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-red-400 transition-colors shadow-lg backdrop-blur-sm">
-                      <Info size={18} />
-                    </div>
-
-                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full">
-                      <div className="text-left md:text-center flex-1">
-                        <h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3>
-                        <p className="text-[10px] md:text-sm text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p>
-                      </div>
-                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden"><Info size={16} /></button>
+                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-red-400 transition-colors shadow-lg backdrop-blur-sm"><Info size={18} /></div>
+                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full"><div className="text-left md:text-center flex-1"><h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3><p className="text-[10px] md:text-sm text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p></div></div>
                   </div>
                 </div>
-
               </div>
             )}
 
-            {/* ПРОСМОТР/РЕДАКТИРОВАНИЕ ДОКУМЕНТА */}
             {activeDocument !== 'none' && !isEditing && (
               <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[135px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
                 <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
                   <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
-                  <input
-                    type="text"
-                    placeholder={`Поиск по ${activeDocument === 'constitution' ? 'конституции' : 'заповедям'}...`}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full flex-1 placeholder:text-gray-500"
-                  />
-                  
+                  <input type="text" placeholder={`Поиск по ${activeDocument === 'constitution' ? 'конституции' : 'заповедям'}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full flex-1 placeholder:text-gray-500" />
                   {matches.length > 0 && (
                     <div className="flex items-center gap-2 ml-2 border-l border-white/10 pl-3">
-                      <span className="text-[10px] text-gray-400 font-mono font-bold whitespace-nowrap">
-                        {currentMatchIndex} / {matches.length}
-                      </span>
+                      <span className="text-[10px] text-gray-400 font-mono font-bold whitespace-nowrap">{currentMatchIndex} / {matches.length}</span>
                       <div className="flex gap-1">
-                        <button onClick={prevMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
-                          <ChevronUp size={14}/>
-                        </button>
-                        <button onClick={nextMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all">
-                          <ChevronDown size={14}/>
-                        </button>
+                        <button onClick={prevMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90"><ChevronUp size={14}/></button>
+                        <button onClick={nextMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90"><ChevronDown size={14}/></button>
                       </div>
                     </div>
                   )}
-
-                  {searchQuery && matches.length === 0 && (
-                    <span className="text-[10px] font-bold text-red-400 ml-2 whitespace-nowrap">0 / 0</span>
-                  )}
-
-                  {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="p-1.5 ml-2 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-red-400 transition-all active:scale-90 flex-shrink-0">
-                      <X size={14} />
-                    </button>
-                  )}
+                  {searchQuery && matches.length === 0 && <span className="text-[10px] font-bold text-red-400 ml-2 whitespace-nowrap">0 / 0</span>}
+                  {searchQuery && <button onClick={() => setSearchQuery('')} className="p-1.5 ml-2 bg-white/5 rounded-full text-gray-400 hover:text-red-400"><X size={14} /></button>}
                 </div>
               </div>
             )}
 
             {activeDocument !== 'none' && isEditing && (
               <div className="space-y-4 scale-100 w-full pt-2">
-                <div 
-                  ref={editorRef} 
-                  contentEditable 
-                  suppressContentEditableWarning 
-                  onKeyUp={checkFormatting}
-                  onMouseUp={checkFormatting}
-                  onInput={checkFormatting}
-                  className="w-full min-h-[600px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" 
-                  data-placeholder={`Начните писать ${activeDocument === 'constitution' ? 'законы' : 'заповеди'} здесь...`} 
-                />
+                <div ref={editorRef} contentEditable suppressContentEditableWarning onKeyUp={checkFormatting} onMouseUp={checkFormatting} onInput={checkFormatting} className="w-full min-h-[600px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" data-placeholder="Текст документа..." />
               </div>
             )}
             
             {activeDocument !== 'none' && !isEditing && (
-              <div 
-                ref={viewRef}
-                className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" 
-                dangerouslySetInnerHTML={{ __html: currentDocText }} 
-              />
+              <div ref={viewRef} className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" dangerouslySetInnerHTML={{ __html: currentDocText }} />
             )}
           </div>
         )}
 
-        {/* ВКЛАДКА MAP (ЗАГЛУШКА SOON) */}
+        {/* КАРТА МИРА (ЗАГЛУШКА) */}
         {activeTab === 'map' && (
           <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
             <div className="flex items-center justify-between w-full px-1 mb-4">
-              <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2">
-                  <Map size={18} />
-                  Карта мира
-                </h2>
-                <div className="group/badge relative">
-                  <div className="bg-[#c0ff00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md cursor-help shadow-lg">Soon</div>
-                  <div className="hidden md:block absolute top-full left-0 mt-2 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">
-                    Функционал в разработке, появится позже
-                  </div>
-                </div>
-              </div>
+              <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2"><Map size={18} />Карта мира</h2>
             </div>
-            
             <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-[#14171c]/90 backdrop-blur-xl flex items-center justify-center">
               <div className="absolute inset-0 z-0 opacity-20 bg-gradient-to-br from-[#c0ff00]/5 to-transparent" />
-              
-              <div className="text-center p-6 max-w-sm relative z-10 animate-fade-in">
+              <div className="text-center p-6 max-w-sm relative z-10">
                  <div className="w-20 h-20 bg-black/40 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-5 relative shadow-xl">
                    <Map size={32} className="text-gray-500" />
                    <div className="absolute -bottom-2 bg-[#c0ff00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-lg">Soon</div>
@@ -1064,27 +927,20 @@ export default function Home() {
           </div>
         )}
 
-        {/* ИГРОКИ */}
+        {/* ЖИТЕЛИ СЕРВЕРА */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
-              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                <Users size={18} className="text-[#c0ff00]" />
-                Жители сервера
-              </h2>
+              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2"><Users size={18} className="text-[#c0ff00]" />Жители сервера</h2>
             </div>
 
             {dbUser && (
               <div className="space-y-2 w-full md:max-w-sm">
                 <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
                 <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
-                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}>
-                    <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
-                  </div>
+                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
-                    </div>
+                    <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
                     <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
                     <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                   </div>
@@ -1099,10 +955,8 @@ export default function Home() {
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20 hover:bg-[#1a1e24]/90'}`}>
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0">
-                        <img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
-                      </div>
+                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}>
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
@@ -1135,7 +989,7 @@ export default function Home() {
                 <label className="ui-pill-btn w-full justify-center !bg-[#1c2026] !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-3 relative overflow-hidden">
                   <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingNewUser)} disabled={isUploadingNewUser}/>
                   <Upload size={16} className={isUploadingNewUser ? "animate-bounce" : (addAvatarUrl ? "text-[#c0ff00]" : "")} />
-                  <span className="font-medium">{isUploadingNewUser ? 'Загрузка фото...' : (addAvatarUrl ? 'Фото загружено ✅' : 'Загрузить аватарку из галереи')}</span>
+                  <span className="font-medium">{isUploadingNewUser ? 'Загрузка фото...' : (addAvatarUrl ? 'Фото загружено WebP ✅' : 'Загрузить аватарку из галереи')}</span>
                 </label>
               </div>
               <button onClick={handleAddPlayer} disabled={isUploadingNewUser} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3 disabled:opacity-50"><Check size={16} /><span>Создать аккаунт</span></button>
@@ -1157,35 +1011,14 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 flex-1 mr-2">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }} />
-                        <input 
-                          type="text" 
-                          value={role.name.toUpperCase()} 
-                          onChange={e => handleRoleChange(role.id!, 'name', e.target.value.toLowerCase())} 
-                          onBlur={() => saveRoleToDb(role)}
-                          className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full" 
-                          style={{ color: role.color }}
-                        />
+                        <input type="text" value={role.name.toUpperCase()} onChange={e => handleRoleChange(role.id!, 'name', e.target.value.toLowerCase())} onBlur={() => saveRoleToDb(role)} className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full" style={{ color: role.color }} />
                       </div>
                       <div className="flex items-center space-x-3 flex-shrink-0">
                         <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={role.canEditConstitution} 
-                            onChange={e => {
-                              handleRoleChange(role.id!, 'canEditConstitution', e.target.checked);
-                              saveRoleToDb({ ...role, canEditConstitution: e.target.checked });
-                            }} 
-                            className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"
-                          />
+                          <input type="checkbox" checked={role.canEditConstitution} onChange={e => { handleRoleChange(role.id!, 'canEditConstitution', e.target.checked); saveRoleToDb({ ...role, canEditConstitution: e.target.checked }); }} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0" />
                           <span>Законы</span>
                         </label>
-                        <input 
-                          type="color" 
-                          value={role.color} 
-                          onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} 
-                          onBlur={() => saveRoleToDb(role)}
-                          className="w-5 h-5 bg-transparent border-none cursor-pointer rounded"
-                        />
+                        <input type="color" value={role.color} onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} onBlur={() => saveRoleToDb(role)} className="w-5 h-5 bg-transparent border-none cursor-pointer rounded" />
                       </div>
                     </div>
                   </div>
@@ -1197,114 +1030,40 @@ export default function Home() {
       </main>
 
       {/* МЕНЮ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */}
-      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500
-         ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}
-      `}>
-        <div className={`flex w-full items-center justify-around px-2`}>
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <HomeIcon size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
-          </button>
-          
-          <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Newspaper size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span>
-          </button>
-          
-          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <BookOpen size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span>
-          </button>
-          
-          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Users size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
-          </button>
-          
-          {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500 hover:text-gray-300'}`}>
-              <ShieldAlert size={22} />
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span>
-            </button>
-          )}
+      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <div className="flex w-full items-center justify-around px-2">
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><HomeIcon size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span></button>
+          <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span></button>
+          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><BookOpen size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span></button>
+          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Users size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span></button>
+          {isAdmin && <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><ShieldAlert size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span></button>}
         </div>
       </nav>
 
       {/* САЙДБАР ДЛЯ ПК */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
-       
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
-           <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all">
-             <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" />
-           </div>
-           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-             Мой профиль
-           </div>
+           <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" /></div>
+           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
          </button>
        )}
 
        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
-         
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <HomeIcon size={24} />
-            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-              Главная
-            </div>
-         </button>
-
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Newspaper size={24} />
-            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-              .медиа
-            </div>
-         </button>
-
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <BookOpen size={24} />
-            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-              Законы
-            </div>
-         </button>
-
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-            <Users size={24} />
-            <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-              Игроки
-            </div>
-         </button>
-
-         {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-gray-300'}`}>
-              <ShieldAlert size={24} />
-              <div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">
-                Админ-панель
-              </div>
-            </button>
-         )}
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
        </nav>
       </aside>
 
       {/* КНОПКА "НАВЕРХ" */}
-      <button 
-        onClick={scrollToTop} 
-        className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${
-          showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'
-        }`}
-      >
-        <ArrowUp size={20} />
-      </button>
+      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
 
-      {/* Стили H1 и H2 переопределены через !important */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
-        
-        body, html { 
-          font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; 
-          max-w-full; 
-          overflow-x: clip; 
-        }
-        
+        body, html { font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; max-w-full; overflow-x: clip; }
         button, input, textarea, div, span { font-family: inherit; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1319,10 +1078,8 @@ export default function Home() {
         .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); background-color: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(192, 255, 0, 0.1); }
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        
         .prose h1 { font-size: 2rem !important; font-weight: 900 !important; color: #ffffff !important; margin-top: 1.5rem !important; margin-bottom: 0.75rem !important; line-height: 1.1 !important; }
         .prose h2 { font-size: 1.5rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-        
         .prose p { margin-bottom: 0.75rem; color: #d1d5db; transition: all 0.3s ease; }
         .prose b, .prose strong { color: #ffffff; font-weight: 700; }
         .prose i, .prose em { color: #e5e7eb; font-style: italic; }
