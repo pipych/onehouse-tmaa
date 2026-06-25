@@ -385,6 +385,12 @@ export default function Home() {
   // ХУКИ СИНХРОНИЗАЦИИ
   // --------------------------------------------------------
 
+  const currentDocText = activeDocument === 'constitution'
+    ? constitutionText
+    : activeDocument === 'commandments'
+      ? commandmentsText
+      : '';
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 40);
@@ -418,7 +424,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
-      {/* ... (Твой код JSX остается прежним, я просто исправил функцию вызова scrollToTop) ... */}
       <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
     </div>
   );
