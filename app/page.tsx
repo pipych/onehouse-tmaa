@@ -42,13 +42,15 @@ interface CustomRole {
 }
 
 export default function Home() {
+  const POSTS_PER_PAGE = 4;
+  
   // 1. Все состояния (States)
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media'>('profile');
+  const [activeTab, useStateActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media'>('profile');
   const [players, setPlayers] = useState<Player[]>([]);
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -107,9 +109,34 @@ export default function Home() {
   const viewRef = useRef<HTMLDivElement>(null);
 
   // --------------------------------------------------------
-  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (СТРОГО НАВЕРХУ)
+  // ИСПРАВЛЕНО: БАЗОВЫЕ ХЕЛПЕРЫ И НАВИГАЦИЯ НА САМОМ ВЕРХУ КОМПОНЕНТА
   // --------------------------------------------------------
-  
+
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') {
+    setSelectedPlayer(null); 
+    setIsEditingProfile(false); 
+    setShowRoleSelector(false); 
+    useStateActiveTab(tab);
+    setActiveDocument('none'); 
+    setIsEditing(false);
+    setSearchQuery('');
+  }
+
+  function isDead(roles: string[]) {
+    return roles.some(r => r.toLowerCase() === 'мёртв');
+  }
+
+  function getRoleColor(roleName: string) {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
+    return found ? found.color : '#888888';
+  }
+
+  function getStoragePathFromUrl(url: string) {
+    if (!url) return null;
+    const parts = url.split('/public/avatars/');
+    return parts.length > 1 ? parts[1] : null;
+  }
+
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -136,42 +163,6 @@ export default function Home() {
     });
   }
 
-  function getRoleColor(roleName: string) {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
-    return found ? found.color : '#888888';
-  }
-
-  function getStoragePathFromUrl(url: string) {
-    if (!url) return null;
-    const parts = url.split('/public/avatars/');
-    return parts.length > 1 ? parts[1] : null;
-  }
-
-  function isDead(roles: string[]) {
-    return roles.some(r => r.toLowerCase() === 'мёртв');
-  }
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // ВОЗВРАЩЕНО: Функция получения актуального статуса игрового сервера
-  async function fetchServerStatus() {
-    setIsServerLoading(true);
-    try {
-      const res = await fetch('/api/exaroton');
-      const data = await res.json();
-      if (data.success) {
-        setServerInfo(data.data.server || data.data);
-        setCredits(data.data.credits ?? null);
-      }
-    } catch (e) {
-      console.error('Ошибка получения статуса сервера:', e);
-    } finally {
-      setIsServerLoading(false);
-    }
-  }
-
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -182,6 +173,30 @@ export default function Home() {
       default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
     }
   }
+
+  // 4. Вычисляемые константы (Scope)
+  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+  const setActiveTab = handleTabChange;
+  const isAdmin = dbUser?.roles.includes('admin');
+  const canEditConstitution = dbUser?.roles.some(r => {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
+    return found ? found.canEditConstitution : false;
+  });
+  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+  
+  const sortedPlayers = players
+    .filter((player) => player.tg_id !== dbUser?.tg_id)
+    .sort((a, b) => {
+      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
+      if (aDead && !bDead) return 1;
+      if (!aDead && bDead) return -1;
+      return a.rp_name.localeCompare(b.rp_name);
+    });
+
+  // --------------------------------------------------------
+  // ФУНКЦИОНАЛЬНЫЕ ОБРАБОТЧИКИ ДАННЫХ БЭКЕНДА
+  // --------------------------------------------------------
 
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию старых изображений и ПОЛНОЕ удаление не-WebP оригиналов из хранилища?')) return;
@@ -314,6 +329,26 @@ export default function Home() {
       alert(`Сбой при загрузке: ${e.message}`);
     } finally {
       setLoadingState(false);
+    }
+  }
+
+  function scrollToTopAction() {
+    scrollToTop();
+  }
+
+  async function fetchServerStatus() {
+    setIsServerLoading(true);
+    try {
+      const res = await fetch('/api/exaroton');
+      const data = await res.json();
+      if (data.success) {
+        setServerInfo(data.data.server || data.data);
+        setCredits(data.data.credits ?? null);
+      }
+    } catch (e) {
+      console.error('Ошибка получения статуса сервера:', e);
+    } finally {
+      setIsServerLoading(false);
     }
   }
 
@@ -517,25 +552,6 @@ export default function Home() {
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
     }
   }
-
-  // 4. Вычисляемые константы (Scope)
-  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
-  const isAdmin = dbUser?.roles.includes('admin');
-  const canEditConstitution = dbUser?.roles.some(r => {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
-    return found ? found.canEditConstitution : false;
-  });
-  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
-  
-  const sortedPlayers = players
-    .filter((player) => player.tg_id !== dbUser?.tg_id)
-    .sort((a, b) => {
-      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
-      if (aDead && !bDead) return 1;
-      if (!aDead && bDead) return -1;
-      return a.rp_name.localeCompare(b.rp_name);
-    });
 
   // --------------------------------------------------------
   // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ ДАННЫХ
@@ -1166,7 +1182,7 @@ export default function Home() {
       </aside>
 
       {/* КНОПКА "НАВЕРХ" */}
-      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
+      <button onClick={scrollToTopAction} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
