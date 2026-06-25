@@ -42,9 +42,7 @@ interface CustomRole {
 }
 
 export default function Home() {
-  const POSTS_PER_PAGE = 4;
-  
-  // 1. Все состояния (useState)
+  // 1. Все состояния (States)
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,18 +102,20 @@ export default function Home() {
 
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
-  // 2. Все ссылки (useRef)
+  // 2. Ссылки (Refs)
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // 3. ЖЕЛЕЗОБЕТОННЫЙ ВЫНОС ВСЕХ ВЫЧИСЛЯЕМЫХ КОНСТАНТ НА САМЫЙ ВЕРХ СКОУПА КОМПОНЕНТА
+  // 3. Вычисляемые константы (Scope)
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
-  const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
   const isAdmin = dbUser?.roles.includes('admin');
   const canEditConstitution = dbUser?.roles.some(r => {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
+  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+  
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
     .sort((a, b) => {
@@ -126,7 +126,7 @@ export default function Home() {
     });
 
   // --------------------------------------------------------
-  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (ДЛЯ НАДЕЖНОЙ СБОРКИ)
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
   
   function convertToWebP(file: File): Promise<Blob> {
@@ -515,7 +515,7 @@ export default function Home() {
   }
 
   // --------------------------------------------------------
-  // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ
+  // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ ДАННЫХ
   // --------------------------------------------------------
 
   useEffect(() => {
@@ -559,7 +559,6 @@ export default function Home() {
     }
   }, [isEditing, activeDocument]);
 
-  // ИСПРАВЛЕНО: Теперь хук гарантированно находит `currentDocText`, так как переменная объявлена на самом верху компонента
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing || activeDocument === 'none') return;
 
@@ -658,9 +657,7 @@ export default function Home() {
               <h3 className="font-black text-white text-xl tracking-wide">{showTooltip === 'constitution' ? 'Конституция' : 'Заповеди дома'}</h3>
             </div>
             <p className="text-[13px] text-gray-300 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
-              {showTooltip === 'constitution'
-                ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.'
-                : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Никакое оправдание под предлогом РП не принимается, все кто нарушат — дураки.'}
+              {showTooltip === 'constitution' ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.' : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры.'}
             </p>
           </div>
         </div>
@@ -677,28 +674,18 @@ export default function Home() {
         {dbUser && !selectedPlayer && !isCreatingPost && (
           <button
             onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
-            className={`md:hidden flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${
-              showToolbar ? 'w-10 justify-center px-0' : 'w-auto px-1.5 pr-4'
-            }`}
+            className={`md:hidden flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${showToolbar ? 'w-10 justify-center px-0' : 'w-auto px-1.5 pr-4'}`}
           >
             <div className="w-7 h-7 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
               <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
             </div>
-            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] whitespace-nowrap overflow-hidden ${
-              showToolbar ? 'max-w-0 opacity-0 ml-0' : 'max-w-[100px] opacity-100 ml-2.5'
-            }`}>
-              Профиль
-            </span>
+            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] whitespace-nowrap overflow-hidden ${showToolbar ? 'max-w-0 opacity-0 ml-0' : 'max-w-[100px] opacity-100 ml-2.5'}`}>Профиль</span>
           </button>
         )}
       </div>
 
       {/* ОТДЕЛЬНАЯ ПАНЕЛЬ ФОРМАТИРОВАНИЯ */}
-      <div className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center pointer-events-none
-        ${showToolbar ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-12 md:-translate-y-4'}
-        bottom-2 left-2 right-2          
-        md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto 
-      `}>
+      <div className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center pointer-events-none ${showToolbar ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-12 md:-translate-y-4'} bottom-2 left-2 right-2 md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto`}>
         <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 pointer-events-auto w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-center">
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={14}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={14}/></button>
@@ -870,7 +857,7 @@ export default function Home() {
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
                         <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0"><BookOpen size={20} className="text-[#c0ff00] xl:w-6 xl:h-6" /></div>
                         <div className="text-left xl:text-center flex-1">
-                          <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Constitutsiya</h3>
+                          <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Конституция</h3>
                           <p className="text-[10px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые законы</p>
                         </div>
                       </div>
@@ -1142,7 +1129,7 @@ export default function Home() {
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
            <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" /></div>
-           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
+           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
          </button>
        )}
 
