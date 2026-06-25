@@ -156,7 +156,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
             </button>
           )}
           <div className="flex items-center gap-3 mt-2 text-[11px] font-bold text-gray-500">
-            <button onClick={() => handleSendComment(comment.id)} className="hover:text-[#c0ff00]">Ответить</button>
+            <button onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)} className="hover:text-[#c0ff00]">Ответить</button>
           </div>
           {replyingToId === comment.id && (
             <div className="mt-3 flex gap-2 items-center">
@@ -189,7 +189,8 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
               <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 hover:bg-white/5 rounded-full text-gray-400"><MoreVertical size={20} /></button>
               {activeMenu && (
                 <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
-                  <button onClick={() => handleStartEdit(post)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                  {/* ИСПРАВЛЕНО: Изменено название функции с handleStartEdit на проп-функцию onStartEdit */}
+                  <button onClick={() => onStartEdit(post)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
                   <button onClick={() => onDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400">Удалить</button>
                 </div>
               )}
