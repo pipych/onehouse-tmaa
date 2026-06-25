@@ -42,6 +42,8 @@ interface CustomRole {
 }
 
 export default function Home() {
+  const POSTS_PER_PAGE = 4;
+  
   // 1. Все состояния (States)
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
@@ -160,6 +162,13 @@ export default function Home() {
     return found ? found.color : '#888888';
   }
 
+  // Вспомогательный хелпер для вычленения имени файла из длинной публичной ссылки Supabase
+  function getStoragePathFromUrl(url: string) {
+    if (!url) return null;
+    const parts = url.split('/public/avatars/');
+    return parts.length > 1 ? parts[1] : null;
+  }
+
   function isDead(roles: string[]) {
     return roles.some(r => r.toLowerCase() === 'мёртв');
   }
@@ -175,23 +184,28 @@ export default function Home() {
     }
   }
 
+  // ИСПРАВЛЕНО: Скрипт теперь удаляет старые файлы при миграции, а в конце чистит весь бакет от мусора
   async function runWebPMigration() {
-    if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP? Это может занять некоторое время.')) return;
+    if (!confirm('Вы действительно хотите запустить оптимизацию старых изображений и ПОЛНОЕ удаление не-WebP оригиналов из хранилища?')) return;
     
     setIsMigrating(true);
     setMigrationProgress('Запуск процесса... Сбор данных таблиц.');
 
     try {
+      let postsCount = 0;
+      let usersCount = 0;
+
+      // 1. Конвертация обложек постов + удаление оригиналов
       setMigrationProgress('Анализ обложек публикаций...');
       const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
       if (postsError) throw postsError;
 
-      let postsCount = 0;
       if (posts) {
         for (let i = 0; i < posts.length; i++) {
           const post = posts[i];
           if (post.cover_url && !post.cover_url.endsWith('.webp')) {
             setMigrationProgress(`Пережатие обложки статьи [${i + 1}/${posts.length}]...`);
+            const oldPath = getStoragePathFromUrl(post.cover_url);
             try {
               const res = await fetch(post.cover_url);
               const blob = await res.blob();
@@ -209,6 +223,11 @@ export default function Home() {
               if (urlData?.publicUrl) {
                 await supabase.from('posts').update({ cover_url: urlData.publicUrl }).eq('id', post.id);
                 postsCount++;
+                
+                // Удаляем старый PNG/JPEG файл из хранилища
+                if (oldPath) {
+                  await supabase.storage.from('avatars').remove([oldPath]);
+                }
               }
             } catch (err) {
               console.error(`Ошибка обработки поста ${post.id}:`, err);
@@ -217,16 +236,17 @@ export default function Home() {
         }
       }
 
+      // 2. Конвертация аватарок жителей + удаление оригиналов
       setMigrationProgress('Анализ аватарок жителей сервера...');
       const { data: users, error: usersError } = await supabase.from('users').select('id, avatar_url');
       if (usersError) throw usersError;
 
-      let usersCount = 0;
       if (users) {
         for (let i = 0; i < users.length; i++) {
           const user = users[i];
           if (user.avatar_url && !user.avatar_url.endsWith('.webp') && !user.avatar_url.includes('via.placeholder')) {
             setMigrationProgress(`Пережатие аватара жителя [${i + 1}/${users.length}]...`);
+            const oldPath = getStoragePathFromUrl(user.avatar_url);
             try {
               const res = await fetch(user.avatar_url);
               const blob = await res.blob();
@@ -244,6 +264,11 @@ export default function Home() {
               if (urlData?.publicUrl) {
                 await supabase.from('users').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
                 usersCount++;
+
+                // Удаляем старый PNG/JPEG файл из хранилища
+                if (oldPath) {
+                  await supabase.storage.from('avatars').remove([oldPath]);
+                }
               }
             } catch (err) {
               console.error(`Ошибка обработки юзера ${user.id}:`, err);
@@ -252,7 +277,23 @@ export default function Home() {
         }
       }
 
-      setMigrationProgress(`Успешно завершено! Оптимизировано постов: ${postsCount}, аватарок пользователей: ${usersCount}.`);
+      // 3. ТОТАЛЬНАЯ СВИП-ЗАЧИСТКА: Находим и чистим вообще все оставшиеся файлы не-WebP
+      setMigrationProgress('Запуск тотальной зачистки бакета от остаточных PNG/JPEG...');
+      const { data: allStorageFiles, error: listError } = await supabase.storage.from('avatars').list({ limit: 1000 });
+      
+      let deletedDanglingCount = 0;
+      if (allStorageFiles && !listError) {
+        const pathsToDelete = allStorageFiles
+          .map(f => f.name)
+          .filter(name => !name.endsWith('.webp') && name !== '.emptyFolderPlaceholder');
+
+        if (pathsToDelete.length > 0) {
+          const { data: removedFiles } = await supabase.storage.from('avatars').remove(pathsToDelete);
+          if (removedFiles) deletedDanglingCount = removedFiles.length;
+        }
+      }
+
+      setMigrationProgress(`Успешно! Сконвертировано постов: ${postsCount}, аватарок: ${usersCount}. Вычищено остаточного мусора из хранилища: ${deletedDanglingCount} файлов.`);
       loadPlayers(); 
     } catch (e: any) {
       alert(`Ошибка выполнения скрипта: ${e.message}`);
@@ -260,6 +301,10 @@ export default function Home() {
     } finally {
       setIsMigrating(false);
     }
+  }
+
+  async function handleMarginSearch(val: string) {
+    setSearchQuery(val);
   }
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
@@ -283,10 +328,6 @@ export default function Home() {
     } finally {
       setLoadingState(false);
     }
-  }
-
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function fetchServerStatus() {
@@ -504,14 +545,6 @@ export default function Home() {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
     }
-  }
-
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') {
-    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
-    setActiveTab(tab);
-    setActiveDocument('none'); 
-    setIsEditing(false);
-    setSearchQuery('');
   }
 
   // --------------------------------------------------------
@@ -994,14 +1027,14 @@ export default function Home() {
             {dbUser && (
               <div className="space-y-2 w-full md:max-w-sm">
                 <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
-                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
-                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${dbUser && isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
+                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${dbUser && isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                   <div className="flex-1 min-w-0">
-                    <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
+                    <span className={`text-base font-black truncate tracking-wide ${dbUser && isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
                     <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
                     <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                   </div>
-                  <div className="flex-shrink-0 text-gray-500"><Edit2 size={16} className={isDead(dbUser.roles) ? "text-gray-600" : "text-[#c0ff00]/80"} /></div>
+                  <div className="flex-shrink-0 text-gray-500"><Edit2 size={16} className={dbUser && isDead(dbUser.roles) ? "text-gray-600" : "text-[#c0ff00]/80"} /></div>
                 </div>
               </div>
             )}
@@ -1129,16 +1162,16 @@ export default function Home() {
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
            <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" /></div>
-           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
+           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
          </button>
        )}
 
        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
        </nav>
       </aside>
 
