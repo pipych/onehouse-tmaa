@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MoreVertical, Clock, Heart, Share2, MessageCircle, Send, CornerDownRight, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, CornerDownRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -170,84 +170,92 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
-      <div className="w-full flex pt-5 mb-11">
-        <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white"><ArrowLeft size={20} /></button>
-      </div>
-
-      <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
-        <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={post.author?.avatar_url} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} onClick={() => onProfileClick(post.author!)} className="bg-black/50 border border-white/10 cursor-pointer" />
-            <div>
-              <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-            </div>
-          </div>
-          {canManage() && (
-            <div className="relative">
-              <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 hover:bg-white/5 rounded-full text-gray-400"><MoreVertical size={20} /></button>
-              {activeMenu && (
-                <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
-                  {/* ИСПРАВЛЕНО: Изменено название функции с handleStartEdit на проп-функцию onStartEdit */}
-                  <button onClick={() => onStartEdit(post)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
-                  <button onClick={() => onDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400">Удалить</button>
-                </div>
-              )}
-            </div>
-          )}
+    // ИСПРАВЛЕНО: fixed inset-0 делает страницу полноэкранной, убирая резкие срезы размытий по бокам на мобильных устройствах
+    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
+      {/* ИСПРАВЛЕНО: Внутренний контейнер max-w-3xl центрирует элементы и удерживает их на своих местах */}
+      <div className="w-full max-w-3xl mx-auto flex flex-col">
+        
+        {/* Кнопка Назад */}
+        <div className="w-full select-none flex mb-11">
+          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white"><ArrowLeft size={20} /></button>
         </div>
 
-        {post.youtube_url && (
-          <div className="px-5 md:px-6 w-full mb-4">
-            <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
-              <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
+        {/* Карточка поста */}
+        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
+          <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <img src={post.author?.avatar_url} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} onClick={() => onProfileClick(post.author!)} className="bg-black/50 border border-white/10 cursor-pointer" />
+              <div>
+                <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+              </div>
             </div>
-          </div>
-        )}
-        {post.cover_url && !post.youtube_url && (
-          <div className="px-5 md:px-6 w-full mb-4">
-            <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-              <img src={post.cover_url} className="absolute inset-0 w-full h-full object-cover" loading="lazy" alt="cover" />
-            </div>
-          </div>
-        )}
-
-        <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
-          <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{post.title}</h1>
-          <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: post.content }} />
-          <div className="flex items-center justify-start gap-3 mt-2">
-            <button onClick={handleLike} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${isLiked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={isLiked ? "currentColor" : "none"} /> <span>{likesCount}</span></button>
-            <button onClick={handleShare} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold"><span>{copied ? 'Скопировано!' : 'Ссылка'}</span></button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl mt-14">
-        <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span></h3>
-        <div className="flex gap-3 items-center mb-9">
-          <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 shadow-inner" />
-          <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shrink-0"><Send size={18} /></button>
-        </div>
-
-        <div className="divide-y divide-white/5">
-          {topLevelComments.map(mainComment => {
-            const replies = comments.filter(r => r.parent_id === mainComment.id);
-            return (
-              <div key={mainComment.id} className="pb-4">
-                {renderComment(mainComment, false)}
-                {replies.length > 0 && (
-                  <div className="pl-12 mt-2">
-                    <button onClick={() => setExpandedThreads(p => ({ ...p, [mainComment.id]: !p[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full">
-                      <span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
-                    </button>
+            {canManage() && (
+              <div className="relative">
+                <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 hover:bg-white/5 rounded-full text-gray-400"><MoreVertical size={20} /></button>
+                {activeMenu && (
+                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
+                    <button onClick={() => onStartEdit(post)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                    <button onClick={() => onDeletePost(post.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400">Удалить</button>
                   </div>
                 )}
-                {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderComment(reply, true))}</div>}
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          {post.youtube_url && (
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
+                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
+              </div>
+            </div>
+          )}
+          {post.cover_url && !post.youtube_url && (
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                <img src={post.cover_url} className="absolute inset-0 w-full h-full object-cover" loading="lazy" alt="cover" />
+              </div>
+            </div>
+          )}
+
+          <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
+            <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{post.title}</h1>
+            <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div className="flex items-center justify-start gap-3 mt-2">
+              <button onClick={handleLike} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${isLiked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={isLiked ? "currentColor" : "none"} /> <span>{likesCount}</span></button>
+              <button onClick={handleShare} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold"><span>{copied ? 'Скопировано!' : 'Ссылка'}</span></button>
+            </div>
+          </div>
         </div>
+
+        {/* Обсуждение */}
+        <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl mt-14">
+          <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span></h3>
+          <div className="flex gap-3 items-center mb-9">
+            <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 shadow-inner" />
+            <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shrink-0"><Send size={18} /></button>
+          </div>
+
+          <div className="divide-y divide-white/5">
+            {topLevelComments.map(mainComment => {
+              const replies = comments.filter(r => r.parent_id === mainComment.id);
+              return (
+                <div key={mainComment.id} className="pb-4">
+                  {renderComment(mainComment, false)}
+                  {replies.length > 0 && (
+                    <div className="pl-12 mt-2">
+                      <button onClick={() => setExpandedThreads(p => ({ ...p, [mainComment.id]: !p[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full">
+                        <span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
+                      </button>
+                    </div>
+                  )}
+                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderComment(reply, true))}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
     </div>
   );
