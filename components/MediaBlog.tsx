@@ -77,9 +77,12 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         if (count !== null) setTotalCount(count);
         
         const ids = data.map(p => p.id);
-        // Загрузка быстрых счетчиков для ленты превью
+        
+        // Запрашиваем данные из связанных таблиц
         const { data: cData } = await supabase.from('comments').select('post_id').in('post_id', ids);
-        const { data: lData } = await supabase.from('post_likes').select('post_id');
+        
+        // ИСПРАВЛЕНО: Добавлен выбор поля user_id, чтобы убрать ошибку компиляции TypeScript
+        const { data: lData } = await supabase.from('post_likes').select('post_id, user_id');
         
         const cMap: Record<string, number> = {};
         const lMap: Record<string, { count: number; liked: boolean }> = {};
@@ -118,11 +121,21 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     fetchPosts(1, false);
   }
 
+  function handleClosePost() {
+    setSelectedPost(null);
+  }
+
+  function handleStartEdit(post: Post) {
+    setEditingPostId(post.id);
+    setIsCreatingPost(true);
+    setSelectedPost(null);
+  }
+
   useEffect(() => {
     fetchPosts(1, false);
   }, [currentUser]);
 
-  // Декларативное ветвление рендеринга без каши
+  // Декларативное переключение экранов
   if (selectedPost) {
     return (
       <PostDetail 
@@ -130,14 +143,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         currentUser={currentUser} 
         onClose={handleClosePost} 
         onProfileClick={onProfileClick}
-        onStartEdit={(p) => { setEditingPostId(p.id); setIsCreatingPost(true); setSelectedPost(null); }}
+        onStartEdit={handleStartEdit}
         onDeletePost={handleDeletePost}
       />
     );
-  }
-
-  function handleClosePost() {
-    setSelectedPost(null);
   }
 
   if (isCreatingPost) {
