@@ -152,63 +152,68 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
   }, []);
 
   return (
-    <div className="w-full max-w-3xl mx-auto animate-fade-in pb-40 px-4 md:px-0 flex flex-col pt-6 relative">
-      <div className="flex items-between justify-between w-full mb-12">
-        <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
-        <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full"><Send size={20} /></button>
-      </div>
-
-      <div className="w-full mb-14">
-        <div className="flex flex-wrap gap-3">
-          <div onClick={() => dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
-            <Clock size={14} /> <span>{newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toLocaleDateString('ru-RU') : 'Дата'}</span>
-            <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute opacity-0 w-0 h-0" />
-          </div>
-          <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
-            <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} />
-            {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span>
-          </label>
-          <button onClick={() => setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 text-xs font-bold outline-none">
-            <Youtube size={14} /> <span>YouTube</span>
-          </button>
+    // ИСПРАВЛЕНО: fixed inset-0 разворачивает рабочую область редактора на весь физический экран
+    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in">
+      {/* ИСПРАВЛЕНО: Коробка max-w-3xl удерживает поля ввода и элементы управления на своих местах */}
+      <div className="w-full max-w-3xl mx-auto flex flex-col relative">
+        
+        <div className="flex items-between justify-between w-full mb-12">
+          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
+          <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full"><Send size={20} /></button>
         </div>
-      </div>
 
-      <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
-      
-      <div className="space-y-4 mb-8">
-        {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="preview" /></div>}
-        {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && <div className="w-full relative rounded-[24px] overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%', height: 0 }}><iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen /></div>}
-      </div>
-
-      <div ref={editorRef} contentEditable onKeyUp={checkFormatting} onMouseUp={checkFormatting} onInput={checkFormatting} className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
-
-      {isTextSelected && (
-        <div className="fixed bottom-24 left-0 right-0 z-[99999] flex items-center justify-center px-4 pointer-events-none animate-fade-in">
-          <div className="p-2 bg-[#14171c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-1.5 pointer-events-auto w-full max-w-sm overflow-x-auto no-scrollbar justify-around">
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2 rounded-xl ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={16}/></button>
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2 rounded-xl ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={16}/></button>
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2 rounded-xl ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={16}/></button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2 rounded-xl ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading1 size={16}/></button>
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2 rounded-xl ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading2 size={16}/></button>
-            <div className="w-[1px] h-4 bg-white/10" />
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-2 rounded-xl ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={16}/></button>
-            <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2 rounded-xl ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={16}/></button>
+        <div className="w-full mb-14">
+          <div className="flex flex-wrap gap-3">
+            <div onClick={() => dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
+              <Clock size={14} /> <span>{newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toLocaleDateString('ru-RU') : 'Дата'}</span>
+              <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute opacity-0 w-0 h-0" />
+            </div>
+            <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} />
+              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span>
+            </label>
+            <button onClick={() => setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 text-xs font-bold outline-none">
+              <Youtube size={14} /> <span>YouTube</span>
+            </button>
           </div>
         </div>
-      )}
 
-      {isYoutubeModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4">
-          <div className="bg-[#14171c] border border-white/10 p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-6">
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 text-gray-400"><X size={20}/></button>
-            <h3 className="text-xl font-black text-white">Видео с YouTube</h3>
-            <input type="text" placeholder="Ссылка..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none" />
-            <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black py-4 rounded-2xl">Сохранить</button>
-          </div>
+        <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
+        
+        <div className="space-y-4 mb-8">
+          {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="preview" /></div>}
+          {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && <div className="w-full relative rounded-[24px] overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%', height: 0 }}><iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen /></div>}
         </div>
-      )}
+
+        <div ref={editorRef} contentEditable onKeyUp={checkFormatting} onMouseUp={checkFormatting} onInput={checkFormatting} className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+
+        {isTextSelected && (
+          <div className="fixed bottom-24 left-0 right-0 z-[99999] flex items-center justify-center px-4 pointer-events-none animate-fade-in">
+            <div className="p-2 bg-[#14171c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-1.5 pointer-events-auto w-full max-w-sm overflow-x-auto no-scrollbar justify-around">
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2 rounded-xl ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={16}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2 rounded-xl ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={16}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2 rounded-xl ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={16}/></button>
+              <div className="w-[1px] h-4 bg-white/10" />
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2 rounded-xl ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading1 size={16}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2 rounded-xl ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading2 size={16}/></button>
+              <div className="w-[1px] h-4 bg-white/10" />
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-2 rounded-xl ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={16}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2 rounded-xl ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={16}/></button>
+            </div>
+          </div>
+        )}
+
+        {isYoutubeModalOpen && (
+          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4">
+            <div className="bg-[#14171c] border border-white/10 p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-6">
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 text-gray-400"><X size={20}/></button>
+              <h3 className="text-xl font-black text-white">Видео с YouTube</h3>
+              <input type="text" placeholder="Ссылка..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black py-4 rounded-2xl">Сохранить</button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
