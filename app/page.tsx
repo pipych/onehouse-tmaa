@@ -42,6 +42,9 @@ interface CustomRole {
 }
 
 export default function Home() {
+  const POSTS_PER_PAGE = 4;
+  
+  // Состояния (States)
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +79,7 @@ export default function Home() {
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
-  // Новые состояния для фонового скрипта конвертации старых картинок
+  // Состояния для фонового скрипта WebP конвертации
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
 
@@ -106,7 +109,7 @@ export default function Home() {
   const viewRef = useRef<HTMLDivElement>(null);
 
   // --------------------------------------------------------
-  // НАДЁЖНЫЕ ФУНКЦИИ С ПОДДЕРЖКОЙ АВТО-КОНВЕРТАЦИИ В WEBP
+  // ВСЕ НАДЁЖНЫЕ ФУНКЦИИ И ОБРАБОТЧИКИ (СТРОГО НАВЕРХУ)
   // --------------------------------------------------------
 
   function convertToWebP(file: File): Promise<Blob> {
@@ -135,7 +138,27 @@ export default function Home() {
     });
   }
 
-  // Скрипт глобальной пакетной миграции старых картинок постов и профилей в WebP прямо с телефона
+  // ИСПРАВЛЕНО: Функции вычисления цветов и статусов переведены на нативный синтаксис для хойстинга
+  function getRoleColor(roleName: string) {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
+    return found ? found.color : '#888888';
+  }
+
+  function isDead(roles: string[]) {
+    return roles.some(r => r.toLowerCase() === 'мёртв');
+  }
+
+  function getServerStatusText(statusCode: number) {
+    switch(statusCode) {
+      case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
+      case 1: return { text: 'ОНЛАЙН', color: 'text-text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
+      case 2: return { text: 'ЗАПУСКАЕТСЯ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
+      case 3: return { text: 'ОСТАНАВЛИВАЕТСЯ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
+      case 4: return { text: 'ПЕРЕЗАГРУЗКА...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
+      default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
+    }
+  }
+
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP? Это может занять некоторое время.')) return;
     
@@ -143,7 +166,6 @@ export default function Home() {
     setMigrationProgress('Запуск процесса... Сбор данных таблиц.');
 
     try {
-      // 1. Конвертация обложек постов
       setMigrationProgress('Анализ обложек публикаций...');
       const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
       if (postsError) throw postsError;
@@ -179,7 +201,6 @@ export default function Home() {
         }
       }
 
-      // 2. Конвертация аватарок жителей
       setMigrationProgress('Анализ аватарок жителей сервера...');
       const { data: users, error: usersError } = await supabase.from('users').select('id, avatar_url');
       if (usersError) throw usersError;
@@ -302,9 +323,8 @@ export default function Home() {
     }
   }
 
-  function nextMatch() { setCurrentPageMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
-  function prevMatch() { setCurrentPageMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
-  const setCurrentPageMatchIndex = setCurrentMatchIndex;
+  function nextMatch() { setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
+  function prevMatch() { setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
 
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
@@ -479,7 +499,7 @@ export default function Home() {
   }
 
   // --------------------------------------------------------
-  // ЭФФЕКТЫ И ПОДПИСКИ СЛУШАТЕЛЕЙ
+  // ХУКИ СИНХРОНИЗАЦИИ ЭФФЕКТОВ
   // --------------------------------------------------------
 
   useEffect(() => {
@@ -501,7 +521,6 @@ export default function Home() {
       if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
-      
       setTgUser(tg.initDataUnsafe.user);
       checkUserInDb(tg.initDataUnsafe.user.id);
     } else {
@@ -523,8 +542,6 @@ export default function Home() {
       editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
     }
   }, [isEditing, activeDocument]);
-
-  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
 
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing || activeDocument === 'none') return;
@@ -606,7 +623,6 @@ export default function Home() {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
-  const isDead = (roles: string[]) => roles.some(r => r.toLowerCase() === 'мёртв');
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
   const sortedPlayers = players
@@ -617,17 +633,6 @@ export default function Home() {
       if (!aDead && bDead) return -1;
       return a.rp_name.localeCompare(b.rp_name);
     });
-
-  const getServerStatusText = (statusCode: number) => {
-    switch(statusCode) {
-      case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
-      case 1: return { text: 'ОНЛАЙН', color: 'text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
-      case 2: return { text: 'ЗАПУСКАЕТСЯ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
-      case 3: return { text: 'ОСТАНАВЛИВАЕТСЯ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
-      case 4: return { text: 'ПЕРЕЗАГРУЗКА...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
-      default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
-    }
-  };
 
   if (loading) {
     return (
@@ -903,7 +908,6 @@ export default function Home() {
                       <div className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale"
                         style={{ backgroundImage: "url('/mapicon.svg')" }} />
                       <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
-
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
                         <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover/widget:scale-110 transition-transform backdrop-blur-md shrink-0"><Map size={20} className="text-gray-400 xl:w-6 xl:h-6" /></div>
                         <div className="text-left xl:text-center flex-1"><h3 className="text-base xl:text-lg font-bold text-gray-300 m-0 tracking-wide drop-shadow-md">Карта мира</h3></div>
@@ -1066,7 +1070,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ИСПРАВЛЕНО: АДМИН ПАНЕЛЬ С ДИНАМИЧЕСКИМ СКИПТОМ ВЕБП МИГРАЦИИ КАРТИНОК */}
+        {/* АДМИН ПАНЕЛЬ */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -1117,7 +1121,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ДОБАВЛЕНО: Новый блок управления глобальной пакетной оптимизацией старых изображений */}
+            {/* Блок оптимизации */}
             <div className="md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl mt-6">
               <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                 <RefreshCw size={16} className={isMigrating ? "animate-spin text-[#c0ff00]" : "text-[#c0ff00]"} />
