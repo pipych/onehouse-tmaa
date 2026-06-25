@@ -44,7 +44,7 @@ interface CustomRole {
 export default function Home() {
   const POSTS_PER_PAGE = 4;
   
-  // Состояния (States)
+  // 1. Все состояния (useState)
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +79,6 @@ export default function Home() {
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
-  // Состояния для фонового скрипта WebP конвертации
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
 
@@ -105,13 +104,31 @@ export default function Home() {
 
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
+  // 2. Все ссылки (useRef)
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // --------------------------------------------------------
-  // ВСЕ НАДЁЖНЫЕ ФУНКЦИИ И ОБРАБОТЧИКИ (СТРОГО НАВЕРХУ)
-  // --------------------------------------------------------
+  // 3. ЖЕЛЕЗОБЕТОННЫЙ ВЫНОС ВСЕХ ВЫЧИСЛЯЕМЫХ КОНСТАНТ НА САМЫЙ ВЕРХ СКОУПА КОМПОНЕНТА
+  const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+  const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
+  const isAdmin = dbUser?.roles.includes('admin');
+  const canEditConstitution = dbUser?.roles.some(r => {
+    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
+    return found ? found.canEditConstitution : false;
+  });
+  const sortedPlayers = players
+    .filter((player) => player.tg_id !== dbUser?.tg_id)
+    .sort((a, b) => {
+      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
+      if (aDead && !bDead) return 1;
+      if (!aDead && bDead) return -1;
+      return a.rp_name.localeCompare(b.rp_name);
+    });
 
+  // --------------------------------------------------------
+  // НАТИВНЫЕ ХОЙСТИНГ-ФУНКЦИИ (ДЛЯ НАДЕЖНОЙ СБОРКИ)
+  // --------------------------------------------------------
+  
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -138,7 +155,6 @@ export default function Home() {
     });
   }
 
-  // ИСПРАВЛЕНО: Функции вычисления цветов и статусов переведены на нативный синтаксис для хойстинга
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
@@ -151,7 +167,7 @@ export default function Home() {
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
-      case 1: return { text: 'ОНЛАЙН', color: 'text-text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
+      case 1: return { text: 'ОНЛАЙН', color: 'text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
       case 2: return { text: 'ЗАПУСКАЕТСЯ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
       case 3: return { text: 'ОСТАНАВЛИВАЕТСЯ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
       case 4: return { text: 'ПЕРЕЗАГРУЗКА...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
@@ -543,6 +559,7 @@ export default function Home() {
     }
   }, [isEditing, activeDocument]);
 
+  // ИСПРАВЛЕНО: Теперь хук гарантированно находит `currentDocText`, так как переменная объявлена на самом верху компонента
   useEffect(() => {
     if (!viewRef.current || activeTab !== 'constitution' || isEditing || activeDocument === 'none') return;
 
@@ -616,47 +633,6 @@ export default function Home() {
       }, 50);
     }
   }, [currentMatchIndex, matches]);
-
-  // Вычисляемые логические флаги
-  const isAdmin = dbUser?.roles.includes('admin');
-  const canEditConstitution = dbUser?.roles.some(r => {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
-    return found ? found.canEditConstitution : false;
-  });
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
-
-  const sortedPlayers = players
-    .filter((player) => player.tg_id !== dbUser?.tg_id)
-    .sort((a, b) => {
-      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
-      if (aDead && !bDead) return 1;
-      if (!aDead && bDead) return -1;
-      return a.rp_name.localeCompare(b.rp_name);
-    });
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#090b0e] text-[#c0ff00]">
-        <div className="text-center animate-pulse">
-          <div className="text-3xl font-black tracking-widest">ONEHOUSE</div>
-          <div className="text-xs text-gray-400 mt-2">Загрузка...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#090b0e] px-6 text-center text-white animate-fade-in">
-        <div className="bg-[#14171c] p-6 rounded-3xl border border-red-500/30 max-w-md md:max-w-xl w-full break-words shadow-2xl scale-95 transition-all">
-          <div className="text-red-500 font-bold text-lg mb-2">Авторизация не удалась</div>
-          <div className="text-sm text-gray-400 font-mono text-left bg-black/30 p-3 rounded-lg border border-white/5 whitespace-pre-wrap">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
 
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
@@ -739,15 +715,15 @@ export default function Home() {
 
       {/* Окно профиля */}
       {selectedPlayer && (
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedIsDead ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
+        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
           <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
-          {((selectedPlayer.id === dbUser?.id && !selectedIsDead) || isAdmin) && !isEditingProfile && (
+          {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer.roles)) || isAdmin) && !isEditingProfile && (
             <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
           )}
 
-          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${selectedIsDead ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
+          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
             <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
           </div>
 
@@ -764,9 +740,9 @@ export default function Home() {
               </div>
             ) : (
               <div className="w-full space-y-1">
-                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${selectedIsDead ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 ${selectedIsDead ? 'text-gray-500' : 'text-[#c0ff00]'}`}>
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'text-gray-500' : 'text-[#c0ff00]'}`}>
                   <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
                 </div>
               </div>
@@ -779,7 +755,7 @@ export default function Home() {
             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
             <div className="flex flex-wrap gap-2 items-center relative">
               {selectedPlayer.roles.map((role, idx) => (
-                <span key={idx} className={`text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 ${isAdmin ? 'pl-3 pr-1' : 'px-3'} ${selectedIsDead && role.toLowerCase() !== 'мёртв' ? 'opacity-50 grayscale' : ''}`} style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
+                <span key={idx} className={`text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 ${isAdmin ? 'pl-3 pr-1' : 'px-3'} ${selectedPlayer && isDead(selectedPlayer.roles) && role.toLowerCase() !== 'мёртв' ? 'opacity-50 grayscale' : ''}`} style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
                   <span>• {role.toUpperCase()}</span>
                   {isAdmin && <button onClick={() => handleRemoveRoleFromUser(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all active:scale-90"><X size={10} /></button>}
                 </span>
@@ -894,7 +870,7 @@ export default function Home() {
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
                         <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover:scale-110 transition-transform backdrop-blur-md shrink-0"><BookOpen size={20} className="text-[#c0ff00] xl:w-6 xl:h-6" /></div>
                         <div className="text-left xl:text-center flex-1">
-                          <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Конституция</h3>
+                          <h3 className="text-base xl:text-lg font-black text-white mb-0.5 xl:mb-1 tracking-wide drop-shadow-md">Constitutsiya</h3>
                           <p className="text-[10px] text-[#c0ff00] font-medium leading-tight drop-shadow-md max-w-[150px] xl:max-w-none">Внутриигровые законы</p>
                         </div>
                       </div>
@@ -905,8 +881,7 @@ export default function Home() {
                         <div className="bg-[#c0ff00] text-black text-[9px] font-black uppercase px-2 py-1 rounded-md shadow-lg cursor-help">Soon</div>
                         <div className="hidden xl:block absolute top-[calc(100%+8px)] right-0 w-[180px] p-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[10px] font-medium text-gray-300 opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none shadow-2xl z-50 text-center leading-tight">Функционал в разработке, появится позже</div>
                       </div>
-                      <div className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale"
-                        style={{ backgroundImage: "url('/mapicon.svg')" }} />
+                      <div className="absolute inset-0 z-0 opacity-20 group-hover/widget:opacity-30 group-hover/widget:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] xl:bg-[right_-20px_bottom_-20px] xl:bg-[length:180px] bg-no-repeat grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
                       <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent xl:bg-gradient-to-t xl:from-[#14171c] xl:via-[#14171c]/80 xl:to-transparent z-0" />
                       <div className="relative z-10 flex items-center xl:flex-col xl:text-center w-full">
                         <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-full bg-black/40 border border-white/10 flex items-center justify-center mb-0 xl:mb-3 mr-4 xl:mr-0 group-hover/widget:scale-110 transition-transform backdrop-blur-md shrink-0"><Map size={20} className="text-gray-400 xl:w-6 xl:h-6" /></div>
@@ -1121,7 +1096,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Блок оптимизации */}
+            {/* Блок пакетной WebP оптимизации */}
             <div className="md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl mt-6">
               <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                 <RefreshCw size={16} className={isMigrating ? "animate-spin text-[#c0ff00]" : "text-[#c0ff00]"} />
@@ -1173,10 +1148,10 @@ export default function Home() {
 
        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
          <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
        </nav>
       </aside>
 
