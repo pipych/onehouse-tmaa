@@ -215,7 +215,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     }, 100);
   }
 
-  // ВОЗВРАЩЕНО НА МЕСТО: Функция отрисовки блоков и ветвей комментариев обсуждения
+  // ЗАКРЕПЛЕНО: Функция отрисовки блоков и ветвей комментариев
   function renderCommentBlock(comment: BlogComment, isReply: boolean = false) {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -388,198 +388,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
-  async function handleSendComment(parentId: string | null = null) {
-    if (!currentUser) return alert('Только авторизованные игроки могут писать комментарии!');
-    const text = parentId ? newReplyText : newCommentText;
-    if (!text.trim() || !selectedPost) return;
-
-    try {
-      const { error } = await supabase.from('comments').insert([{
-        post_id: selectedPost.id,
-        author_id: currentUser.id,
-        parent_id: parentId,
-        content: text.trim()
-      }]);
-
-      if (!error) {
-        if (parentId) {
-          setNewReplyText('');
-          setReplyingToId(null);
-        } else {
-          setNewCommentText('');
-        }
-        loadCommentsAndTheirLikes(selectedPost.id);
-      } else {
-        alert(`Не удалось отправить комментарий: ${error.message}`);
-      }
-    } catch (e) {}
-  }
-
-  async function handleCommentLike(commentId: string) {
-    if (!currentUser) return alert('Авторизуйтесь, чтобы оценивать комментарии!');
-    try {
-      const isLiked = commentLikes[commentId]?.liked;
-      if (isLiked) {
-        const { error } = await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id);
-        if (error) return alert(`Ошибка: ${error.message}`);
-        setCommentLikes(prev => ({
-          ...prev,
-          [commentId]: { count: Math.max(0, (prev[commentId]?.count || 1) - 1), liked: false }
-        }));
-      } else {
-        const { error } = await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: currentUser.id }]);
-        if (error) return alert(`Ошибка: ${error.message}`);
-        setCommentLikes(prev => ({
-          ...prev,
-          [commentId]: { count: (prev[commentId]?.count || 0) + 1, liked: true }
-        }));
-      }
-    } catch (e) {}
-  }
-
-  async function fetchPosts(page: number, append: boolean = false) {
-    const from = (page - 1) * POSTS_PER_PAGE;
-    const to = page * POSTS_PER_PAGE - 1;
-
-    try {
-      const { data, error, count } = await supabase
-        .from('posts')
-        .select('*, author:users(*)', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (data && !error) {
-        if (append) {
-          setPosts(prev => [...prev, ...data]);
-        } else {
-          setPosts(data);
-        }
-        if (count !== null) setTotalCount(count);
-        return data;
-      }
-    } catch (e) {}
-    return [];
-  }
-
-  function handleOpenPost(post: Post) {
-    setSelectedPost(post);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.set('post', post.id);
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  }
-
-  function handleClosePost() {
-    setSelectedPost(null);
-    setComments([]);
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.delete('post');
-      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
-      window.history.pushState({ path: newUrl }, '', newUrl);
-    }
-  }
-
-  function handleSharePost(e: React.MouseEvent, postId: string) {
-    e.stopPropagation(); 
-    if (typeof window !== 'undefined') {
-      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedPostId(postId);
-      
-      if ((window as any).Telegram?.WebApp?.HapticFeedback) {
-        (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-      }
-      setTimeout(() => setCopiedPostId(null), 2000);
-    }
-  }
-
-  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
-    try {
-      setLoadingState(true);
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      const webpBlob = await convertToWebP(file);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
-
-      const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, {
-        contentType: 'image/webp'
-      });
-      
-      if (error) return alert(`Ошибка загрузки: ${error.message}`);
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      if (urlData) setUrlCallback(urlData.publicUrl);
-    } catch (e: any) {
-      alert(`Сбой при загрузке: ${e.message}`);
-    } finally {
-      setLoadingState(false);
-    }
-  }
-
-  async function publishPost() {
-    const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
-      alert('Заголовок и текст не могут быть пустыми!');
-      return;
-    }
-
-    let finalCreatedAt = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
-
-    const postData = {
-      author_id: currentUser.id,
-      title: newPostTitle,
-      content: postContent,
-      cover_url: newPostCoverUrl || null,
-      youtube_url: newPostYoutubeUrl || null,
-      created_at: finalCreatedAt
-    };
-
-    let error;
-    if (editingPostId) {
-      const { error: updateError } = await supabase.from('posts').update(postData).eq('id', editingPostId);
-      error = updateError;
-    } else {
-      const { error: insertError } = await supabase.from('posts').insert([postData]);
-      error = insertError;
-    }
-
-    if (!error) {
-      setIsCreatingPost(false);
-      setEditingPostId(null);
-      setCurrentPage(1);
-      fetchPosts(1, false); 
-    } else {
-      alert(`Ошибка сохранения: ${error.message}`);
-    }
-  }
-
-  async function handleDeletePost(postId: string) {
-    if (!confirm('Вы действительно хотите удалить эту публикацию?')) return;
-    
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (!error) {
-      setActiveMenuPostId(null);
-      handleClosePost();
-      fetchPosts(currentPage, false);
-    } else {
-      alert(`Ошибка при удалении: ${error.message}`);
-    }
-  }
-
-  function loadMorePosts() {
-    const nextPage = currentPage + 1;
-    setCurrentPage(nextPage);
-    fetchPosts(nextPage, true);
-  }
-
-  function handlePageSelect(pageIdx: number) {
-    setCurrentPage(pageIdx);
-    fetchPosts(pageIdx, false);
-  }
-
   // СИСТЕМА СИНХРОНИЗАЦИИ И ЭФФЕКТОВ
   useEffect(() => {
     fetchPosts(1, false);
@@ -627,6 +435,93 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       }
     }
   }, [posts]);
+
+  // --------------------------------------------------------
+  // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
+  // --------------------------------------------------------
+  if (selectedPost) {
+    const topLevelComments = comments.filter(c => !c.parent_id);
+
+    return (
+      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
+        <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
+          <button onClick={handleClosePost} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg shrink-0"><ArrowLeft size={20} /></button>
+        </div>
+
+        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
+          <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
+            <div className="flex items-center gap-4">
+              <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} alt="author" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} className="bg-black/50 border border-white/10" />
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+              </div>
+            </div>
+            {canManagePost(selectedPost) && (
+              <div className="relative">
+                <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === selectedPost.id ? null : selectedPost.id); }} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"><MoreVertical size={20} /></button>
+                {activeMenuPostId === selectedPost.id && (
+                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
+                    <button onClick={() => handleStartEdit(selectedPost)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
+                    <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {selectedPost.youtube_url && (
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
+              </div>
+            </div>
+          )}
+          {selectedPost.cover_url && !selectedPost.youtube_url && (
+            <div className="px-5 md:px-6 w-full mb-4">
+              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
+                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" alt="cover" />
+              </div>
+            </div>
+          )}
+
+          <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
+            <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{selectedPost.title}</h1>
+            <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
+            <div className="flex items-center justify-start gap-3 mt-2 select-none">
+              <button onClick={(e) => handlePostLike(e, selectedPost.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[selectedPost.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[selectedPost.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[selectedPost.id]?.count || 0}</span></button>
+              <button onClick={(e) => handleSharePost(e, selectedPost.id)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold"><Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
+          <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({postCommentCounts[selectedPost.id] || 0})</span></h3>
+          <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
+            <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 placeholder:text-gray-600 shadow-inner" />
+            <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90"><Send size={18} /></button>
+          </div>
+
+          <div className="divide-y divide-white/5">
+            {topLevelComments.map(mainComment => {
+              const replies = comments.filter(r => r.parent_id === mainComment.id);
+              return (
+                <div key={mainComment.id} className="pb-4">
+                  {renderCommentBlock(mainComment, false)}
+                  {replies.length > 0 && (
+                    <div className="pl-12 mt-2">
+                      <button onClick={() => setExpandedReplyThreads(prev => ({ ...prev, [mainComment.id]: !prev[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full"><span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span></button>
+                    </div>
+                  )}
+                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderCommentBlock(reply, true))}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --------------------------------------------------------
   // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА
