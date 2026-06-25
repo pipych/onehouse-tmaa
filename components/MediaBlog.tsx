@@ -224,6 +224,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
+  // ИСПРАВЛЕНО: Добавлены алерты ошибок для выявления блокировок базы данных
   async function handlePostLike(e: React.MouseEvent, postId: string) {
     e.stopPropagation();
     if (!currentUser) return alert('Авторизуйтесь, чтобы ставить лайки!');
@@ -231,13 +232,21 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     try {
       const isLiked = postLikes[postId]?.liked;
       if (isLiked) {
-        await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+        const { error } = await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+        if (error) {
+          alert(`Ошибка БД при удалении лайка: ${error.message}`);
+          return;
+        }
         setPostLikes(prev => ({
           ...prev,
           [postId]: { count: Math.max(0, (prev[postId]?.count || 1) - 1), liked: false }
         }));
       } else {
-        await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
+        const { error } = await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
+        if (error) {
+          alert(`Ошибка БД при сохранении лайка: ${error.message}`);
+          return;
+        }
         setPostLikes(prev => ({
           ...prev,
           [postId]: { count: (prev[postId]?.count || 0) + 1, liked: true }
@@ -304,6 +313,8 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           setNewCommentText('');
         }
         loadCommentsAndTheirLikes(selectedPost.id);
+      } else {
+        alert(`Не удалось отправить комментарий: ${error.message}`);
       }
     } catch (e) {}
   }
@@ -313,13 +324,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     try {
       const isLiked = commentLikes[commentId]?.liked;
       if (isLiked) {
-        await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id);
+        const { error } = await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', currentUser.id);
+        if (error) return alert(`Ошибка: ${error.message}`);
         setCommentLikes(prev => ({
           ...prev,
           [commentId]: { count: Math.max(0, (prev[commentId]?.count || 1) - 1), liked: false }
         }));
       } else {
-        await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: currentUser.id }]);
+        const { error } = await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: currentUser.id }]);
+        if (error) return alert(`Ошибка: ${error.message}`);
         setCommentLikes(prev => ({
           ...prev,
           [commentId]: { count: (prev[commentId]?.count || 0) + 1, liked: true }
@@ -346,10 +359,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           setPosts(data);
         }
         if (count !== null) setTotalCount(count);
-        
-        const ids = data.map(p => p.id);
-        loadLikesForPosts(ids);
-        loadCommentCounts(ids);
         return data;
       }
     } catch (e) {}
@@ -358,7 +367,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
   function handleOpenPost(post: Post) {
     setSelectedPost(post);
-    loadCommentsAndTheirLikes(post.id);
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       params.set('post', post.id);
@@ -557,59 +565,38 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     );
   }
 
-  // Инициализация данных при старте
+  // Первичный вызов загрузки постов
   useEffect(() => {
-    const initBlog = async () => {
-      const fetched = await fetchPosts(1, false);
-
-      if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        const postIdFromUrl = params.get('post');
-        if (postIdFromUrl) {
-          const targetPost = fetched.find(p => p.id === postIdFromUrl);
-          if (targetPost) {
-            handleOpenPost(targetPost);
-          } else {
-            const { data } = await supabase.from('posts').select('*, author:users(*)').eq('id', postIdFromUrl).single();
-            if (data) handleOpenPost(data);
-          }
-        }
-      }
-    };
-    initBlog();
+    fetchPosts(1, false);
   }, []);
 
+  // ИСПРАВЛЕНО: Реактивный хук для синхронизации лайков и счетчиков (убирает баг Race Condition)
   useEffect(() => {
-    if (!isCreatingPost) {
-      setNewPostTitle('');
-      setNewPostCoverUrl('');
-      setNewPostYoutubeUrl('');
-      setEditingPostId(null);
-      setNewPostPublishedAtInput('');
-      if (editorRef.current) editorRef.current.innerHTML = '';
+    if (posts.length > 0) {
+      const ids = posts.map(p => p.id);
+      loadLikesForPosts(ids);
+      loadCommentCounts(ids);
     }
-  }, [isCreatingPost]);
+  }, [posts, currentUser]);
 
+  // ИСПРАВЛЕНО: Реактивный хук для подгрузки обсуждений при URL-переходах и обновлении юзера
   useEffect(() => {
-    if (isCreatingPost && editingPostId) {
-      const postToEdit = posts.find(p => p.id === editingPostId);
-      if (postToEdit) {
-        setNewPostTitle(postToEdit.title);
-        setNewPostCoverUrl(postToEdit.cover_url || '');
-        setNewPostYoutubeUrl(postToEdit.youtube_url || '');
-        if (postToEdit.created_at) {
-          const date = new Date(postToEdit.created_at);
-          date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-          setNewPostPublishedAtInput(date.toISOString().slice(0, 16));
-        }
-        setTimeout(() => {
-          if (editorRef.current) {
-            editorRef.current.innerHTML = postToEdit.content || '';
-          }
-        }, 60);
+    if (selectedPost) {
+      loadCommentsAndTheirLikes(selectedPost.id);
+    }
+  }, [selectedPost, currentUser]);
+
+  // Роутинг из URL ссылок
+  useEffect(() => {
+    if (typeof window !== 'undefined' && posts.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const postIdFromUrl = params.get('post');
+      if (postIdFromUrl) {
+        const targetPost = posts.find(p => p.id === postIdFromUrl);
+        if (targetPost) handleOpenPost(targetPost);
       }
     }
-  }, [isCreatingPost, editingPostId, posts]);
+  }, [posts]);
 
   // --------------------------------------------------------
   // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
@@ -839,7 +826,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           )}
         </div>
 
-        {/* ИСПРАВЛЕНО: Теперь используется железное условие currentPage < totalPages для стопроцентного отображения кнопки */}
+        {/* ИСПРАВЛЕНО: Кнопка «Показать еще» принудительно отображается через сравнение текущей страницы и максимума */}
         {currentPage < totalPages && (
           <div className="flex justify-center mt-2 mb-4 select-none">
             <button onClick={loadMorePosts} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 hover:border-[#c0ff00]/30 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all active:scale-95 shadow-xl">
