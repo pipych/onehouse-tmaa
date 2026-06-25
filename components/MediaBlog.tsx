@@ -6,7 +6,8 @@ import {
   Newspaper, Clock, Heart, MessageCircle, Image as ImageIcon, 
   Youtube, X, Send, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, Plus, ArrowLeft,
-  MoreVertical, Share2, ChevronDown, ChevronUp, CornerDownRight
+  MoreVertical, Share2, ChevronDown, ChevronUp, CornerDownRight,
+  RefreshCw
 } from 'lucide-react';
 
 interface Player {
@@ -272,7 +273,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
-  // СНАЧАЛА ИНИЦИАЛИЗИРУЕМ ОБРАБОТЧИКИ ОЦЕНОК КОММЕНТАРИЕВ ДЛЯ ТОЧНОГО ХОЙСТИНГА
   async function handleCommentLike(commentId: string) {
     if (!currentUser) return alert('Авторизуйтесь, чтобы оценивать комментарии!');
     try {
@@ -315,7 +315,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         setComments(formattedComments);
         setPostCommentCounts(prev => ({ ...prev, [postId]: formattedComments.length }));
 
-        // Подгружаем лайки для каждого комментария
         const { data: clCounts } = await supabase.from('comment_likes').select('comment_id');
         let myCLikes: string[] = [];
         if (currentUser) {
@@ -371,7 +370,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     } catch (e) {}
   }
 
-  // ТЕПЕРЬ ОПРЕДЕЛЯЕМ ОТРИСОВКУ, КОГДА ВСЕ ПРЕДЫДУЩИЕ ФУНКЦИИ ЖЕЛЕЗНО ИНИЦИАЛИЗИРОВАНЫ
   function renderCommentBlock(comment: BlogComment, isReply: boolean = false) {
     const isLongText = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -642,93 +640,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       }
     }
   }, [posts]);
-
-  // --------------------------------------------------------
-  // СТРАНИЦА ПРОСМОТРА ПОЛНОГО ПОСТА (С КОММЕНТАРИЯМИ)
-  // --------------------------------------------------------
-  if (selectedPost) {
-    const topLevelComments = comments.filter(c => !c.parent_id);
-
-    return (
-      <div className="w-full max-w-3xl mx-auto animate-fade-in pb-32 px-4 md:px-0 flex flex-col">
-        <div className="w-full select-none flex" style={{ paddingTop: '20px', marginBottom: '44px' }}>
-          <button onClick={handleClosePost} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-90 shadow-lg shrink-0"><ArrowLeft size={20} /></button>
-        </div>
-
-        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
-          <div className="p-5 md:p-6 pb-2 flex items-center justify-between select-none">
-            <div className="flex items-center gap-4">
-              <img src={selectedPost.author?.avatar_url || 'https://via.placeholder.com/150'} alt="author" style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} className="bg-black/50 border border-white/10" />
-              <div className="flex-1 min-w-0">
-                <div className="text-base font-bold text-white truncate">{selectedPost.author?.rp_name || 'Неизвестный'}</div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {selectedPost.created_at ? new Date(selectedPost.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</div>
-              </div>
-            </div>
-            {canManagePost(selectedPost) && (
-              <div className="relative">
-                <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === selectedPost.id ? null : selectedPost.id); }} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors"><MoreVertical size={20} /></button>
-                {activeMenuPostId === selectedPost.id && (
-                  <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
-                    <button onClick={() => handleStartEdit(selectedPost)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00] transition-colors">Редактировать</button>
-                    <button onClick={() => handleDeletePost(selectedPost.id)} className="w-full text-left px-3 py-2 hover:bg-red-500/10 rounded-xl text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Удалить</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {selectedPost.youtube_url && (
-            <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(selectedPost.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
-              </div>
-            </div>
-          )}
-          {selectedPost.cover_url && !selectedPost.youtube_url && (
-            <div className="px-5 md:px-6 w-full mb-4">
-              <div onClick={() => setIsImageZoomOpen(true)} className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
-                <img src={selectedPost.cover_url} className="absolute inset-0 w-full h-full object-cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" alt="cover" />
-              </div>
-            </div>
-          )}
-
-          <div className="p-5 md:p-6 pt-2 flex flex-col gap-5 flex-grow">
-            <h1 className="text-2xl md:text-4xl font-black text-white leading-tight">{selectedPost.title}</h1>
-            <div className="prose prose-invert max-w-none text-gray-300 text-base" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
-            <div className="flex items-center justify-start gap-3 mt-2 select-none">
-              <button onClick={(e) => handlePostLike(e, selectedPost.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[selectedPost.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400 hover:text-red-400'}`}><Heart size={15} fill={postLikes[selectedPost.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[selectedPost.id]?.count || 0}</span></button>
-              <button onClick={(e) => handleSharePost(e, selectedPost.id)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] text-xs font-bold"><Share2 size={15} /> <span>{copiedPostId === selectedPost.id ? 'Скопировано!' : 'Ссылка'}</span></button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl" style={{ marginTop: '56px' }}>
-          <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({postCommentCounts[selectedPost.id] || 0})</span></h3>
-          <div className="flex gap-3 items-center" style={{ marginBottom: '36px' }}>
-            <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 placeholder:text-gray-600 shadow-inner" />
-            <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shadow-lg shrink-0 active:scale-90"><Send size={18} /></button>
-          </div>
-
-          <div className="divide-y divide-white/5">
-            {topLevelComments.map(mainComment => {
-              const replies = comments.filter(r => r.parent_id === mainComment.id);
-              return (
-                <div key={mainComment.id} className="pb-4">
-                  {renderCommentBlock(mainComment, false)}
-                  {replies.length > 0 && (
-                    <div className="pl-12 mt-2">
-                      <button onClick={() => setExpandedReplyThreads(prev => ({ ...prev, [mainComment.id]: !prev[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full"><span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span></button>
-                    </div>
-                  )}
-                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderCommentBlock(reply, true))}</div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // --------------------------------------------------------
   // ПОЛНОЭКРАННЫЙ РЕДАКТОР ПОСТА
