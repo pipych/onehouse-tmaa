@@ -156,10 +156,13 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
   }, []);
 
   return (
-    // ФИКС СКРОЛЛА: Изолированный тач-слой оверлея на 100% высоты экрана смартфона
-    <div className="fixed inset-0 bg-[#090b0e] z-[9999] overflow-y-auto !h-full touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
-      {/* ФИКС СКРОЛЛА: Паддинги вынесены внутрь, разблокируя естественную прокрутку WebView */}
-      <div className="w-full max-w-3xl mx-auto flex flex-col relative p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in">
+    // ФИКС: Принудительный скролл-контекст на корневом оверлее редактора статей
+    <div 
+      className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" 
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      {/* ФИКС: block вместо флекса гарантирует корректное пролистывание полей ввода и превью медиафайлов */}
+      <div className="w-full max-w-3xl mx-auto block relative p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in">
         
         <div className="flex items-between justify-between w-full mb-12">
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
