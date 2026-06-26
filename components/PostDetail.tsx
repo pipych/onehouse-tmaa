@@ -173,10 +173,13 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   }
 
   return (
-    // ФИКС СКРОЛЛА: Чистый изолированный тач-контейнер на весь экран смартфона
-    <div className="fixed inset-0 bg-[#090b0e] z-[9999] overflow-y-auto !h-full touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
-      {/* ФИКС СКРОЛЛА: Паддинги перенесены сюда, чтобы дать контенту физическую высоту для прокрутки */}
-      <div className="w-full max-w-3xl mx-auto flex flex-col p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
+    // ФИКС: Жесткое принудительное включение вертикального скролла на мобильных
+    <div 
+      className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" 
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      {/* ФИКС: Изменено с flex на block, чтобы Safari корректно высчитывал высоту прокрутки */}
+      <div className="w-full max-w-3xl mx-auto block p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
         
         {/* Кнопка Назад */}
         <div className="w-full select-none flex mb-11">
@@ -193,7 +196,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
                 <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
               </div>
             </div>
-            {canManage() && (
+            {canManage()} && (
               <div className="relative">
                 <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                 {activeMenu && (
@@ -203,12 +206,12 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
                   </div>
                 )}
               </div>
-            )}
+            )
           </div>
 
           {post.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
                 <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
               </div>
             </div>
