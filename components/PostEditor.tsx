@@ -2,7 +2,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Send, Clock, ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw } from 'lucide-react';
+import { 
+  ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, 
+  Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, 
+  AlignCenter, RefreshCw 
+} from 'lucide-react';
 
 interface Player {
   id: string;
@@ -152,9 +156,10 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
   }, []);
 
   return (
-    // ИСПРАВЛЕНО: Добавлены overflow-y-auto и h-full для разблокировки прокрутки редактора
-    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto h-full p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in touch-pan-y">
-      <div className="w-full max-w-3xl mx-auto flex flex-col relative">
+    // ФИКС СКРОЛЛА: Изолированный тач-слой оверлея на 100% высоты экрана смартфона
+    <div className="fixed inset-0 bg-[#090b0e] z-[9999] overflow-y-auto !h-full touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* ФИКС СКРОЛЛА: Паддинги вынесены внутрь, разблокируя естественную прокрутку WebView */}
+      <div className="w-full max-w-3xl mx-auto flex flex-col relative p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in">
         
         <div className="flex items-between justify-between w-full mb-12">
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
