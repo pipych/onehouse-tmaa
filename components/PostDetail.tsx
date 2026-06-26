@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, CornerDownRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { 
+  ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, 
+  CornerDownRight, ChevronUp, ChevronDown 
+} from 'lucide-react';
 
 interface Player {
   id: string;
@@ -140,7 +143,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     return (
       <div key={comment.id} className={`flex gap-3 items-start ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
-        <img src={comment.author?.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
+        <img src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
         <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs font-black text-white">{comment.author?.rp_name}</span>
@@ -170,9 +173,10 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   }
 
   return (
-    // ИСПРАВЛЕНО: Добавлены overflow-y-auto и h-full, чтобы страница прокручивалась на мобилках
-    <div className="fixed inset-0 bg-[#090b0e] z-40 overflow-y-auto h-full p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in touch-pan-y">
-      <div className="w-full max-w-3xl mx-auto flex flex-col">
+    // ФИКС СКРОЛЛА: Чистый изолированный тач-контейнер на весь экран смартфона
+    <div className="fixed inset-0 bg-[#090b0e] z-[9999] overflow-y-auto !h-full touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* ФИКС СКРОЛЛА: Паддинги перенесены сюда, чтобы дать контенту физическую высоту для прокрутки */}
+      <div className="w-full max-w-3xl mx-auto flex flex-col p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
         
         {/* Кнопка Назад */}
         <div className="w-full select-none flex mb-11">
@@ -183,7 +187,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img src={post.author?.avatar_url} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} onClick={() => onProfileClick(post.author!)} className="bg-black/50 border border-white/10 cursor-pointer" />
+              <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
               <div>
                 <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                 <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
@@ -191,7 +195,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
             </div>
             {canManage() && (
               <div className="relative">
-                <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 hover:bg-white/5 rounded-full text-gray-400"><MoreVertical size={20} /></button>
+                <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                 {activeMenu && (
                   <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-[60] shadow-2xl flex flex-col gap-0.5">
                     <button onClick={() => onStartEdit(post)} className="w-full text-left px-3 py-2 hover:bg-white/5 rounded-xl text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
@@ -205,13 +209,13 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
           {post.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
               <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
-                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen style={{ width: '100%', height: '100%' }} loading="lazy" />
+                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" />
               </div>
             </div>
           )}
           {post.cover_url && !post.youtube_url && (
             <div className="px-5 md:px-6 w-full mb-4">
-              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md cursor-zoom-in" style={{ paddingBottom: '56.25%' }}>
+              <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%' }}>
                 <img src={post.cover_url} className="absolute inset-0 w-full h-full object-cover" loading="lazy" alt="cover" />
               </div>
             </div>
