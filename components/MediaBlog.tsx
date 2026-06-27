@@ -33,7 +33,7 @@ interface MediaBlogProps {
   setIsCreatingPost: (val: boolean) => void;
 }
 
-export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
+export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProps) {
   const POSTS_PER_PAGE = 4;
   const router = useRouter();
   
@@ -122,7 +122,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
       <div className="flex items-center justify-between w-full select-none">
         <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
         {currentUser && (
-          <button onClick={() => router.push('/media/editor')} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg">
+          <button onClick={() => router.push('/media/editor')} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90">
             <Plus size={26} />
           </button>
         )}
@@ -136,7 +136,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
               <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
+                  <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" alt="avatar" />
                   <div>
                     <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
