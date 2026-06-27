@@ -120,7 +120,7 @@ export default function StandalonePostDetail() {
   }
 
   async function handleDeletePost() {
-    if (!post || !confirm('Удалить пост?')) return;
+    if (!post || !confirm('Удалить post?')) return;
     await supabase.from('posts').delete().eq('id', post.id);
     router.push('/');
   }
@@ -181,7 +181,8 @@ export default function StandalonePostDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-12 pb-32 selection:bg-[#c0ff00] selection:text-black">
+    // ИСПРАВЛЕНО: pt-24 опускает страницу ниже системной плашки Telegram
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 selection:bg-[#c0ff00] selection:text-black">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
         <div className="w-full flex mb-8">
@@ -198,8 +199,7 @@ export default function StandalonePostDetail() {
               </div>
             </div>
             
-            {/* ИСПРАВЛЕНО: Безопасные условия без текстовых артефактов && () */}
-            {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) ? (
+            {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
               <div className="relative">
                 <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                 {activeMenu && (
@@ -209,7 +209,7 @@ export default function StandalonePostDetail() {
                   </div>
                 )}
               </div>
-            ) : null}
+            )}
           </div>
 
           {post.youtube_url && (
@@ -249,7 +249,6 @@ export default function StandalonePostDetail() {
               const replies = comments.filter(r => r.parent_id === mainComment.id);
               return (
                 <div key={mainComment.id} className="pb-4">
-                  {/* ИСПРАВЛЕНО: renderComment теперь гарантированно виден компилятору */}
                   {renderComment(mainComment, false)}
                   {replies.length > 0 && (
                     <div className="pl-12 mt-2">
