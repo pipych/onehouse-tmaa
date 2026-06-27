@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-import PostDetail from './PostDetail';
-import PostEditor from './PostEditor';
 import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical } from 'lucide-react';
 
 interface Player {
@@ -36,12 +35,10 @@ interface MediaBlogProps {
 
 export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
   const POSTS_PER_PAGE = 4;
+  const router = useRouter();
   
   const [posts, setPosts] = useState<Post[]>([]);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null); 
-  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
-  
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [postLikes, setPostLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
@@ -77,11 +74,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         if (count !== null) setTotalCount(count);
         
         const ids = data.map(p => p.id);
-        
-        // Запрашиваем данные из связанных таблиц
         const { data: cData } = await supabase.from('comments').select('post_id').in('post_id', ids);
-        
-        // ИСПРАВЛЕНО: Добавлен выбор поля user_id, чтобы убрать ошибку компиляции TypeScript
         const { data: lData } = await supabase.from('post_likes').select('post_id, user_id');
         
         const cMap: Record<string, number> = {};
@@ -117,54 +110,22 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
   async function handleDeletePost(postId: string) {
     if (!confirm('Удалить пост?')) return;
     await supabase.from('posts').delete().eq('id', postId);
-    setSelectedPost(null);
     fetchPosts(1, false);
-  }
-
-  function handleClosePost() {
-    setSelectedPost(null);
-  }
-
-  function handleStartEdit(post: Post) {
-    setEditingPostId(post.id);
-    setIsCreatingPost(true);
-    setSelectedPost(null);
   }
 
   useEffect(() => {
     fetchPosts(1, false);
   }, [currentUser]);
 
-  // Декларативное переключение экранов
-  if (selectedPost) {
-    return (
-      <PostDetail 
-        post={selectedPost} 
-        currentUser={currentUser} 
-        onClose={handleClosePost} 
-        onProfileClick={onProfileClick}
-        onStartEdit={handleStartEdit}
-        onDeletePost={handleDeletePost}
-      />
-    );
-  }
-
-  if (isCreatingPost) {
-    return (
-      <PostEditor 
-        currentUser={currentUser} 
-        editingPostId={editingPostId} 
-        onClose={() => { setIsCreatingPost(false); setEditingPostId(null); }} 
-        onSuccess={() => { setIsCreatingPost(false); setEditingPostId(null); fetchPosts(1, false); }}
-      />
-    );
-  }
-
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
       <div className="flex items-center justify-between w-full select-none">
         <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
-        {currentUser && <button onClick={() => { setEditingPostId(null); setIsCreatingPost(true); }} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg"><Plus size={26} /></button>}
+        {currentUser && (
+          <button onClick={() => router.push('/media/editor')} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg">
+            <Plus size={26} />
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col gap-8 pb-8">
@@ -172,21 +133,21 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
           <div className="text-center py-16 text-gray-400 bg-[#14171c]/50 rounded-[32px] border border-white/5">Лента пуста</div>
         ) : (
           posts.map(post => (
-            <div key={post.id} onClick={() => setSelectedPost(post)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
+            <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
               <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <img src={post.author?.avatar_url} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
+                  <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
                   <div>
                     <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
                   </div>
                 </div>
-                {(post.author_id === currentUser?.id || currentUser?.roles?.includes('admin')) && (
+                {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
                   <div className="relative">
                     <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                     {activeMenuPostId === post.id && (
                       <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => handleStartEdit(post)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                        <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
                         <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 text-sm font-bold text-red-400">Удалить</button>
                       </div>
                     )}
@@ -210,7 +171,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                 <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
                 <div className="flex items-center justify-start gap-3 select-none" onClick={e => e.stopPropagation()}>
                   <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
-                  <button onClick={() => setSelectedPost(post)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
+                  <button onClick={() => router.push(`/media/${post.id}`)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
                 </div>
               </div>
             </div>
