@@ -9,7 +9,6 @@ interface Player {
   id: string;
 }
 
-// Выносим всю тяжелую логику в отдельный внутренний компонент
 function EditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -153,7 +152,8 @@ function EditorContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-12 pb-40">
+    // ИСПРАВЛЕНО: pt-24 спускает заголовок и кнопки ниже шапки WebView Телеграма
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-40">
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
         
         <div className="flex items-between justify-between w-full mb-12">
@@ -217,7 +217,6 @@ function EditorContent() {
   );
 }
 
-// Главный экспортируемый компонент-страница оборачивает контент в Suspense-границу
 export default function StandalonePostEditor() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs tracking-wider">ЗАГРУЗКА ИНТЕРФЕЙСА РЕДАКТОРА...</div>}>
