@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw } from 'lucide-react';
@@ -9,7 +9,8 @@ interface Player {
   id: string;
 }
 
-export default function StandalonePostEditor() {
+// Выносим всю тяжелую логику в отдельный внутренний компонент
+function EditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editingPostId = searchParams.get('edit');
@@ -213,5 +214,14 @@ export default function StandalonePostEditor() {
         )}
       </div>
     </div>
+  );
+}
+
+// Главный экспортируемый компонент-страница оборачивает контент в Suspense-границу
+export default function StandalonePostEditor() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs tracking-wider">ЗАГРУЗКА ИНТЕРФЕЙСА РЕДАКТОРА...</div>}>
+      <EditorContent />
+    </Suspense>
   );
 }
