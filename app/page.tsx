@@ -549,7 +549,7 @@ export default function Home() {
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       setTgUser(tg.initDataUnsafe.user);
 
-      // ИСПРАВЛЕНО: Логика автоматического перехвата директ-ссылки (Deep Link) из бота
+      // ИСПРАВЛЕНО: Логика автоматического перехвата параметров запуска стартапа (Deep Link) из бота
       if (tg.initDataUnsafe.start_param) {
         const param = tg.initDataUnsafe.start_param;
         if (param.startsWith('post_')) {
@@ -654,7 +654,7 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
-  // ИСПРАВЛЕНО: Бесшовная и красивая анимация вращения спиннера по центру экрана при загрузке
+  // ИСПРАВЛЕНО: Красивый крутящийся спиннер по центру экрана вместо сырого текста при первой загрузке приложения
   if (loading) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
@@ -797,9 +797,10 @@ export default function Home() {
         </div>
       )}
 
-      <main className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col">
+      {/* ИСПРАВЛЕНО: Добавлен key={activeTab} на контейнер <main>, чтобы при переключении меню контент плавно проявлялся по анимации animate-fade-in */}
+      <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
-          <div className="space-y-6 w-full animate-fade-in">
+          <div className="space-y-6 w-full">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
                 <HomeIcon size={18} className="text-[#c0ff00]" />
@@ -991,7 +992,7 @@ export default function Home() {
         )}
 
         {activeTab === 'map' && (
-          <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
+          <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col relative">
             <div className="flex items-center justify-between w-full px-1 mb-4">
               <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2"><Map size={18} />Карта мира</h2>
             </div>
@@ -1010,7 +1011,7 @@ export default function Home() {
         )}
 
         {activeTab === 'players' && (
-          <div className="space-y-6 animate-fade-in w-full">
+          <div className="space-y-6 w-full">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2"><Users size={18} className="text-[#c0ff00]" />Жители сервера</h2>
             </div>
