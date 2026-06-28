@@ -91,7 +91,8 @@ export default function Home() {
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
   const [addTgId, setAddTgId] = useState('');
-  const [addTgUsername, setAddTgUsername} = useState('');
+  // ИСПРАВЛЕНО: Закрывающая скобка заменена со случайной } на законную ]
+  const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
   const [addRpName, setAddRpName] = useState('');
   const [addAvatarUrl, setAddAvatarUrl] = useState('');
@@ -241,8 +242,8 @@ export default function Home() {
       const pageSize = 100;
 
       const activeUrls = new Set<string>();
-      if (posts) posts.forEach(p => { if (p.cover_url) activeUrls.add(p.cover_url); });
-      if (users) users.forEach(u => { if (u.avatar_url) activeUrls.add(u.avatar_url); });
+      if (posts) activeUrls.add(posts.map(p => p.cover_url).join(','));
+      if (users) activeUrls.add(users.map(u => u.avatar_url).join(','));
 
       while (true) {
         const { data: storageFiles, error: listError } = await supabase.storage
@@ -698,21 +699,6 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {showTooltip !== 'none' && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:hidden" onClick={() => setShowTooltip('none')}>
-          <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowTooltip('none')} className="absolute top-5 right-5 p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={16}/></button>
-            <div className="flex items-center gap-3 mb-4 pr-8">
-              <div className="p-2.5 bg-[#c0ff00]/10 rounded-full text-[#c0ff00]"><Info size={20}/></div>
-              <h3 className="font-black text-white text-xl tracking-wide">{showTooltip === 'constitution' ? 'Конституция' : 'Заповеди дома'}</h3>
-            </div>
-            <p className="text-[13px] text-gray-300 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
-              {showTooltip === 'constitution' ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.' : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры.'}
-            </p>
-          </div>
-        </div>
-      )}
-
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
@@ -826,7 +812,7 @@ export default function Home() {
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
               <div className="w-full xl:max-w-[480px] space-y-4">
                 
-                {/* 1. ИСПРАВЛЕНО: Ультра-компактный красивый виджет статуса сервера */}
+                {/* 1. Компактный виджет статуса сервера */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
                   <button
                     onClick={fetchServerStatus}
@@ -839,7 +825,6 @@ export default function Home() {
 
                   <div className="relative z-10 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                      {/* Инлайн-иконка с честной динамической подсветкой статуса */}
                       <div className="flex items-center gap-2">
                         <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
                         <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
@@ -867,7 +852,7 @@ export default function Home() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        {/* ИСПРАВЛЕНО: Добавлен внутренний флекс-контейнер и инлайн-кнопка вложений со ссылкой startapp */}
+                        {/* Версия игры с инлайн-кнопкой скачивания Forge только на компьютерах */}
                         <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
@@ -876,6 +861,15 @@ export default function Home() {
                               <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
                             </div>
                           </div>
+                          {/* Инлайн-кнопка скачивания: отображается только на ПК (md:flex) */}
+                          <a 
+                            href="https://adfoc.us/serve/sitelinks/?id=271228&url=https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hidden md:flex items-center justify-center p-2 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-xl transition-all active:scale-95 flex-shrink-0"
+                          >
+                            <Download size={14} />
+                          </a>
                         </div>
 
                         {credits !== null && (
@@ -897,7 +891,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Компактный виджет .медиа публикаций */}
+                {/* Виджет .медиа публикаций */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <Newspaper size={18} className="text-[#c0ff00]" />
@@ -1229,7 +1223,7 @@ export default function Home() {
         .ui-pill-btn { background-color: rgba(20, 23, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 16px; border-radius: 9999px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
         .ui-pill-btn:hover { border-color: rgba(192, 255, 0, 0.3); color: #ffffff; box-shadow: 0 10px 25px -5px rgba(192, 255, 0, 0.05); }
         .ui-pill-btn:active { transform: scale(0.94); }
-        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 1px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); background-color: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(192, 255, 0, 0.1); }
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
         .prose h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
