@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check } from 'lucide-react';
 
-const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk1901pxtg/exec";
+const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
 
 interface Player {
   id: string;
