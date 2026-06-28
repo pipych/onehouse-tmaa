@@ -91,7 +91,6 @@ export default function Home() {
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
   const [addTgId, setAddTgId] = useState('');
-  // ИСПРАВЛЕНО: Закрывающая скобка заменена со случайной } на законную ]
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
   const [addRpName, setAddRpName] = useState('');
@@ -462,7 +461,7 @@ export default function Home() {
 
   async function saveProfileData() {
     if (!selectedPlayer || !newRpName.trim()) return;
-    const { error } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
+    const { error = null } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
     if (!error) {
       const updatedUser = { ...selectedPlayer, rp_name: newRpName, avatar_url: newAvatarUrl };
       setSelectedPlayer(updatedUser);
@@ -699,6 +698,21 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
+      {showTooltip !== 'none' && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:hidden" onClick={() => setShowTooltip('none')}>
+          <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowTooltip('none')} className="absolute top-5 right-5 p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={16}/></button>
+            <div className="flex items-center gap-3 mb-4 pr-8">
+              <div className="p-2.5 bg-[#c0ff00]/10 rounded-full text-[#c0ff00]"><Info size={20}/></div>
+              <h3 className="font-black text-white text-xl tracking-wide">{showTooltip === 'constitution' ? 'Конституция' : 'Заповеди дома'}</h3>
+            </div>
+            <p className="text-[13px] text-gray-300 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
+              {showTooltip === 'constitution' ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.' : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
@@ -812,7 +826,7 @@ export default function Home() {
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
               <div className="w-full xl:max-w-[480px] space-y-4">
                 
-                {/* 1. Компактный виджет статуса сервера */}
+                {/* Компактный виджет статуса сервера */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
                   <button
                     onClick={fetchServerStatus}
@@ -852,7 +866,6 @@ export default function Home() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        {/* Версия игры с инлайн-кнопкой скачивания Forge только на компьютерах */}
                         <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
@@ -861,12 +874,12 @@ export default function Home() {
                               <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
                             </div>
                           </div>
-                          {/* Инлайн-кнопка скачивания: отображается только на ПК (md:flex) */}
+                          {/* ИСПРАВЛЕНО: Кнопка скачивания стала идеально КРУГЛОЙ (rounded-full + размеры w-8 h-8) */}
                           <a 
                             href="https://adfoc.us/serve/sitelinks/?id=271228&url=https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hidden md:flex items-center justify-center p-2 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-xl transition-all active:scale-95 flex-shrink-0"
+                            className="hidden md:flex items-center justify-center w-8 h-8 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full transition-all active:scale-95 flex-shrink-0"
                           >
                             <Download size={14} />
                           </a>
