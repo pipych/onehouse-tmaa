@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import MediaBlog from '../components/MediaBlog'; 
-import { supabase } from '../lib/supabase';
+import MediaBlog from '../../components/MediaBlog'; 
+import { supabase } from '../../lib/supabase';
 
 interface Player {
   id: string;
@@ -33,7 +33,6 @@ export default function MediaPage() {
   return (
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
-        {/* ИСПРАВЛЕНО: Передаем обязательные для интерфейса пропсы, чтобы TypeScript не ругался */}
         <MediaBlog 
           currentUser={currentUser} 
           onProfileClick={(player) => router.push('/players')} 
@@ -42,7 +41,7 @@ export default function MediaPage() {
         />
       </div>
 
-      {/* НИЖНИЙ НАВБАР (Такой же, как на главной) */}
+      {/* НИЖНИЙ НАВБАР */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#14171c]/90 backdrop-blur-xl p-4 flex justify-around z-40 border-t border-white/5 select-none">
         <button onClick={() => router.push('/')} className={`text-xs font-bold transition-colors ${pathname === '/' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Главная</button>
         <button onClick={() => router.push('/media')} className={`text-xs font-bold transition-colors ${pathname === '/media' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Медиа</button>
