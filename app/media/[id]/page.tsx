@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
-import { ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, CornerDownRight, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, CornerDownRight, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -97,7 +97,7 @@ export default function StandalonePostDetail() {
       setLikesCount(p => Math.max(0, p - 1));
       setIsLiked(false);
     } else {
-      await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUser.id }]);
+      await supabase.from('post_likes').insert([{ post_id: post.id, text_id: currentUser.id }]); // поправили поле лайка под твою структуру бд
       setLikesCount(p => p + 1);
       setIsLiked(true);
     }
@@ -139,8 +139,14 @@ export default function StandalonePostDetail() {
     loadActivity();
   }, [postId, currentUser]);
 
+  // ИСПРАВЛЕНО: Бесшовная и красивая анимация вращения спиннера по центру экрана при загрузке публикации
   if (!post) {
-    return <div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs">ЗАГРУЗКА ПУБЛИКАЦИИ...</div>;
+    return (
+      <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
+        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
+        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка публикации...</span>
+      </div>
+    );
   }
 
   const topLevelComments = comments.filter(c => !c.parent_id);
@@ -184,7 +190,7 @@ export default function StandalonePostDetail() {
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 selection:bg-[#c0ff00] selection:text-black">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
-        {/* Кнопка Назад - Возврат строго на корень сайта */}
+        {/* Кнопка Назад - Sticky */}
         <div className="sticky top-24 z-50 w-full mb-6 pointer-events-none">
           <button 
             onClick={() => router.push('/')} 
