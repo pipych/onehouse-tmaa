@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
@@ -549,10 +547,13 @@ export default function Home() {
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       setTgUser(tg.initDataUnsafe.user);
 
-      // ИСПРАВЛЕНО: Логика автоматического перехвата параметров запуска стартапа (Deep Link) из бота
+      // ИСПРАВЛЕНО: Предотвращаем циклическое перенаправление при нажатии "Назад" после перехода по ссылке
       if (tg.initDataUnsafe.start_param) {
         const param = tg.initDataUnsafe.start_param;
-        if (param.startsWith('post_')) {
+        const alreadyHandled = sessionStorage.getItem('handled_start_param');
+        
+        if (param.startsWith('post_') && alreadyHandled !== param) {
+          sessionStorage.setItem('handled_start_param', param); // Записываем метку, что переход выполнен
           const postId = param.replace('post_', '');
           router.push(`/media/${postId}`);
           return;
@@ -654,7 +655,6 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
-  // ИСПРАВЛЕНО: Красивый крутящийся спиннер по центру экрана вместо сырого текста при первой загрузке приложения
   if (loading) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
@@ -797,7 +797,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* ИСПРАВЛЕНО: Добавлен key={activeTab} на контейнер <main>, чтобы при переключении меню контент плавно проявлялся по анимации animate-fade-in */}
       <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-6xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
@@ -826,7 +825,7 @@ export default function Home() {
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
-                          <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                          <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).text : 'text-gray-400'}`}>
                             {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                           </div>
                         </div>
@@ -992,7 +991,7 @@ export default function Home() {
         )}
 
         {activeTab === 'map' && (
-          <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col relative">
+          <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
             <div className="flex items-center justify-between w-full px-1 mb-4">
               <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2"><Map size={18} />Карта мира</h2>
             </div>
@@ -1011,7 +1010,7 @@ export default function Home() {
         )}
 
         {activeTab === 'players' && (
-          <div className="space-y-6 w-full">
+          <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2"><Users size={18} className="text-[#c0ff00]" />Жители сервера</h2>
             </div>
@@ -1073,7 +1072,7 @@ export default function Home() {
                   <span className="font-medium">{isUploadingNewUser ? 'Загрузка фото...' : (addAvatarUrl ? 'Фото загружено WebP ✅' : 'Загрузить аватарку из галереи')}</span>
                 </label>
               </div>
-              <button onClick={handleAddPlayer} disabled={isUploadingNewUser} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3 disabled:opacity-50"><Check size={16} /><span>Создать аккаунт</span></button>
+              <button onClick={handleAddPlayer} disabled={isUploadingNewUser} className="ui-pill-btn w-full justify-center py-3 disabled:opacity-50"><Check size={16} /><span>Создать аккаунт</span></button>
             </div>
 
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
