@@ -3,10 +3,9 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
-import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check } from 'lucide-react';
 
-// ФИКС: Сюда вставь URL Веб-приложения, полученный после Deploy скрипта в Google Apps Script!
-const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
+const BOT_WEBHOOK_URL = "8975967394:AAFePXJcr1JgQICEG4ztqARKx3ZF_bJM1Wo";
 
 interface Player {
   id: string;
@@ -25,6 +24,10 @@ function EditorContent() {
   const [newPostPublishedAtInput, setNewPostPublishedAtInput] = useState(''); 
   const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
   const [isTextSelected, setIsTextSelected] = useState(false);
+  
+  // ИСПРАВЛЕНО: Стейты для умного отслеживания пустоты контента и статуса публикации
+  const [isEditorEmpty, setIsEditorEmpty] = useState(true);
+  const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success'>('idle');
   
   const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -99,9 +102,10 @@ function EditorContent() {
 
   async function handlePublish() {
     const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || !postContent.trim() || postContent === '<br>' || !currentUser) {
-      return alert('Заполните поля заголовка и контента статьи!');
-    }
+    if (!newPostTitle.trim() || isEditorEmpty || !currentUser) return;
+
+    // Включаем жёлтый спиннер и лочим кнопку
+    setPublishStatus('publishing');
 
     const finalDate = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
     const payload = {
@@ -109,7 +113,6 @@ function EditorContent() {
       cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null, created_at: finalDate
     };
 
-    // Изменяем запрос на .select().single(), чтобы вытащить ID созданного поста для передачи боту
     const query = editingPostId 
       ? supabase.from('posts').update(payload).eq('id', editingPostId).select().single()
       : supabase.from('posts').insert([payload]).select().single();
@@ -117,7 +120,6 @@ function EditorContent() {
     const { data: savedPost, error } = await query;
 
     if (!error && savedPost) {
-      // ФИКС: Скрытая отправка сигнала боту о публикации новой статьи
       if (BOT_WEBHOOK_URL && !BOT_WEBHOOK_URL.includes("СЮДА_ВСТАВЬ_ССЫЛКУ")) {
         try {
           await fetch(BOT_WEBHOOK_URL, {
@@ -133,9 +135,16 @@ function EditorContent() {
           });
         } catch (e) {}
       }
-      router.push('/');
-    } else if (error) {
-      alert(error.message);
+      
+      // Показываем зелёную галочку, ждем секунду и перенаправляем
+      setPublishStatus('success');
+      setTimeout(() => {
+        router.push('/');
+      }, 1200);
+
+    } else {
+      if (error) alert(error.message);
+      setPublishStatus('idle'); // Сбрасываем в дефолт при ошибке
     }
   }
 
@@ -159,7 +168,10 @@ function EditorContent() {
           const d = new Date(data.created_at);
           d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
           setNewPostPublishedAtInput(d.toISOString().slice(0, 16));
-          if (editorRef.current) editorRef.current.innerHTML = data.content || '';
+          if (editorRef.current) {
+            editorRef.current.innerHTML = data.content || '';
+            setIsEditorEmpty(!data.content || !data.content.trim() || data.content === '<br>');
+          }
         }
       });
     }
@@ -176,42 +188,80 @@ function EditorContent() {
     return () => document.removeEventListener('selectionchange', handleSelection);
   }, []);
 
+  // Вычисляем динамические стили кнопки публикации на основе стейтов
+  const isButtonDisabled = isUploadingPostCover || !newPostTitle.trim() || RichmondEmptyEvaluator() || publishStatus !== 'idle';
+  
+  function RichmondEmptyEvaluator() {
+    return isEditorEmpty;
+  }
+
+  let buttonClass = "w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-500 ease-out ";
+  let buttonIcon = <Send size={20} />;
+
+  if (publishStatus === 'publishing') {
+    buttonClass += "bg-yellow-500 text-black cursor-not-allowed scale-95";
+    buttonIcon = <RefreshCw size={20} className="animate-spin" />;
+  } else if (publishStatus === 'success') {
+    buttonClass += "bg-green-500 text-white scale-110";
+    buttonIcon = <Check size={20} className="animate-fade-in" />;
+  } else if (isButtonDisabled) {
+    buttonClass += "bg-gray-800 text-gray-600 border border-white/5 cursor-not-allowed";
+  } else {
+    buttonClass += "bg-[#c0ff00] text-black active:scale-90 hover:scale-105";
+  }
+
   return (
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-40">
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
         
         <div className="flex items-center justify-between w-full mb-12">
-          <button onClick={() => router.push('/')} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
-          <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-lg"><Send size={20} /></button>
+          <button onClick={() => router.push('/')} disabled={publishStatus !== 'idle'} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 disabled:opacity-30"><ArrowLeft size={20} /></button>
+          
+          {/* Интеллектуальная динамическая кнопка */}
+          <button onClick={handlePublish} disabled={isButtonDisabled} className={buttonClass}>
+            {buttonIcon}
+          </button>
         </div>
 
         <div className="w-full mb-14">
           <div className="flex flex-wrap gap-3">
-            <div onClick={() => dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
+            <div onClick={() => publishStatus === 'idle' && dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
               <Clock size={14} /> 
               <span>{newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toLocaleDateString('ru-RU') : 'Дата'}</span>
               <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute opacity-0 w-0 h-0" />
             </div>
             <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} />
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} disabled={publishStatus !== 'idle'} />
               {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span>
             </label>
-            <button onClick={() => setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 text-xs font-bold outline-none">
+            <button onClick={() => publishStatus === 'idle' && setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 text-xs font-bold outline-none">
               <Youtube size={14} /> <span>YouTube</span>
             </button>
           </div>
         </div>
 
-        <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8" />
+        <input type="text" placeholder="Яркий заголовок..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} disabled={publishStatus !== 'idle'} className="w-full bg-transparent text-3xl md:text-5xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-8 disabled:opacity-50" />
         
         <div className="space-y-4 mb-8">
           {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="preview" /></div>}
           {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && <div className="w-full relative rounded-[24px] overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%', height: 0 }}><iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen /></div>}
         </div>
 
-        <div ref={editorRef} contentEditable onKeyUp={checkFormatting} onMouseUp={checkFormatting} onInput={checkFormatting} className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none pt-2 pb-10 focus:outline-none" data-placeholder="Текст вашей статьи..." />
+        <div 
+          ref={editorRef} 
+          contentEditable={publishStatus === 'idle'} 
+          onKeyUp={checkFormatting} 
+          onMouseUp={checkFormatting} 
+          onInput={() => {
+            checkFormatting();
+            const html = editorRef.current?.innerHTML || '';
+            setIsEditorEmpty(!html.trim() || html === '<br>');
+          }} 
+          className="w-full min-h-[40vh] bg-transparent text-lg text-gray-200 outline-none prose prose-invert max-w-none pt-2 pb-10 focus:outline-none disabled:opacity-50" 
+          data-placeholder="Текст вашей статьи..." 
+        />
 
-        {isTextSelected && (
+        {isTextSelected && publishStatus === 'idle' && (
           <div className="fixed bottom-24 left-0 right-0 z-[99999] flex items-center justify-center px-4 pointer-events-none animate-fade-in">
             <div className="p-2 bg-[#14171c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-1.5 pointer-events-auto w-full max-w-sm overflow-x-auto no-scrollbar justify-around">
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2 rounded-xl ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={16}/></button>
