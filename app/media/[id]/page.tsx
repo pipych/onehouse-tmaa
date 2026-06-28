@@ -97,7 +97,7 @@ export default function StandalonePostDetail() {
       setLikesCount(p => Math.max(0, p - 1));
       setIsLiked(false);
     } else {
-      await supabase.from('post_likes').insert([{ post_id: post.id, text_id: currentUser.id }]); // поправили поле лайка под твою структуру бд
+      await supabase.from('post_likes').insert([{ post_id: post.id, user_id: currentUser.id }]);
       setLikesCount(p => p + 1);
       setIsLiked(true);
     }
@@ -139,7 +139,6 @@ export default function StandalonePostDetail() {
     loadActivity();
   }, [postId, currentUser]);
 
-  // ИСПРАВЛЕНО: Бесшовная и красивая анимация вращения спиннера по центру экрана при загрузке публикации
   if (!post) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
@@ -190,7 +189,7 @@ export default function StandalonePostDetail() {
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 selection:bg-[#c0ff00] selection:text-black">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
-        {/* Кнопка Назад - Sticky */}
+        {/* Кнопка Назад - Исправлен жесткий пуш для WebView */}
         <div className="sticky top-24 z-50 w-full mb-6 pointer-events-none">
           <button 
             onClick={() => router.push('/')} 
