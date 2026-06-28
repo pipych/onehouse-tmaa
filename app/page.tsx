@@ -10,7 +10,7 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper
+  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -91,7 +91,7 @@ export default function Home() {
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
   const [addTgId, setAddTgId] = useState('');
-  const [addTgUsername, setAddTgUsername] = useState('');
+  const [addTgUsername, setAddTgUsername} = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
   const [addRpName, setAddRpName] = useState('');
   const [addAvatarUrl, setAddAvatarUrl] = useState('');
@@ -826,7 +826,7 @@ export default function Home() {
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
               <div className="w-full xl:max-w-[480px] space-y-4">
                 
-                {/* 1. ПЕРЕДЕЛАНО: Ультра-компактный красивый виджет сервера */}
+                {/* 1. ИСПРАВЛЕНО: Ультра-компактный красивый виджет статуса сервера */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
                   <button
                     onClick={fetchServerStatus}
@@ -867,13 +867,17 @@ export default function Home() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
-                          <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
-                          <div className="min-w-0">
-                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
-                            <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
+                        {/* ИСПРАВЛЕНО: Добавлен внутренний флекс-контейнер и инлайн-кнопка вложений со ссылкой startapp */}
+                        <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
+                            <div className="min-w-0">
+                              <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
+                              <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
+                            </div>
                           </div>
                         </div>
+
                         {credits !== null && (
                           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
                             <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00] shrink-0"><Coins size={16} /></div>
@@ -893,7 +897,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 2. ДОБАВЛЕНО: Компактный виджет .медиа публикаций */}
+                {/* Компактный виджет .медиа публикаций */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <Newspaper size={18} className="text-[#c0ff00]" />
@@ -1096,7 +1100,6 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
-                        {/* ИСПРАВЛЕНО: Закрыли кавычку в свойстве className */}
                         <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
@@ -1226,12 +1229,11 @@ export default function Home() {
         .ui-pill-btn { background-color: rgba(20, 23, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 16px; border-radius: 9999px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
         .ui-pill-btn:hover { border-color: rgba(192, 255, 0, 0.3); color: #ffffff; box-shadow: 0 10px 25px -5px rgba(192, 255, 0, 0.05); }
         .ui-pill-btn:active { transform: scale(0.94); }
-        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 1px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); background-color: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(192, 255, 0, 0.1); }
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        .prose h1 { font-size: 2rem !important; font-weight: 900 !important; color: #ffffff !important; margin-top: 1.5rem !important; margin-bottom: 0.75rem !important; line-height: 1.1 !important; }
-        .prose h2 { font-size: 1.5rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-        /* ИСПРАВЛЕНО: Заменили JSX-комментарий на чистый CSS-формат, цвета форматирования выровнены */
+        .prose h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+        .prose h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
         .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; transition: all 0.3s ease; }
         .prose b, .prose strong { color: #d1d5db !important; font-weight: 700; }
         .prose i, .prose em { color: #d1d5db !important; font-style: italic; }
