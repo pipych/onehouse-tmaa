@@ -86,7 +86,6 @@ export default function Home() {
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
-  // Добавили стейт для хранения 2 последних постов на главной панели
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
   
   const staticIp = "onehouse2.exaroton.me:15879"; 
@@ -278,7 +277,7 @@ export default function Home() {
       setMigrationProgress(`✅ Готово! Конвертировано постов: ${postsCount}, аватарок: ${usersCount}. Удалено старых файлов из хранилища: ${deletedCount}.`);
       loadPlayers(); 
     } catch (e: any) {
-      alert(`Ошибка выполнения скрипта: ${e.message}`);
+      alert(`Ошибка выполнения 😊 скрипта: ${e.message}`);
       setMigrationProgress('Процесс принудительно остановлен.');
     } finally {
       setIsMigrating(false);
@@ -323,7 +322,6 @@ export default function Home() {
     }
   }
 
-  // Добавили функцию выкачивания двух последних статей для виджета
   async function loadLatestPosts() {
     try {
       const { data, error } = await supabase
@@ -411,7 +409,7 @@ export default function Home() {
         loadRoles();
         loadPlayers();
         loadConstitution();
-        loadLatestPosts(); // Триггерим загрузку постов при входе
+        loadLatestPosts();
       }
     } catch (e: any) {
       setError(`Ошибка базы данных: ${e.message}`);
@@ -543,7 +541,7 @@ export default function Home() {
     setActiveDocument('none'); 
     setIsEditing(false);
     setSearchQuery('');
-    if (tab === 'profile') loadLatestPosts(); // Обновляем при возврате на главную
+    if (tab === 'profile') loadLatestPosts();
   }
 
   useEffect(() => {
@@ -700,6 +698,21 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
+      {showTooltip !== 'none' && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:hidden" onClick={() => setShowTooltip('none')}>
+          <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowTooltip('none')} className="absolute top-5 right-5 p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={16}/></button>
+            <div className="flex items-center gap-3 mb-4 pr-8">
+              <div className="p-2.5 bg-[#c0ff00]/10 rounded-full text-[#c0ff00]"><Info size={20}/></div>
+              <h3 className="font-black text-white text-xl tracking-wide">{showTooltip === 'constitution' ? 'Конституция' : 'Заповеди дома'}</h3>
+            </div>
+            <p className="text-[13px] text-gray-300 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
+              {showTooltip === 'constitution' ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.' : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
@@ -812,7 +825,8 @@ export default function Home() {
 
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
               <div className="w-full xl:max-w-[480px] space-y-4">
-                {/* КОМПАКТНЫЙ ВИДЖЕТ СЕРВЕРА */}
+                
+                {/* 1. ПЕРЕДЕЛАНО: Компактный виджет статуса сервера */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
                   <button
                     onClick={fetchServerStatus}
@@ -825,6 +839,7 @@ export default function Home() {
 
                   <div className="relative z-10 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
+                      {/* Инлайн-иконка с честной динамической подсветкой */}
                       <div className="flex items-center gap-2">
                         <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
                         <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
@@ -878,7 +893,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ДОБАВЛЕННЫЙ БЛОК: Виджет .медиа на главной панели */}
+                {/* 2. ДОБАВЛЕНО: Компактный виджет .медиа публикаций */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <Newspaper size={18} className="text-[#c0ff00]" />
@@ -1081,7 +1096,7 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
-                        <div className-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
+                        <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
                         {player.roles.slice(0, 1).map((r, i) => (
@@ -1190,41 +1205,4 @@ export default function Home() {
          <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
          <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
          <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
-       </nav>
-      </aside>
-
-      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
-
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
-        body, html { font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; max-w-full; overflow-x: clip; }
-        button, input, textarea, div, span { font-family: inherit; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes profileGrow { from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
-        .animate-fade-in { animation: fadeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        .animate-profile-grow { animation: profileGrow 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
-        .ui-pill-btn { background-color: rgba(20, 23, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 16px; border-radius: 9999px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
-        .ui-pill-btn:hover { border-color: rgba(192, 255, 0, 0.3); color: #ffffff; box-shadow: 0 10px 25px -5px rgba(192, 255, 0, 0.05); }
-        .ui-pill-btn:active { transform: scale(0.94); }
-        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-        .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); background-color: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(192, 255, 0, 0.1); }
-        .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        .prose h1 { font-size: 2rem !important; font-weight: 900 !important; color: #ffffff !important; margin-top: 1.5rem !important; margin-bottom: 0.75rem !important; line-height: 1.1 !important; }
-        .prose h2 { font-size: 1.5rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-        .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; transition: all 0.3s ease; }
-        .prose b, .prose strong { color: #d1d5db !important; font-weight: 700; }
-        .prose i, .prose em { color: #d1d5db !important; font-style: italic; }
-      `}</style>
-    </div>
-  );
-}
-откатываемся назад, вот актуальный чистый код главной страницы, теперь сюда вноси точечно правки которые я просил выше, то есть:
-1. убираем эту шапку статус сервера, перенесем кнопку обновления в правый верхний угол виджета так чтобы соблюдались все отступы, уберем надпись текущее состояние, оставим только само состояние и эту иконку серверную которая щас в статусе сервера поставим перед статусом сервера, она будет зеленого цвета такого же как и сейчас, ну и соответственно изза пропажи надписи текущее состояние должен уменьшится слегка и сам виджет
-2. давай на главную теперь добавим виджет медиа, я хочу чтобы он по размеру был как виджет статуса сервера и на этом виджете бцдет отображатся заголовок 2 последних постов и маленьким текстом автор, на самом последнем всегда будет маленькая зеленая плашка new
-3. не забудь про цвет статуса сервера, он щас просто белый у меня, сделай так шоб он горел нужным цветом, и про жирный и курсивный текст в prose, чтобы они не отличались по цвету от обычного текста
-
-все, больше ничего не меняй абсолютно, делай по красоте_м
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold
