@@ -110,7 +110,6 @@ export default function Home() {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
-  const selectedIsDead = selectedPlayer ? isDead(selectedPlayer.roles) : false;
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
   
   const sortedPlayers = players
@@ -230,7 +229,6 @@ export default function Home() {
         }
       }
 
-      // ✅ НОВЫЙ БЛОК: чистка хранилища от не-WebP файлов
       setMigrationProgress('Сканирование хранилища на наличие старых форматов...');
       
       const nonWebpExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.svg'];
@@ -238,7 +236,6 @@ export default function Home() {
       let pageOffset = 0;
       const pageSize = 100;
 
-      // Собираем все ссылки которые сейчас используются в БД
       const activeUrls = new Set<string>();
       if (posts) posts.forEach(p => { if (p.cover_url) activeUrls.add(p.cover_url); });
       if (users) users.forEach(u => { if (u.avatar_url) activeUrls.add(u.avatar_url); });
@@ -256,7 +253,6 @@ export default function Home() {
           const isOldFormat = nonWebpExtensions.some(ext => nameLower.endsWith(ext));
           if (!isOldFormat) return false;
 
-          // Проверяем что файл НЕ используется в БД
           const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(file.name);
           const isActive = activeUrls.has(urlData?.publicUrl || '');
           return !isActive;
@@ -266,9 +262,7 @@ export default function Home() {
           const pathsToDelete = filesToDelete.map(f => f.name);
           setMigrationProgress(`Удаление ${pathsToDelete.length} старых файлов из хранилища...`);
           const { error: deleteError } = await supabase.storage.from('avatars').remove(pathsToDelete);
-          if (deleteError) {
-            console.error('Ошибка удаления файлов:', deleteError);
-          } else {
+          if (!deleteError) {
             deletedCount += pathsToDelete.length;
           }
         }
@@ -648,6 +642,14 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
+  if (loading) {
+    return <div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs">ЗАГРУЗКА ИНТЕРФЕЙСА...</div>;
+  }
+
+  if (error) {
+    return <div className="min-h-screen bg-[#090b0e] text-red-400 flex items-center justify-center font-mono text-xs p-4 text-center">{error}</div>;
+  }
+
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
@@ -732,7 +734,7 @@ export default function Home() {
                 <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
                   <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewAvatarUrl, setIsUploadingProfile)} disabled={isUploadingProfile} />
                   <Upload size={14} className={isUploadingProfile ? "animate-bounce" : ""} />
-                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим файл...' : 'Загрузить из галереи'}</span>
+                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим file...' : 'Загрузить из галереи'}</span>
                 </label>
                 <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2 disabled:opacity-50"><Save size={14} /><span>Сохранить всё</span></button>
               </div>
