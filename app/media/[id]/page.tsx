@@ -122,7 +122,7 @@ export default function StandalonePostDetail() {
   async function handleDeletePost() {
     if (!post || !confirm('Удалить пост?')) return;
     await supabase.from('posts').delete().eq('id', post.id);
-    router.back();
+    router.push('/?tab=media');
   }
 
   useEffect(() => {
@@ -145,9 +145,6 @@ export default function StandalonePostDetail() {
 
   const topLevelComments = comments.filter(c => !c.parent_id);
 
-  /********************************************************
-   * ВЕРНУЛИ НА МЕСТО: Функция отрисовки блоков комментариев
-   ********************************************************/
   function renderComment(comment: BlogComment, isReply = false) {
     const isLong = comment.content.length > 75;
     const isExpanded = expandedComments[comment.id];
@@ -187,11 +184,10 @@ export default function StandalonePostDetail() {
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 selection:bg-[#c0ff00] selection:text-black">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
-        {/* Кнопка Назад */}
+        {/* Кнопка Назад - Sticky */}
         <div className="sticky top-24 z-50 w-full mb-6 pointer-events-none">
-          {/* ИСПРАВЛЕНО: router.back() возвращает на предыдущую вкладку истории */}
           <button 
-            onClick={() => router.back()} 
+            onClick={() => router.push('/?tab=media')} 
             className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-gray-300 hover:text-white transition-transform active:scale-90 shadow-2xl pointer-events-auto"
           >
             <ArrowLeft size={20} />
