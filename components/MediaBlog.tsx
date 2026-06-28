@@ -33,7 +33,7 @@ interface MediaBlogProps {
   setIsCreatingPost: (val: boolean) => void;
 }
 
-export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProps) {
+export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
   const POSTS_PER_PAGE = 4;
   const router = useRouter();
   
@@ -47,7 +47,7 @@ export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProp
   const totalPages = Math.ceil(totalCount / POSTS_PER_PAGE);
 
   function getYoutubeEmbedUrl(url: string) {
-    if (!url) return null;
+    if (!url || url.trim().length === 0) return null;
     const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   }
@@ -132,51 +132,65 @@ export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProp
         {posts.length === 0 ? (
           <div className="text-center py-16 text-gray-400 bg-[#14171c]/50 rounded-[32px] border border-white/5">Лента пуста</div>
         ) : (
-          posts.map(post => (
-            <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
-              <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" alt="avatar" />
-                  <div className="min-w-0">
-                    <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
+          posts.map(post => {
+            const embedUrl = getYoutubeEmbedUrl(post.youtube_url);
+            const hasVideo = post.youtube_url && post.youtube_url.trim().length > 0 && embedUrl;
+            const hasCover = post.cover_url && post.cover_url.trim().length > 0;
+
+            return (
+              <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
+                <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={post.author?.avatar_url || 'https://via.placeholder.com/150'} 
+                      style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} 
+                      className="bg-black/50 border border-white/10" 
+                      alt="avatar" 
+                      onClick={(e) => { e.stopPropagation(); if (post.author) onProfileClick(post.author); }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
+                    </div>
+                  </div>
+                  {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
+                    <div className="relative">
+                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
+                      {activeMenuPostId === post.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                          <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 text-sm font-bold text-red-400">Удалить</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {hasVideo ? (
+                  <div className="px-5 md:px-6 w-full mb-2">
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
+                      <iframe src={embedUrl} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
+                    </div>
+                  </div>
+                ) : hasCover ? (
+                  <div className="px-5 md:px-6 w-full mb-2">
+                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
+                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
+                  <h3 className="text-lg md:text-2xl font-black text-white truncate leading-tight">{post.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
+                  <div className="flex items-center justify-start gap-3 select-none" onClick={e => e.stopPropagation()}>
+                    <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
+                    <button onClick={() => router.push(`/media/${post.id}`)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
                   </div>
                 </div>
-                {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
-                  <div className="relative">
-                    <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
-                    {activeMenuPostId === post.id && (
-                      <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
-                        <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 text-sm font-bold text-red-400">Удалить</button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-
-              {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) && (
-                <div className="px-5 md:px-6 w-full mb-2">
-                  <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen /></div>
-                </div>
-              )}
-              {post.cover_url && !post.youtube_url && (
-                <div className="px-5 md:px-6 w-full mb-2">
-                  <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" /></div>
-                </div>
-              )}
-
-              <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
-                {/* ИСПРАВЛЕНО: Адаптивный размер заголовка text-lg на мобилках */}
-                <h3 className="text-lg md:text-2xl font-black text-white truncate leading-tight">{post.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
-                <div className="flex items-center justify-start gap-3 select-none" onClick={e => e.stopPropagation()}>
-                  <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
-                  <button onClick={() => router.push(`/media/${post.id}`)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -184,3 +198,7 @@ export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProp
         <div className="flex justify-center mt-2 mb-4">
           <button onClick={() => { const n = currentPage + 1; setCurrentPage(n); fetchPosts(n, true); }} className="flex items-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 rounded-full text-xs font-bold text-gray-400">Показать еще</button>
         </div>
+      )}
+    </div>
+  );
+}
