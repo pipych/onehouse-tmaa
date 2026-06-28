@@ -1,13 +1,8 @@
-// app/page.tsx
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-import MediaBlog from '../components/MediaBlog';
-// Сюда ты импортируешь остальные свои вкладки, когда вынесешь их в отдельные файлы:
-// import HomeTab from '../components/HomeTab';
-// import ProfileTab from '../components/ProfileTab';
 
 interface Player {
   id: string;
@@ -19,13 +14,9 @@ interface Player {
   roles: string[];
 }
 
-function MainTabsHub() {
+export default function RootPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  // Читаем активную вкладку прямо из URL строки браузера. Если параметра нет — открываем 'home'
-  const activeTab = searchParams.get('tab') || 'home';
-  
+  const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
 
   useEffect(() => {
@@ -38,53 +29,25 @@ function MainTabsHub() {
     }
   }, []);
 
-  // Функция переключения вкладок теперь меняет URL, а не просто стейт в памяти
-  function setActiveTab(tabName: string) {
-    router.push(`/?tab=${tabName}`);
-  }
-
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white">
-      {/* Твоё боковое или нижнее меню навигации */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#14171c] p-4 flex justify-around z-50 border-t border-white/5">
-        <button onClick={() => setActiveTab('home')} className={`text-xs font-bold ${activeTab === 'home' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Главная</button>
-        <button onClick={() => setActiveTab('media')} className={`text-xs font-bold ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Медиа</button>
-        <button onClick={() => setActiveTab('profile')} className={`text-xs font-bold ${activeTab === 'profile' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Профиль</button>
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32">
+      <div className="w-full max-w-3xl mx-auto flex flex-col">
+        
+        {/* КОНТЕНТ ГЛАВНОЙ СТРАНИЦЫ */}
+        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 shadow-2xl text-center">
+          <h1 className="text-2xl font-black mb-4">Добро пожаловать в OneHouse</h1>
+          <p className="text-gray-400 text-sm">Это основная вкладка вашего приложения.</p>
+        </div>
+
       </div>
 
-      {/* Декларативно рендерим нужный компонент в зависимости от URL */}
-      <div className="pb-24 pt-6">
-        {activeTab === 'home' && (
-          <div className="text-center py-20 text-gray-500">
-            {/* Здесь будет твой <HomeTab /> */}
-            Контент главной страницы (Вынеси его в components/HomeTab.tsx)
-          </div>
-        )}
-
-        {activeTab === 'media' && (
-          <MediaBlog 
-            currentUser={currentUser} 
-            onProfileClick={(p) => setActiveTab('profile')} 
-            isCreatingPost={false} 
-            setIsCreatingPost={() => {}} 
-          />
-        )}
-
-        {activeTab === 'profile' && (
-          <div className="text-center py-20 text-gray-500">
-            {/* Здесь будет твой <ProfileTab /> */}
-            Контент профиля (Вынеси его в components/ProfileTab.tsx)
-          </div>
-        )}
+      {/* НИЖНИЙ НАВБАР ДЛЯ ФИЗИЧЕСКИХ СТРАНИЦ */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#14171c]/90 backdrop-blur-xl p-4 flex justify-around z-40 border-t border-white/5 select-none">
+        <button onClick={() => router.push('/')} className={`text-xs font-bold transition-colors ${pathname === '/' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Главная</button>
+        <button onClick={() => router.push('/media')} className={`text-xs font-bold transition-colors ${pathname === '/media' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Медиа</button>
+        <button onClick={() => router.push('/laws')} className={`text-xs font-bold transition-colors ${pathname === '/laws' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Законы</button>
+        <button onClick={() => router.push('/players')} className={`text-xs font-bold transition-colors ${pathname === '/players' ? 'text-[#c0ff00]' : 'text-gray-400'}`}>Игроки</button>
       </div>
     </div>
-  );
-}
-
-export default function RootPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs">ЗАГРУЗКА ИНТЕРФЕЙСА...</div>}>
-      <MainTabsHub />
-    </Suspense>
   );
 }
