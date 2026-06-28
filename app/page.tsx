@@ -549,13 +549,12 @@ export default function Home() {
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       setTgUser(tg.initDataUnsafe.user);
 
-      // ИСПРАВЛЕНО: Предотвращаем циклическое перенаправление при нажатии "Назад" после перехода по ссылке
       if (tg.initDataUnsafe.start_param) {
         const param = tg.initDataUnsafe.start_param;
         const alreadyHandled = sessionStorage.getItem('handled_start_param');
         
         if (param.startsWith('post_') && alreadyHandled !== param) {
-          sessionStorage.setItem('handled_start_param', param); // Записываем метку, что переход выполнен
+          sessionStorage.setItem('handled_start_param', param);
           const postId = param.replace('post_', '');
           router.push(`/media/${postId}`);
           return;
@@ -810,74 +809,78 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
-              <div className="w-full xl:max-w-[480px] space-y-4">
-                 <div className="flex items-center justify-between w-full px-1">
-                    <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
-                      <Server size={18} className="text-[#c0ff00]" />
-                      Статус сервера
-                    </h2>
-                    <button onClick={fetchServerStatus} className={`p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 ${isServerLoading ? 'animate-spin' : ''}`}>
-                      <RefreshCw size={14} />
-                    </button>
-                 </div>
 
-                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
-                    {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
-                    <div className="relative z-10 flex flex-col gap-4">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Текущее состояние</div>
-                          {/* ИСПРАВЛЕНО: Теперь текст статуса загорается нужным цветом (красный/зеленый/желтый) */}
-                          <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
-                            {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
+              {/* ===== ИЗМЕНЁННЫЙ БЛОК: компактный виджет сервера ===== */}
+              <div className="w-full xl:max-w-[480px] space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
+
+                  {/* Кнопка обновления перемещена в правый верхний угол карточки */}
+                  <button
+                    onClick={fetchServerStatus}
+                    className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}
+                  >
+                    <RefreshCw size={14} />
+                  </button>
+
+                  {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+
+                  <div className="relative z-10 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      {/* Иконка сервера теперь инлайн рядом со статусом, без лейбла "Текущее состояние" */}
+                      <div className="flex items-center gap-2">
+                        <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
+                        <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                          {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
+                        </div>
+                      </div>
+
+                      {serverInfo?.status === 1 && (
+                        <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
+                          <div className="text-[#c0ff00] font-black text-sm leading-none">{serverInfo.players.count} / {serverInfo.players.max}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP (Статика)</div>
+                          <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
+                        </div>
+                        <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
+                          <Copy size={16} />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
+                          <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
+                          <div className="min-w-0">
+                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
+                            <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
                           </div>
                         </div>
-                        {serverInfo?.status === 1 && (
-                          <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
-                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
-                            <div className="text-[#c0ff00] font-black text-sm leading-none">{serverInfo.players.count} / {serverInfo.players.max}</div>
+                        {credits !== null && (
+                          <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
+                            <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00] shrink-0"><Coins size={16} /></div>
+                            <div className="min-w-0">
+                              <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">{credits.toFixed(2)} кр.</div>
+                              <div className="font-mono text-xs text-[#c0ff00] truncate">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
+                            </div>
                           </div>
                         )}
                       </div>
-
-                      <div className="space-y-2">
-                        <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Основной IP (Статика)</div>
-                            <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
-                          </div>
-                          <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
-                            <Copy size={16} />
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
-                             <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
-                             <div className="min-w-0">
-                               <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
-                               <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
-                             </div>
-                           </div>
-                           {credits !== null && (
-                           <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center gap-2 group transition-all hover:border-white/10">
-                             <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00] shrink-0"><Coins size={16} /></div>
-                             <div className="min-w-0">
-                               <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">{credits.toFixed(2)} кр.</div>
-                               <div className="font-mono text-xs text-[#c0ff00] truncate">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
-                             </div>
-                           </div>
-                           )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-1">
-                        <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"><Play size={14} className="fill-current" /><span>Включить</span></button>
-                        <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"><Square size={14} className="fill-current" /><span>Выключить</span></button>
-                      </div>
                     </div>
-                 </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"><Play size={14} className="fill-current" /><span>Включить</span></button>
+                      <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"><Square size={14} className="fill-current" /><span>Выключить</span></button>
+                    </div>
+                  </div>
+                </div>
               </div>
+              {/* ===== КОНЕЦ ИЗМЕНЁННОГО БЛОКА ===== */}
 
               <div className="w-full xl:max-w-[320px] shrink-0 space-y-4">
                  <div className="hidden xl:block h-[26px]"></div> 
@@ -1178,7 +1181,6 @@ export default function Home() {
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
         .prose h1 { font-size: 2rem !important; font-weight: 900 !important; color: #ffffff !important; margin-top: 1.5rem !important; margin-bottom: 0.75rem !important; line-height: 1.1 !important; }
         .prose h2 { font-size: 1.5rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-        {/* ИСПРАВЛЕНО: Теперь жирный и курсив в законах имеют монолитный цвет основного контента */}
         .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; transition: all 0.3s ease; }
         .prose b, .prose strong { color: #d1d5db !important; font-weight: 700; }
         .prose i, .prose em { color: #d1d5db !important; font-style: italic; }
