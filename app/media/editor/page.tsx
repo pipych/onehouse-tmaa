@@ -110,7 +110,7 @@ function EditorContent() {
       ? await supabase.from('posts').update(payload).eq('id', editingPostId)
       : await supabase.from('posts').insert([payload]);
 
-    if (!error) router.push('/media');
+    if (!error) router.push('/');
     else alert(error.message);
   }
 
@@ -156,7 +156,7 @@ function EditorContent() {
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
         
         <div className="flex items-center justify-between w-full mb-12">
-          <button onClick={() => router.push('/media')} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
+          <button onClick={() => router.push('/')} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
           <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-lg"><Send size={20} /></button>
         </div>
 
