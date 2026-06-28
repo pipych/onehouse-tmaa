@@ -86,6 +86,9 @@ export default function Home() {
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
+  // Добавили стейт для хранения 2 последних постов на главной панели
+  const [latestPosts, setLatestPosts] = useState<any[]>([]);
+  
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
   const [addTgId, setAddTgId] = useState('');
@@ -320,6 +323,18 @@ export default function Home() {
     }
   }
 
+  // Добавили функцию выкачивания двух последних статей для виджета
+  async function loadLatestPosts() {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('id, title, author:users(rp_name)')
+        .order('created_at', { ascending: false })
+        .range(0, 1);
+      if (data && !error) setLatestPosts(data);
+    } catch (e) {}
+  }
+
   function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
@@ -396,6 +411,7 @@ export default function Home() {
         loadRoles();
         loadPlayers();
         loadConstitution();
+        loadLatestPosts(); // Триггерим загрузку постов при входе
       }
     } catch (e: any) {
       setError(`Ошибка базы данных: ${e.message}`);
@@ -527,6 +543,7 @@ export default function Home() {
     setActiveDocument('none'); 
     setIsEditing(false);
     setSearchQuery('');
+    if (tab === 'profile') loadLatestPosts(); // Обновляем при возврате на главную
   }
 
   useEffect(() => {
@@ -554,7 +571,7 @@ export default function Home() {
         const alreadyHandled = sessionStorage.getItem('handled_start_param');
         
         if (param.startsWith('post_') && alreadyHandled !== param) {
-          sessionStorage.setItem('handled_start_param', param);
+          sessionStorage.setItem('handled_start_param', param); 
           const postId = param.replace('post_', '');
           router.push(`/media/${postId}`);
           return;
@@ -683,21 +700,6 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      {showTooltip !== 'none' && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in md:hidden" onClick={() => setShowTooltip('none')}>
-          <div className="bg-[#14171c] border border-white/10 rounded-[32px] p-6 max-w-sm w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setShowTooltip('none')} className="absolute top-5 right-5 p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90"><X size={16}/></button>
-            <div className="flex items-center gap-3 mb-4 pr-8">
-              <div className="p-2.5 bg-[#c0ff00]/10 rounded-full text-[#c0ff00]"><Info size={20}/></div>
-              <h3 className="font-black text-white text-xl tracking-wide">{showTooltip === 'constitution' ? 'Конституция' : 'Заповеди дома'}</h3>
-            </div>
-            <p className="text-[13px] text-gray-300 leading-relaxed bg-black/20 p-4 rounded-2xl border border-white/5">
-              {showTooltip === 'constitution' ? 'Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.' : 'Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры.'}
-            </p>
-          </div>
-        </div>
-      )}
-
       <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
@@ -809,12 +811,9 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col xl:flex-row gap-6 items-start w-full">
-
-              {/* ===== ИЗМЕНЁННЫЙ БЛОК: компактный виджет сервера ===== */}
               <div className="w-full xl:max-w-[480px] space-y-4">
+                {/* КОМПАКТНЫЙ ВИДЖЕТ СЕРВЕРА */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden">
-
-                  {/* Кнопка обновления перемещена в правый верхний угол карточки */}
                   <button
                     onClick={fetchServerStatus}
                     className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}
@@ -826,7 +825,6 @@ export default function Home() {
 
                   <div className="relative z-10 flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                      {/* Иконка сервера теперь инлайн рядом со статусом, без лейбла "Текущее состояние" */}
                       <div className="flex items-center gap-2">
                         <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
                         <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
@@ -879,8 +877,44 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* ДОБАВЛЕННЫЙ БЛОК: Виджет .медиа на главной панели */}
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] md:rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <Newspaper size={18} className="text-[#c0ff00]" />
+                    <div className="text-xs font-black uppercase text-gray-400 tracking-wider">Последние публикации</div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2.5">
+                    {latestPosts.map((post, idx) => (
+                      <div 
+                        key={post.id} 
+                        onClick={() => router.push(`/media/${post.id}`)}
+                        className="bg-black/20 border border-white/5 p-3 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col gap-1 group"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-bold text-sm text-white group-hover:text-[#c0ff00] transition-colors truncate">
+                            {post.title}
+                          </span>
+                          {idx === 0 && (
+                            <span className="bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/20 text-[9px] font-black uppercase px-1.5 py-0.5 rounded shrink-0 select-none tracking-wider">
+                              NEW
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-gray-500 font-medium">
+                          Автор: {post.author?.rp_name || 'Неизвестный'}
+                        </span>
+                      </div>
+                    ))}
+                    
+                    {latestPosts.length === 0 && (
+                      <div className="text-center py-4 text-xs text-gray-500 font-mono tracking-wide">ПУБЛИКАЦИЙ ПОКА НЕТ</div>
+                    )}
+                  </div>
+                </div>
+
               </div>
-              {/* ===== КОНЕЦ ИЗМЕНЁННОГО БЛОКА ===== */}
 
               <div className="w-full xl:max-w-[320px] shrink-0 space-y-4">
                  <div className="hidden xl:block h-[26px]"></div> 
@@ -1047,7 +1081,7 @@ export default function Home() {
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
-                        <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
+                        <div className-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
                         {player.roles.slice(0, 1).map((r, i) => (
@@ -1188,3 +1222,9 @@ export default function Home() {
     </div>
   );
 }
+откатываемся назад, вот актуальный чистый код главной страницы, теперь сюда вноси точечно правки которые я просил выше, то есть:
+1. убираем эту шапку статус сервера, перенесем кнопку обновления в правый верхний угол виджета так чтобы соблюдались все отступы, уберем надпись текущее состояние, оставим только само состояние и эту иконку серверную которая щас в статусе сервера поставим перед статусом сервера, она будет зеленого цвета такого же как и сейчас, ну и соответственно изза пропажи надписи текущее состояние должен уменьшится слегка и сам виджет
+2. давай на главную теперь добавим виджет медиа, я хочу чтобы он по размеру был как виджет статуса сервера и на этом виджете бцдет отображатся заголовок 2 последних постов и маленьким текстом автор, на самом последнем всегда будет маленькая зеленая плашка new
+3. не забудь про цвет статуса сервера, он щас просто белый у меня, сделай так шоб он горел нужным цветом, и про жирный и курсивный текст в prose, чтобы они не отличались по цвету от обычного текста
+
+все, больше ничего не меняй абсолютно, делай по красоте_м
