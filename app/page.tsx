@@ -112,6 +112,9 @@ export default function Home() {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
+
+  // ВЕРНУЛИ НА МЕСТО: Вычисление переменной отображения тулбара редактирования
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
   
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
