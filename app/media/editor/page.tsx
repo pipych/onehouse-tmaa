@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check } from 'lucide-react';
 
-// ВНЕСЕНО: Твой актуальный рабочий вебхук Google Apps Script для автоматических публикаций ботом
+// Твой рабочий вебхук Google Apps Script
 const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
 
 interface Player {
@@ -119,7 +119,8 @@ function EditorContent() {
     const { data: savedPost, error } = await query;
 
     if (!error && savedPost) {
-      if (BOT_WEBHOOK_URL) {
+      // ФИКС: Отправляем уведомление на вебхук ТОЛЬКО если это абсолютно новый пост (нет editingPostId)
+      if (!editingPostId && BOT_WEBHOOK_URL) {
         try {
           await fetch(BOT_WEBHOOK_URL, {
             method: 'POST',
