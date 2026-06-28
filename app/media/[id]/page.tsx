@@ -184,7 +184,7 @@ export default function StandalonePostDetail() {
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 selection:bg-[#c0ff00] selection:text-black">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
-        {/* ИСПРАВЛЕНО: Кнопка Назад теперь намертво закреплена (sticky) на уровне top-24 и снабжена фоновой подложкой */}
+        {/* Кнопка Назад закреплена (sticky) на уровне top-24 */}
         <div className="sticky top-24 z-50 w-full mb-6 pointer-events-none">
           <button 
             onClick={() => router.push('/')} 
@@ -259,7 +259,8 @@ export default function StandalonePostDetail() {
                   {replies.length > 0 && (
                     <div className="pl-12 mt-2">
                       <button onClick={() => setExpandedThreads(p => ({ ...p, [mainComment.id]: !p[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full">
-                        <span>{expandedThreads[p => p.id === mainComment.id ? !expandedThreads[mainComment.id] : expandedThreads[mainComment.id]] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
+                        {/* ИСПРАВЛЕНО: Убрана ошибочная стрелочная функция из индексного вызова ключа объекта */}
+                        <span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
                       </button>
                     </div>
                   )}
