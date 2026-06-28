@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check } from 'lucide-react';
 
+// ВНЕСЕНО: Твой актуальный рабочий вебхук Google Apps Script для автоматических публикаций ботом
 const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
 
 interface Player {
@@ -25,7 +26,6 @@ function EditorContent() {
   const [isYoutubeModalOpen, setIsYoutubeModalOpen] = useState(false);
   const [isTextSelected, setIsTextSelected] = useState(false);
   
-  // ИСПРАВЛЕНО: Стейты для умного отслеживания пустоты контента и статуса публикации
   const [isEditorEmpty, setIsEditorEmpty] = useState(true);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'publishing' | 'success'>('idle');
   
@@ -104,7 +104,6 @@ function EditorContent() {
     const postContent = editorRef.current?.innerHTML || '';
     if (!newPostTitle.trim() || isEditorEmpty || !currentUser) return;
 
-    // Включаем жёлтый спиннер и лочим кнопку
     setPublishStatus('publishing');
 
     const finalDate = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
@@ -120,7 +119,7 @@ function EditorContent() {
     const { data: savedPost, error } = await query;
 
     if (!error && savedPost) {
-      if (BOT_WEBHOOK_URL && !BOT_WEBHOOK_URL.includes("СЮДА_ВСТАВЬ_ССЫЛКУ")) {
+      if (BOT_WEBHOOK_URL) {
         try {
           await fetch(BOT_WEBHOOK_URL, {
             method: 'POST',
@@ -136,7 +135,6 @@ function EditorContent() {
         } catch (e) {}
       }
       
-      // Показываем зелёную галочку, ждем секунду и перенаправляем
       setPublishStatus('success');
       setTimeout(() => {
         router.push('/');
@@ -144,7 +142,7 @@ function EditorContent() {
 
     } else {
       if (error) alert(error.message);
-      setPublishStatus('idle'); // Сбрасываем в дефолт при ошибке
+      setPublishStatus('idle');
     }
   }
 
@@ -188,13 +186,8 @@ function EditorContent() {
     return () => document.removeEventListener('selectionchange', handleSelection);
   }, []);
 
-  // Вычисляем динамические стили кнопки публикации на основе стейтов
-  const isButtonDisabled = isUploadingPostCover || !newPostTitle.trim() || RichmondEmptyEvaluator() || publishStatus !== 'idle';
+  const isButtonDisabled = isUploadingPostCover || !newPostTitle.trim() || isEditorEmpty || publishStatus !== 'idle';
   
-  function RichmondEmptyEvaluator() {
-    return isEditorEmpty;
-  }
-
   let buttonClass = "w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-500 ease-out ";
   let buttonIcon = <Send size={20} />;
 
@@ -217,7 +210,6 @@ function EditorContent() {
         <div className="flex items-center justify-between w-full mb-12">
           <button onClick={() => router.push('/')} disabled={publishStatus !== 'idle'} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 disabled:opacity-30"><ArrowLeft size={20} /></button>
           
-          {/* Интеллектуальная динамическая кнопка */}
           <button onClick={handlePublish} disabled={isButtonDisabled} className={buttonClass}>
             {buttonIcon}
           </button>
@@ -297,7 +289,7 @@ export default function StandalonePostEditor() {
     <Suspense fallback={
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
         <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
-        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
+        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса редактора...</span>
       </div>
     }>
       <EditorContent />
