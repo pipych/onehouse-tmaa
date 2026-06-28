@@ -110,8 +110,8 @@ function EditorContent() {
       ? await supabase.from('posts').update(payload).eq('id', editingPostId)
       : await supabase.from('posts').insert([payload]);
 
-    // ИСПРАВЛЕНО: Редирект после публикации изменён на /media
-    if (!error) router.push('/media');
+    // ИСПРАВЛЕНО: router.back() возвращает пользователя ровно на ту страницу/вкладку, откуда он пришёл
+    if (!error) router.back();
     else alert(error.message);
   }
 
@@ -157,15 +157,15 @@ function EditorContent() {
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
         
         <div className="flex items-between justify-between w-full mb-12">
-          {/* ИСПРАВЛЕНО: Редирект отмены изменён на /media */}
-          <button onClick={() => router.push('/media')} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
+          {/* ИСПРАВЛЕНО: router.back() для кнопки отмены */}
+          <button onClick={() => router.back()} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
           <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full shadow-lg"><Send size={20} /></button>
         </div>
 
         <div className="w-full mb-14">
           <div className="flex flex-wrap gap-3">
             <div onClick={() => dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
-              <Clock size={14} /> <span>{newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toLocaleDateString('ru-RU') : 'Дата'}</span>
+              <Clock size={14} /> <span>{newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toLocaleDateString('ru-RU')} : 'Дата'}</span>
               <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute opacity-0 w-0 h-0" />
             </div>
             <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
