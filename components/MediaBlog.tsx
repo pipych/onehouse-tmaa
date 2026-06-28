@@ -137,7 +137,7 @@ export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProp
               <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" alt="avatar" />
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
                   </div>
@@ -157,17 +157,18 @@ export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProp
 
               {post.youtube_url && getYoutubeEmbedUrl(post.youtube_url) && (
                 <div className="px-5 md:px-6 w-full mb-2">
-                  <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen loading="lazy" /></div>
+                  <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen /></div>
                 </div>
               )}
               {post.cover_url && !post.youtube_url && (
                 <div className="px-5 md:px-6 w-full mb-2">
-                  <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" /></div>
+                  <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}><img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" /></div>
                 </div>
               )}
 
               <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
-                <h3 className="text-2xl font-black text-white truncate leading-tight">{post.title}</h3>
+                {/* ИСПРАВЛЕНО: Адаптивный размер заголовка text-lg на мобилках */}
+                <h3 className="text-lg md:text-2xl font-black text-white truncate leading-tight">{post.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
                 <div className="flex items-center justify-start gap-3 select-none" onClick={e => e.stopPropagation()}>
                   <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
@@ -183,7 +184,3 @@ export default function MediaBlog({ currentUser, onProfileClick }: MediaBlogProp
         <div className="flex justify-center mt-2 mb-4">
           <button onClick={() => { const n = currentPage + 1; setCurrentPage(n); fetchPosts(n, true); }} className="flex items-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 rounded-full text-xs font-bold text-gray-400">Показать еще</button>
         </div>
-      )}
-    </div>
-  );
-}
