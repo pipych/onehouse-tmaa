@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw } from 'lucide-react';
 
+// ФИКС: Сюда вставь URL Веб-приложения, полученный после Deploy скрипта в Google Apps Script!
+const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
+
 interface Player {
   id: string;
 }
@@ -106,12 +109,34 @@ function EditorContent() {
       cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null, created_at: finalDate
     };
 
-    const { error } = editingPostId 
-      ? await supabase.from('posts').update(payload).eq('id', editingPostId)
-      : await supabase.from('posts').insert([payload]);
+    // Изменяем запрос на .select().single(), чтобы вытащить ID созданного поста для передачи боту
+    const query = editingPostId 
+      ? supabase.from('posts').update(payload).eq('id', editingPostId).select().single()
+      : supabase.from('posts').insert([payload]).select().single();
 
-    if (!error) router.push('/');
-    else alert(error.message);
+    const { data: savedPost, error } = await query;
+
+    if (!error && savedPost) {
+      // ФИКС: Скрытая отправка сигнала боту о публикации новой статьи
+      if (BOT_WEBHOOK_URL && !BOT_WEBHOOK_URL.includes("СЮДА_ВСТАВЬ_ССЫЛКУ")) {
+        try {
+          await fetch(BOT_WEBHOOK_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'new_post',
+              id: savedPost.id,
+              title: savedPost.title,
+              cover_url: savedPost.cover_url
+            })
+          });
+        } catch (e) {}
+      }
+      router.push('/');
+    } else if (error) {
+      alert(error.message);
+    }
   }
 
   useEffect(() => {
@@ -219,7 +244,12 @@ function EditorContent() {
 
 export default function StandalonePostEditor() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs tracking-wider">ЗАГРУЗКА ИНТЕРФЕЙСА РЕДАКТОРА...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
+        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
+        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
+      </div>
+    }>
       <EditorContent />
     </Suspense>
   );
