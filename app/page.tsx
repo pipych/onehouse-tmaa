@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import { 
@@ -42,6 +43,7 @@ interface CustomRole {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [tgUser, setTgUser] = useState<any>(null);
   const [dbUser, setDbUser] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
@@ -260,7 +262,6 @@ export default function Home() {
 
         if (filesToDelete.length > 0) {
           const pathsToDelete = filesToDelete.map(f => f.name);
-          setMigrationProgress(`Удаление ${pathsToDelete.length} старых файлов из хранилища...`);
           const { error: deleteError } = await supabase.storage.from('avatars').remove(pathsToDelete);
           if (!deleteError) {
             deletedCount += pathsToDelete.length;
@@ -547,6 +548,17 @@ export default function Home() {
       if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       setTgUser(tg.initDataUnsafe.user);
+
+      // ИСПРАВЛЕНО: Логика автоматического перехвата директ-ссылки (Deep Link) из бота
+      if (tg.initDataUnsafe.start_param) {
+        const param = tg.initDataUnsafe.start_param;
+        if (param.startsWith('post_')) {
+          const postId = param.replace('post_', '');
+          router.push(`/media/${postId}`);
+          return;
+        }
+      }
+
       checkUserInDb(tg.initDataUnsafe.user.id);
     } else {
       setError('Пожалуйста, откройте приложение внутри Telegram.');
@@ -642,8 +654,14 @@ export default function Home() {
     }
   }, [currentMatchIndex, matches]);
 
+  // ИСПРАВЛЕНО: Бесшовная и красивая анимация вращения спиннера по центру экрана при загрузке
   if (loading) {
-    return <div className="min-h-screen bg-[#090b0e] text-gray-500 flex items-center justify-center font-mono text-xs">ЗАГРУЗКА ИНТЕРФЕЙСА...</div>;
+    return (
+      <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
+        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
+        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
+      </div>
+    );
   }
 
   if (error) {
