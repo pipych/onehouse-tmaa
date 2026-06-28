@@ -82,7 +82,7 @@ export default function StandalonePostDetail() {
         setComments(formatted);
       }
 
-      const { data: likes } = await supabase.from('post_likes').select('user_id').eq('post_id', postId);
+      const { data: likes = [] } = await supabase.from('post_likes').select('user_id').eq('post_id', postId);
       if (likes) {
         setLikesCount(likes.length);
         if (currentUser) setIsLiked(likes.some(l => l.user_id === currentUser.id));
@@ -120,7 +120,7 @@ export default function StandalonePostDetail() {
   }
 
   async function handleDeletePost() {
-    if (!post || !confirm('Удалить post?')) return;
+    if (!post || !confirm('Удалить пост?')) return;
     await supabase.from('posts').delete().eq('id', post.id);
     router.push('/');
   }
@@ -181,14 +181,20 @@ export default function StandalonePostDetail() {
   }
 
   return (
-    // ИСПРАВЛЕНО: pt-24 опускает страницу ниже системной плашки Telegram
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 selection:bg-[#c0ff00] selection:text-black">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         
-        <div className="w-full flex mb-8">
-          <button onClick={() => router.push('/')} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white transition-transform active:scale-90"><ArrowLeft size={20} /></button>
+        {/* ИСПРАВЛЕНО: Кнопка Назад теперь намертво закреплена (sticky) на уровне top-24 и снабжена фоновой подложкой */}
+        <div className="sticky top-24 z-50 w-full mb-6 pointer-events-none">
+          <button 
+            onClick={() => router.push('/')} 
+            className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-gray-300 hover:text-white transition-transform active:scale-90 shadow-2xl pointer-events-auto"
+          >
+            <ArrowLeft size={20} />
+          </button>
         </div>
 
+        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -253,7 +259,7 @@ export default function StandalonePostDetail() {
                   {replies.length > 0 && (
                     <div className="pl-12 mt-2">
                       <button onClick={() => setExpandedThreads(p => ({ ...p, [mainComment.id]: !p[mainComment.id] }))} className="flex items-center gap-1.5 text-xs font-black text-[#c0ff00] bg-[#c0ff00]/5 px-3 py-1.5 rounded-full">
-                        <span>{expandedThreads[mainComment.id] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
+                        <span>{expandedThreads[p => p.id === mainComment.id ? !expandedThreads[mainComment.id] : expandedThreads[mainComment.id]] ? 'Скрыть ответы' : `Ответы (${replies.length})`}</span>
                       </button>
                     </div>
                   )}
