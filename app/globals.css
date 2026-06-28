@@ -2,13 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 /* app/globals.css */
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
 body {
-  font-family: 'Google Sans', sans-serif !important;
+  font-family: var(--font-wix), -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-/* Перекрываем абсолютно все текстовые узлы, кнопки и инпуты сайта */
+/* Намертво перекрываем все текстовые узлы, чтобы шрифт применился везде одинаково */
 * {
-  font-family: 'Google Sans', sans-serif !important;
+  font-family: var(--font-wix), -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
