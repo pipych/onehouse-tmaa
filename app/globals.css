@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* app/globals.css */
+
+/* Сбрасываем всё на наш Open Sans */
+body {
+  font-family: var(--font-open-sans), sans-serif !important;
+}
+
+/* Если где-то еще остались старые шрифты, они будут перекрыты */
+* {
+  font-family: var(--font-open-sans), sans-serif !important;
+}
