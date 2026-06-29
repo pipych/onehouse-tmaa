@@ -151,7 +151,7 @@ export default function Home() {
   }
 
   function getRoleColor(roleName: string) {
-    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
+    const found = customRoles.find(cr => r => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
@@ -802,8 +802,8 @@ export default function Home() {
         {activeTab === 'profile' && (
           <div className="space-y-4 w-full">
             
-            {/* ИСПРАВЛЕНО: Логотип w-40 h-40, приветствие стало еще больше по размеру и отступ pb-14 сместил сетку пониже */}
-            <div className="flex flex-col items-center text-center gap-3 pt-2 pb-14 w-full select-none">
+            {/* ИСПРАВЛЕНО: Уменьшен нижний отступ до pb-6, чтобы подтянуть виджеты ближе к приветствию */}
+            <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
               <h3 className="text-base md:text-lg font-black text-white tracking-wide leading-tight">
                 Добро пожаловать в One App<br />
@@ -811,12 +811,7 @@ export default function Home() {
               </h3>
             </div>
 
-            <div className="flex items-center justify-between w-full px-1">
-              <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <HomeIcon size={16} className="text-[#c0ff00]" />
-                Главная панель
-              </h2>
-            </div>
+            {/* ИСПРАВЛЕНО: Полностью удалена надпись и иконка "Главная панель" */}
 
             {/* СЕТКА APPLE HIG (4 КОЛОНКИ) */}
             <div className="grid grid-cols-4 gap-3.5 w-full">
