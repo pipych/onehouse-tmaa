@@ -6,7 +6,7 @@ import { supabase } from '../../../lib/supabase';
 import { 
   ArrowLeft, FolderArchive, ChevronDown, FileText, Plus, Save, 
   RefreshCw, Trash2, Edit2, X, Bold, Italic, Strikethrough, 
-  Heading1, Heading2, AlignLeft, AlignCenter 
+  Heading1, Heading2, AlignLeft, AlignCenter, BookOpen
 } from 'lucide-react';
 
 export default function ArchiveDocsPage() {
@@ -210,7 +210,7 @@ export default function ArchiveDocsPage() {
 
             {!activeDoc && (
               <div className="relative">
-                <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c]/90 border border-white/15 py-2 px-4 rounded-full backdrop-blur-md flex items-center gap-2 text-xs font-bold text-gray-200 shadow-lg active:scale-95 transition-all">
+                <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c]/90 border border-white/15 py-2 px-4 rounded-full backdrop-md flex items-center gap-2 text-xs font-bold text-gray-200 shadow-lg active:scale-95 transition-all">
                   <FolderArchive size={14} className="text-[#c0ff00]" />
                   <span>{selectedSeason}</span>
                   <ChevronDown size={14} className={`text-gray-500 transition-transform duration-300 ${showSeasonSelector ? 'rotate-180' : ''}`} />
@@ -243,13 +243,12 @@ export default function ArchiveDocsPage() {
         {/* ЭКРАН 1: РЕЖИМ РЕДАКТИРОВАНИЯ ИЛИ СОЗДАНИЯ */}
         {activeDoc && isEditing ? (
           <div className="space-y-4 scale-100 w-full pt-2 animate-fade-in">
-            {/* ИСПРАВЛЕНО: Белое уродливое поле (1000027030.png) полностью заменено на темный прозрачный инпут */}
             <input 
               type="text" 
               placeholder="Название архивного документа" 
               value={docTitle} 
               onChange={e => setDocTitle(e.target.value)} 
-              className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl padding-4 p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl"
+              className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl placeholder:text-gray-600"
             />
             <div 
               ref={editorRef} 
@@ -261,15 +260,19 @@ export default function ArchiveDocsPage() {
         ) : activeDoc ? (
           /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМОТР ДОКУМЕНТА */
           <div className="space-y-4 animate-fade-in w-full">
-            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
-              <h2 className="text-xl font-black text-white leading-tight">{activeDoc.title || (activeDoc.id === 1 ? 'Конституция' : 'Заповеди дома')}</h2>
+            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3 gap-4">
+              {/* ДОБАВЛЕНО: Каноничная иконка законов BookOpen слева от заголовка */}
+              <h2 className="text-xl font-black text-white leading-tight flex items-center gap-2.5 min-w-0">
+                <BookOpen size={20} className="text-[#c0ff00] shrink-0" />
+                <span className="truncate">{activeDoc.title || (activeDoc.id === 1 ? 'Конституция' : 'Заповеди дома')}</span>
+              </h2>
               {isEditor && (
                 <button 
                   onClick={() => {
                     setDocTitle(activeDoc.title || (activeDoc.id === 1 ? 'Конституция' : 'Заповеди дома'));
                     setIsEditing(true);
                   }} 
-                  className="bg-black/40 border border-white/10 py-1.5 px-3.5 rounded-full text-xs font-bold text-gray-200 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-md"
+                  className="bg-black/40 border border-white/10 py-1.5 px-3.5 rounded-full text-xs font-bold text-gray-200 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-md shrink-0"
                 >
                   <Edit2 size={12} /><span>Редактировать</span>
                 </button>
@@ -332,13 +335,13 @@ export default function ArchiveDocsPage() {
 
       </div>
 
-      {/* ИСПРАВЛЕНО: Глобальные стили для восстановления разметки заголовков на этой изолированной странице */}
+      {/* ВОССТАНОВЛЕНО: Фирменные стили отображения H1 и H2 заголовков в разметке */}
       <style jsx global>{`
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        .prose h1, [contenteditable] h1 { font-size: 1.45rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.4rem !important; margin-bottom: 0.6rem !important; line-height: 1.25 !important; }
-        .prose h2, [contenteditable] h2 { font-size: 1.15rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.1rem !important; margin-bottom: 0.5rem !important; line-height: 1.25 !important; }
+        .prose h1, [contenteditable] h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+        .prose h2, [contenteditable] h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
         .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; }
-        .prose b, .prose strong { color: #ffffff !important; font-weight: 700; }
+        .prose b, .prose strong { color: #d1d5db !important; font-weight: 700; }
         .prose i, .prose em { color: #d1d5db !important; font-style: italic; }
         [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
