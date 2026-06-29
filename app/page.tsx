@@ -150,8 +150,9 @@ export default function Home() {
     });
   }
 
+  // ИСПРАВЛЕНО: Убрана лишняя стрелочная функция r =>, ломавшая цвета ролей
   function getRoleColor(roleName: string) {
-    const found = customRoles.find(cr => r => cr.name.toLowerCase() === roleName.toLowerCase());
+    const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
@@ -802,7 +803,6 @@ export default function Home() {
         {activeTab === 'profile' && (
           <div className="space-y-4 w-full">
             
-            {/* ИСПРАВЛЕНО: Уменьшен нижний отступ до pb-6, чтобы подтянуть виджеты ближе к приветствию */}
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
               <h3 className="text-base md:text-lg font-black text-white tracking-wide leading-tight">
@@ -811,12 +811,10 @@ export default function Home() {
               </h3>
             </div>
 
-            {/* ИСПРАВЛЕНО: Полностью удалена надпись и иконка "Главная панель" */}
-
             {/* СЕТКА APPLE HIG (4 КОЛОНКИ) */}
             <div className="grid grid-cols-4 gap-3.5 w-full">
               
-              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ: Формат Small (2x2) */}
+              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
                 className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
@@ -831,7 +829,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 2. ВИДЖЕТ КАРТЫ: Формат Small (2x2) */}
+              {/* 2. ВИДЖЕТ КАРТЫ */}
               <div 
                 onClick={() => handleTabChange('map')}
                 className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
@@ -847,7 +845,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ: Формат Medium (4x2) */}
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -888,7 +886,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА: Формат Large (4x4) */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden">
                 <button
                   onClick={fetchServerStatus}
