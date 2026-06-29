@@ -26,7 +26,7 @@ export default function Archive({ currentUser }: ArchiveProps) {
         </h2>
       </div>
 
-      {/* НЕВИДИМАЯ СЕТКА ВИДЖЕТОВ (APPLE HIG STYLE) */}
+      {/* СЕТКА ВИДЖЕТОВ APPLE HIG */}
       <div className="grid grid-cols-4 gap-3.5 w-full">
         
         {/* 1. ВИДЖЕТ: Хронология (Small 2x2) */}
@@ -44,7 +44,7 @@ export default function Archive({ currentUser }: ArchiveProps) {
           </div>
         </div>
 
-        {/* 2. ВИДЖЕТ: Архив Медиа / Статей (Small 2x2) */}
+        {/* 2. ВИДЖЕТ: Архив Прессы (Small 2x2) */}
         <div 
           onClick={() => router.push('/archive/media')}
           className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/15 transition-all duration-300 shadow-xl"
@@ -59,7 +59,7 @@ export default function Archive({ currentUser }: ArchiveProps) {
           </div>
         </div>
 
-        {/* 3. ВИДЖЕТ: Персонажи (Small 2x2) */}
+        {/* 3. ВИДЖЕТ: Персонажи жителей (Small 2x2) */}
         <div 
           onClick={() => router.push('/archive/characters')}
           className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/15 transition-all duration-300 shadow-xl"
@@ -74,36 +74,41 @@ export default function Archive({ currentUser }: ArchiveProps) {
           </div>
         </div>
 
-        {/* 4. ВИДЖЕТ: Карта мира (Small 2x2) */}
+        {/* 4. ИСПРАВЛЕНО: Документация переехала на место Карты (Small 2x2) */}
         <div 
-          onClick={() => router.push('/archive/map')}
-          className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
+          onClick={() => router.push('/archive/docs')}
+          className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/15 transition-all duration-300 shadow-xl"
         >
           <ArrowUpRight size={14} className="absolute top-4 right-4 text-gray-600 group-hover:text-[#c0ff00] transition-colors" />
           <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0">
-            <Map size={20} />
+            <FileText size={20} />
           </div>
           <div className="space-y-0.5">
-            <h3 className="text-sm font-black text-white tracking-wide">Карты мира</h3>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Рендеры миров</p>
+            <h3 className="text-sm font-black text-white tracking-wide">Документация</h3>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Законы и пакты</p>
           </div>
         </div>
 
-        {/* 5. ВИДЖЕТ: Документы (Medium 4x2) */}
+        {/* 5. ИСПРАВЛЕНО: Карта мира теперь снизу во всю ширину (Medium 4x2) + Плашка SOON */}
         <div 
-          onClick={() => router.push('/archive/docs')}
+          onClick={() => router.push('/archive/map')}
           className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex items-center justify-between group cursor-pointer hover:border-white/10 transition-all duration-300 min-h-[90px]"
         >
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0">
-              <FileText size={20} />
+              <Map size={20} />
             </div>
             <div>
-              <h3 className="text-sm font-black text-white tracking-wide">Документация</h3>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Конституции, указы и акты</p>
+              <h3 className="text-sm font-black text-white tracking-wide">Карты миров</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Рендеры миров прошлых лет</p>
             </div>
           </div>
-          <ArrowUpRight size={16} className="text-gray-600 group-hover:text-[#c0ff00] transition-colors mr-1" />
+          <div className="flex items-center gap-3 shrink-0 mr-1">
+            <span className="bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/20 text-[9px] font-black uppercase px-2 py-0.5 rounded shadow-sm select-none tracking-wider">
+              Soon
+            </span>
+            <ArrowUpRight size={16} className="text-gray-600 group-hover:text-white transition-colors" />
+          </div>
         </div>
 
       </div>
