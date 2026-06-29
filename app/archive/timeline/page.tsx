@@ -6,7 +6,7 @@ import { supabase } from '../../../lib/supabase';
 import { 
   ArrowLeft, FolderArchive, ChevronDown, Calendar, Plus, Save, 
   RefreshCw, Trash2, Edit2, X, Bold, Italic, Strikethrough, 
-  Heading1, Heading2, AlignLeft, AlignCenter, Clock, ArrowRight 
+  Heading1, Heading2, AlignLeft, AlignCenter, Clock, ArrowRight, MoreVertical 
 } from 'lucide-react';
 
 export default function ArchiveTimelinePage() {
@@ -17,12 +17,13 @@ export default function ArchiveTimelinePage() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Стейты просмотра и редактирования событий
+  // Стейты просмотра, редактирования и контекстного меню событий
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false); // Стейт для трех точек
 
   // Стейты тулбара оригинального редактора
   const [formats, setFormats] = useState({
@@ -136,14 +137,6 @@ export default function ArchiveTimelinePage() {
     setIsSubmitting(false);
   }
 
-  // Удаление исторического события из архива
-  async function handleDeleteEvent(id: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!confirm('Вы действительно хотите стереть это событие из хронологии?')) return;
-    await supabase.from('timeline_events').delete().eq('id', id);
-    loadEvents();
-  }
-
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user?.id) {
@@ -180,6 +173,7 @@ export default function ArchiveTimelinePage() {
               if (isEditing || activeEvent) {
                 setIsEditing(false);
                 setActiveEvent(null);
+                setShowActionMenu(false);
               } else {
                 router.push('/');
               }
@@ -190,7 +184,7 @@ export default function ArchiveTimelinePage() {
           </button>
 
           <div className="relative flex items-center gap-2">
-            {/* Плюсик создания новой эпохи для Администрации и Редакторов */}
+            {/* Плюсик создания новой эпохи */}
             {isEditor && !isEditing && !activeEvent && (
               <button 
                 onClick={() => {
@@ -199,7 +193,7 @@ export default function ArchiveTimelinePage() {
                   setActiveEvent({ isNew: true });
                   setIsEditing(true);
                 }}
-                className="w-10 h-10 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                className="w-10 h-10 bg-[#14171c]/90 border border-white/15 rounded-full flex items-center justify-center text-[#c0ff00] shadow-lg active:scale-95 transition-all"
               >
                 <Plus size={18} />
               </button>
@@ -230,11 +224,10 @@ export default function ArchiveTimelinePage() {
             {isEditing && (
               <button 
                 onClick={handleSaveEvent}
-                disabled={isSubmitting}
-                className="bg-[#c0ff00] text-black px-4 py-2 rounded-full text-xs font-black uppercase flex items-center gap-1.5 shadow-lg active:scale-95 transition-all"
+                disabled={isSubmitting || !eventTitle.trim()}
+                className="bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform disabled:opacity-40"
               >
-                <Save size={14} />
-                <span>Записать</span>
+                {isSubmitting ? <RefreshCw className="animate-spin" size={16} /> : <Save size={16} />}
               </button>
             )}
           </div>
@@ -255,7 +248,7 @@ export default function ArchiveTimelinePage() {
           </div>
         )}
 
-        {/* ЭКРАН 1: СОЗДАНИЕ ИЛИ РЕЖАКТУРА СОБЫТИЯ */}
+        {/* ЭКРАН 1: РЕЖИМ РЕДАКТИРОВАНИЯ ИЛИ СОЗДАНИЯ СОБЫТИЯ */}
         {isEditing ? (
           <div className="space-y-4 w-full pt-2 animate-fade-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -277,11 +270,10 @@ export default function ArchiveTimelinePage() {
               ref={editorRef} 
               contentEditable 
               className="w-full min-h-[500px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-24" 
-              data-placeholder="Детальный разбор исторического события..." 
-            />
+              data-placeholder="Детальный разбор исторического события..." />
           </div>
         ) : activeEvent ? (
-          /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМОТР ИСТОРИИ (КЛИК ПО ТАЙМЛАЙНУ) */
+          /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМОТР ИСТОРИИ И КЛАССИЧЕСКИЙ ВЫПАДАЮЩИЙ СПИСОК ТРЕХ ТОЧЕК */
           <div className="space-y-4 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3 gap-4">
               <div className="min-w-0 flex-1 space-y-1">
@@ -290,23 +282,54 @@ export default function ArchiveTimelinePage() {
                   <Clock size={12} /> {new Date(activeEvent.event_date).toLocaleDateString('ru-RU')}
                 </div>
               </div>
+              
+              {/* ИСПРАВЛЕНО: Кнопка "Редактировать" спрятана внутрь ТРЕХ ТОЧЕК и добавлено удаление */}
               {isEditor && (
-                <button 
-                  onClick={() => {
-                    setEventTitle(activeEvent.title);
-                    setEventDate(new Date(activeEvent.event_date).toISOString().substring(0, 10));
-                    setIsEditing(true);
-                  }} 
-                  className="bg-black/40 border border-white/10 py-1.5 px-3.5 rounded-full text-xs font-bold text-gray-200 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-md shrink-0"
-                >
-                  <Edit2 size={12} /><span>Редактировать</span>
-                </button>
+                <div className="relative shrink-0">
+                  <button 
+                    onClick={() => setShowActionMenu(!showActionMenu)}
+                    className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md"
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+                  
+                  {showActionMenu && (
+                    <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[160px] flex flex-col gap-1 backdrop-blur-xl animate-fade-in">
+                      <button 
+                        onClick={() => {
+                          setEventTitle(activeEvent.title);
+                          setEventDate(new Date(activeEvent.event_date).toISOString().substring(0, 10));
+                          setIsEditing(true);
+                          setShowActionMenu(false);
+                        }}
+                        className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-gray-300 hover:bg-white/5 flex items-center gap-2 transition-all"
+                      >
+                        <Edit2 size={14} className="text-[#c0ff00]" />
+                        <span>Редактировать</span>
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (confirm('Вы действительно хотите стереть это событие из хронологии?')) {
+                            await supabase.from('timeline_events').delete().eq('id', activeEvent.id);
+                            setActiveEvent(null);
+                            setShowActionMenu(false);
+                            loadEvents();
+                          }
+                        }}
+                        className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-all"
+                      >
+                        <Trash2 size={14} />
+                        <span>Удалить веху</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: activeEvent.content }} />
           </div>
         ) : (
-          /* ЭКРАН 3: КЛАССИЧЕСКИЙ ВЕРТИКАЛЬНЫЙ ТАЙМЛАЙН ХРОНОЛОГИИ */
+          /* ЭКРАН 3: ЧИСТЫЙ ВЕРТИКАЛЬНЫЙ ТАЙМЛАЙН БЕЗ КНОПОК УДАЛЕНИЯ НА ЖИВУЮ СТРУКТУРУ */
           <>
             <div className="flex items-center gap-2 px-1">
               <Calendar size={18} className="text-[#c0ff00]" />
@@ -330,28 +353,20 @@ export default function ArchiveTimelinePage() {
                     }}
                     className="bg-[#14171c]/90 border border-white/5 p-4 rounded-2xl flex items-center justify-between hover:border-white/10 transition-all cursor-pointer group relative shadow-xl transform hover:scale-[1.01]"
                   >
-                    {/* Концентрическая точка на треке таймлайна */}
                     <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#090b0e] border-2 border-white/20 flex items-center justify-center group-hover:border-[#c0ff00] transition-colors">
                       <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-[#c0ff00]" />
                     </div>
 
-                    <div className="min-w-0 flex-1 space-y-1.5 pr-2">
+                    <div className="min-w-0 flex-1 space-y-1.5 pr-4">
                       <div className="text-[9px] font-bold font-mono text-[#c0ff00] uppercase tracking-wider flex items-center gap-1 select-none">
                         <Clock size={10}/> {new Date(event.event_date).toLocaleDateString('ru-RU')}
                       </div>
-                      <h4 className="font-black text-sm text-white truncate group-hover:text-[#c0ff00] transition-colors leading-snug">{event.title}</h4>
+                      <h4 className="font-black text-sm text-white group-hover:text-[#c0ff00] transition-colors leading-snug">{event.title}</h4>
                       <p className="text-[11px] text-gray-400 font-medium line-clamp-2 leading-relaxed">{stripHtml(event.content)}</p>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isEditor && (
-                        <button 
-                          onClick={(e) => handleDeleteEvent(event.id, e)}
-                          className="p-2 bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-400 rounded-xl transition-all md:opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                    {/* ИСПРАВЛЕНО: Кнопка удаления полностью удалена с главного экрана таймлайна, оставлена только стрелка перехода */}
+                    <div className="flex items-center shrink-0">
                       <ArrowRight size={15} className="text-gray-600 group-hover:text-white transition-all transform group-hover:translate-x-0.5" />
                     </div>
                   </div>
