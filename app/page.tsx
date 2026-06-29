@@ -155,7 +155,6 @@ export default function Home() {
     return found ? found.color : '#888888';
   }
 
-  // Исправлено: Добавили в массив зависимостей пустой массив
   function isDead(roles: string[]) {
     return roles.some(r => r.toLowerCase() === 'мёртв');
   }
@@ -390,7 +389,7 @@ export default function Home() {
   }
 
   function copyToClipboard(text: string) {
-    if (typeof document !== 'undefined' && navigator.clipboard) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
         (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -784,7 +783,7 @@ export default function Home() {
                 <div className="relative inline-block">
                   <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all active:scale-90 shadow-sm"><Plus size={14} /></button>
                   {showRoleSelector && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#1a1e24] border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
                       <div className="text-[10px] text-gray-500 uppercase font-bold px-2 py-1">Выдать роль:</div>
                       {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).length === 0 && <div className="text-xs text-gray-500 px-2 py-1">Нет доступных ролей</div>}
                       {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).map((cr, idx) => (
@@ -803,7 +802,6 @@ export default function Home() {
         {activeTab === 'profile' && (
           <div className="space-y-4 w-full">
             
-            {/* Заголовок главной панели */}
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                 <HomeIcon size={16} className="text-[#c0ff00]" />
@@ -811,7 +809,7 @@ export default function Home() {
               </h2>
             </div>
 
-            {/* ВНЕДРЕНА НЕВИДИМАЯ СЕТКА APPLE HIG (4 КОЛОНКИ) */}
+            {/* СЕТКА APPLE HIG (4 КОЛОНКИ) */}
             <div className="grid grid-cols-4 gap-3.5 w-full">
               
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ: Формат Small (2x2) */}
@@ -820,8 +818,9 @@ export default function Home() {
                 className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                <div className="w-9 h-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0">
-                  <BookOpen size={16} />
+                {/* ИСПРАВЛЕНО: Увеличена круглая подложка (w-11 h-11) и сама иконка (size={20}) */}
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0">
+                  <BookOpen size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
                   <h3 className="text-sm font-black text-white tracking-wide">Конституция</h3>
@@ -836,8 +835,9 @@ export default function Home() {
               >
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
-                <div className="w-9 h-9 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0">
-                  <Map size={16} />
+                {/* ИСПРАВЛЕНО: Увеличена круглая подложка (w-11 h-11) и сама иконка (size={20}) */}
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0">
+                  <Map size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
                   <h3 className="text-sm font-black text-gray-300 tracking-wide">Карта мира</h3>
@@ -845,8 +845,8 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 3. ВИДЖЕТ ПУБЛИКАЦИЙ МЕДИА: Формат Medium (4x2) */}
-              <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3">
+              {/* 3. ИСПРАВЛЕНО: Виджет последних новостей сделан больше по высоте */}
+              <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Newspaper size={16} className="text-[#c0ff00]" />
@@ -860,7 +860,8 @@ export default function Home() {
                     <div 
                       key={post.id} 
                       onClick={() => router.push(`/media/${post.id}`)}
-                      className="bg-black/20 border border-white/5 p-3 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0"
+                      /* Изменено: отступы p-4 и минимальная высота min-h-[115px] делают виджет выше и просторнее */
+                      className="bg-black/20 border border-white/5 p-4 min-h-[115px] rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0"
                     >
                       <div className="flex flex-col gap-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -881,12 +882,12 @@ export default function Home() {
                   ))}
                   
                   {latestPosts.length === 0 && (
-                    <div className="col-span-2 text-center py-4 text-xs text-gray-500 font-mono tracking-wide">ПУБЛИКАЦИЙ ПОКА НЕТ</div>
+                    <div className="col-span-2 text-center py-6 text-xs text-gray-500 font-mono tracking-wide">ПУБЛИКАЦИЙ ПОКА НЕТ</div>
                   )}
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА: Формат Large (4x4) — Смещён вниз */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА: Формат Large (4x4) */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden">
                 <button
                   onClick={fetchServerStatus}
@@ -901,7 +902,6 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
-                      {/* ИСПРАВЛЕНО: Текст статуса теперь светится нужным цветом на главном экране */}
                       <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
                         {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                       </div>
@@ -935,7 +935,6 @@ export default function Home() {
                             <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
                           </div>
                         </div>
-                        {/* Круглая кнопка скачивания Forge для ПК */}
                         <a 
                           href="https://adfoc.us/serve/sitelinks/?id=271228&url=https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
                           target="_blank"
