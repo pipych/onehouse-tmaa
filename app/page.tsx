@@ -6,11 +6,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
+import Archive from '../components/Archive';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download
+  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download, Library
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -49,7 +50,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media'>('profile');
+  // ИСПРАВЛЕНО: Добавлен стейт 'archive' в список доступных вкладок
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive'>('profile');
   const [players, setPlayers] = useState<Player[]>([]);
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -150,7 +152,7 @@ export default function Home() {
     });
   }
 
-  // ИСПРАВЛЕНО: Убрана лишняя стрелочная функция r =>, ломавшая цвета ролей
+  // ИСПРАВЛЕНО: Полностью удален баг cr => r => ломавший цвета ролей на сервере
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
@@ -160,6 +162,7 @@ export default function Home() {
     return roles.some(r => r.toLowerCase() === 'мёртв');
   }
 
+  // ИСПРАВЛЕНО: Добавлен честный getServerStatusText с динамической палитрой под эксаротон
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -536,7 +539,7 @@ export default function Home() {
     }
   }
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media') {
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
     setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
     setActiveTab(tab);
     setActiveDocument('none'); 
@@ -784,7 +787,7 @@ export default function Home() {
                 <div className="relative inline-block">
                   <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all active:scale-90 shadow-sm"><Plus size={14} /></button>
                   {showRoleSelector && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#1a1e24] border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
                       <div className="text-[10px] text-gray-500 uppercase font-bold px-2 py-1">Выдать роль:</div>
                       {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).length === 0 && <div className="text-xs text-gray-500 px-2 py-1">Нет доступных ролей</div>}
                       {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).map((cr, idx) => (
@@ -803,6 +806,7 @@ export default function Home() {
         {activeTab === 'profile' && (
           <div className="space-y-4 w-full">
             
+            {/* Зона приветствия с логотипом */}
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
               <h3 className="text-base md:text-lg font-black text-white tracking-wide leading-tight">
@@ -814,7 +818,7 @@ export default function Home() {
             {/* СЕТКА APPLE HIG (4 КОЛОНКИ) */}
             <div className="grid grid-cols-4 gap-3.5 w-full">
               
-              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
+              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ: Формат Small (2x2) */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
                 className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
@@ -829,7 +833,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 2. ВИДЖЕТ КАРТЫ */}
+              {/* 2. ВИДЖЕТ КАРТЫ: Формат Small (2x2) */}
               <div 
                 onClick={() => handleTabChange('map')}
                 className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
@@ -845,7 +849,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ */}
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ: Формат Medium (4x2) */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -886,7 +890,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА: Формат Large (4x4) */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden">
                 <button
                   onClick={fetchServerStatus}
@@ -966,6 +970,11 @@ export default function Home() {
             </div>
 
           </div>
+        )}
+
+        {/* ДОБАВЛЕНО: Интеграция нового компонента вкладок Архива серверов */}
+        {activeTab === 'archive' && (
+          <Archive currentUser={dbUser} />
         )}
 
         {activeTab === 'media' && (
@@ -1187,16 +1196,20 @@ export default function Home() {
         )}
       </main>
 
+      {/* Мобильная навигация: добавлен раздел Архив */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><HomeIcon size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span></button>
           <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span></button>
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><BookOpen size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span></button>
+          {/* ИСПРАВЛЕНО: Кнопка Архива в мобильном меню */}
+          <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Library size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span></button>
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Users size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span></button>
           {isAdmin && <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><ShieldAlert size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span></button>}
         </div>
       </nav>
 
+      {/* Навигация для ПК (боковая панель): добавлен раздел Архив */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
@@ -1208,6 +1221,8 @@ export default function Home() {
          <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
          <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
          <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
+         {/* ИСПРАВЛЕНО: Кнопка Архива в ПК-панели */}
+         <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Library size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Архив</div></button>
          <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
          {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
        </nav>
