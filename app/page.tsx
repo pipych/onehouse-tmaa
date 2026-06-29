@@ -802,12 +802,12 @@ export default function Home() {
         {activeTab === 'profile' && (
           <div className="space-y-4 w-full">
             
-            {/* ИСПРАВЛЕНО: Логотип увеличен (w-28 h-28), текст перенесён на новую строку, имя сделано крупнее, отступ увеличен (pb-8) */}
-            <div className="flex flex-col items-center text-center gap-3 pt-2 pb-8 w-full select-none">
-              <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-28 h-28 object-contain" />
-              <h3 className="text-sm md:text-base font-black text-white tracking-wide leading-tight">
+            {/* ИСПРАВЛЕНО: Логотип w-40 h-40, приветствие стало еще больше по размеру и отступ pb-14 сместил сетку пониже */}
+            <div className="flex flex-col items-center text-center gap-3 pt-2 pb-14 w-full select-none">
+              <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
+              <h3 className="text-base md:text-lg font-black text-white tracking-wide leading-tight">
                 Добро пожаловать в One App<br />
-                <span className="text-[#c0ff00] text-base md:text-lg font-black">{dbUser?.rp_name || 'Житель'}</span>
+                <span className="text-[#c0ff00] text-xl md:text-2xl font-black block mt-1.5">{dbUser?.rp_name || 'Житель'}</span>
               </h3>
             </div>
 
