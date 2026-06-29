@@ -23,7 +23,7 @@ export default function ArchiveTimelinePage() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false); // Стейт для трех точек
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
   // Стейты тулбара оригинального редактора
   const [formats, setFormats] = useState({
@@ -53,7 +53,7 @@ export default function ArchiveTimelinePage() {
         .from('timeline_events')
         .select('*')
         .eq('season', selectedSeason)
-        .order('event_date', { ascending: true }); // Сортировка времени сверху вниз (от старых к новым)
+        .order('event_date', { ascending: true });
       
       if (data && !error) {
         setEvents(data);
@@ -123,7 +123,7 @@ export default function ArchiveTimelinePage() {
       } else {
         const { error } = await supabase
           .from('timeline_events')
-          .update({ title: eventTitle.trim(), content: updatedContent, event_date: finalDate })
+          .update({ title: eventTitle.trim(), content: updatedContent, event_date: finalDate, season: selectedSeason })
           .eq('id', activeEvent.id);
         if (error) throw error;
       }
@@ -166,12 +166,14 @@ export default function ArchiveTimelinePage() {
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
         
-        {/* Навигационный тулбар Apple HIG */}
+        {/* НАВИГАЦИОННЫЙ ТУЛБАР */}
         <div className="flex items-center justify-between w-full select-none">
           <button 
             onClick={() => {
-              if (isEditing || activeEvent) {
+              if (isEditing && !activeEvent?.isNew) {
                 setIsEditing(false);
+                setShowActionMenu(false);
+              } else if (activeEvent) {
                 setActiveEvent(null);
                 setShowActionMenu(false);
               } else {
@@ -184,12 +186,57 @@ export default function ArchiveTimelinePage() {
           </button>
 
           <div className="relative flex items-center gap-2">
+            {/* ИСПРАВЛЕНО: Кнопка «три точки» перенесена наверх в хедер */}
+            {activeEvent && !isEditing && isEditor && (
+              <div className="relative">
+                <button 
+                  onClick={() => setShowActionMenu(!showActionMenu)}
+                  className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md"
+                >
+                  <MoreVertical size={18} />
+                </button>
+                
+                {showActionMenu && (
+                  <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[160px] flex flex-col gap-1 backdrop-blur-xl animate-fade-in">
+                    <button 
+                      onClick={() => {
+                        setEventTitle(activeEvent.title);
+                        setEventDate(new Date(activeEvent.event_date).toISOString().substring(0, 10));
+                        setSelectedSeason(activeEvent.season || 'Сезон 2');
+                        setIsEditing(true);
+                        setShowActionMenu(false);
+                      }}
+                      className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-gray-300 hover:bg-white/5 flex items-center gap-2 transition-all"
+                    >
+                      <Edit2 size={14} className="text-[#c0ff00]" />
+                      <span>Редактировать</span>
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        if (confirm('Вы действительно хотите стереть это событие из хронологии?')) {
+                          await supabase.from('timeline_events').delete().eq('id', activeEvent.id);
+                          setActiveEvent(null);
+                          setShowActionMenu(false);
+                          loadEvents();
+                        }
+                      }}
+                      className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-all"
+                    >
+                      <Trash2 size={14} />
+                      <span>Удалить веху</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Плюсик создания новой эпохи */}
             {isEditor && !isEditing && !activeEvent && (
               <button 
                 onClick={() => {
                   setEventTitle('');
                   setEventDate(new Date().toISOString().substring(0, 10));
+                  setSelectedSeason('Сезон 2');
                   setActiveEvent({ isNew: true });
                   setIsEditing(true);
                 }}
@@ -199,7 +246,7 @@ export default function ArchiveTimelinePage() {
               </button>
             )}
 
-            {/* Выпадающий список сезонов */}
+            {/* Выпадающий список сезонов в главном меню */}
             {!isEditing && !activeEvent && (
               <div className="relative">
                 <button 
@@ -248,88 +295,72 @@ export default function ArchiveTimelinePage() {
           </div>
         )}
 
-        {/* ЭКРАН 1: РЕЖИМ РЕДАКТИРОВАНИЯ ИЛИ СОЗДАНИЯ СОБЫТИЯ */}
+        {/* ЭКРАН 1: СОЗДАНИЕ ИЛИ РЕЖАКТУРА СОБЫТИЯ */}
         {isEditing ? (
           <div className="space-y-4 w-full pt-2 animate-fade-in">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input 
-                type="text" 
-                placeholder="Заголовок исторической вехи..." 
-                value={eventTitle} 
-                onChange={e => setEventTitle(e.target.value)} 
-                className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl placeholder:text-gray-600"
-              />
-              <input 
-                type="date" 
-                value={eventDate} 
-                onChange={e => setEventDate(e.target.value)} 
-                className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl"
-              />
+            <input 
+              type="text" 
+              placeholder="Заголовок исторической вехи..." 
+              value={eventTitle} 
+              onChange={e => setEventTitle(e.target.value)} 
+              className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl placeholder:text-gray-600"
+            />
+            
+            {/* ИСПРАВЛЕНО: Дата и Сезон перенесены в стильные круглые пилюли, как в редакторе постов */}
+            <div className="flex flex-wrap gap-2.5 pt-1 select-none">
+              {/* Пилюля Даты */}
+              <div className="inline-flex items-center gap-2 bg-[#14171c]/80 border border-white/10 rounded-full px-4 py-2 text-xs font-bold text-gray-300 shadow-md">
+                <Calendar size={14} className="text-[#c0ff00]" />
+                <input 
+                  type="date" 
+                  value={eventDate} 
+                  onChange={e => setEventDate(e.target.value)} 
+                  className="bg-transparent border-none outline-none text-white font-mono cursor-pointer p-0 text-xs w-28 focus:ring-0"
+                />
+              </div>
+
+              {/* Пилюля Выбора Сезона */}
+              <div className="inline-flex items-center gap-2 bg-[#14171c]/80 border border-white/10 rounded-full px-4 py-2 text-xs font-bold text-gray-300 shadow-md relative">
+                <FolderArchive size={14} className="text-[#c0ff00]" />
+                <select 
+                  value={selectedSeason} 
+                  onChange={e => setSelectedSeason(e.target.value)}
+                  className="bg-transparent border-none outline-none text-white font-bold cursor-pointer p-0 pr-6 text-xs focus:ring-0 appearance-none"
+                >
+                  {seasons.map(s => (
+                    <option key={s} value={s} className="bg-[#14171c] text-white font-bold">{s}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 pointer-events-none text-gray-500">
+                  <ChevronDown size={12} />
+                </div>
+              </div>
             </div>
+
             <div 
               ref={editorRef} 
               contentEditable 
               className="w-full min-h-[500px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-24" 
-              data-placeholder="Детальный разбор исторического события..." />
+              data-placeholder="Детальный разбор исторического события..." 
+            />
           </div>
         ) : activeEvent ? (
-          /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМОТР ИСТОРИИ И КЛАССИЧЕСКИЙ ВЫПАДАЮЩИЙ СПИСОК ТРЕХ ТОЧЕК */
+          /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМОТР ИСТОРИИ */
           <div className="space-y-4 animate-fade-in w-full">
-            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3 gap-4">
-              <div className="min-w-0 flex-1 space-y-1">
-                <h2 className="text-xl font-black text-white leading-tight truncate">{activeEvent.title}</h2>
-                <div className="text-[10px] font-bold font-mono text-[#c0ff00] uppercase tracking-wider flex items-center gap-1">
-                  <Clock size={12} /> {new Date(activeEvent.event_date).toLocaleDateString('ru-RU')}
-                </div>
+            <div className="space-y-1 w-full border-b border-white/5 pb-3">
+              {/* ИСПРАВЛЕНО: Убран класс truncate, заголовок теперь переносится и виден полностью */}
+              <h2 className="text-xl md:text-2xl font-black text-white leading-tight break-words">
+                {activeEvent.title}
+              </h2>
+              {/* ИСПРАВЛЕНО: Цвет даты изменен на нейтральный серый text-gray-500 */}
+              <div className="text-[10px] font-bold font-mono text-gray-500 uppercase tracking-wider flex items-center gap-1 select-none pt-0.5">
+                <Clock size={12} /> {new Date(activeEvent.event_date).toLocaleDateString('ru-RU')}
               </div>
-              
-              {/* ИСПРАВЛЕНО: Кнопка "Редактировать" спрятана внутрь ТРЕХ ТОЧЕК и добавлено удаление */}
-              {isEditor && (
-                <div className="relative shrink-0">
-                  <button 
-                    onClick={() => setShowActionMenu(!showActionMenu)}
-                    className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md"
-                  >
-                    <MoreVertical size={18} />
-                  </button>
-                  
-                  {showActionMenu && (
-                    <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[160px] flex flex-col gap-1 backdrop-blur-xl animate-fade-in">
-                      <button 
-                        onClick={() => {
-                          setEventTitle(activeEvent.title);
-                          setEventDate(new Date(activeEvent.event_date).toISOString().substring(0, 10));
-                          setIsEditing(true);
-                          setShowActionMenu(false);
-                        }}
-                        className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-gray-300 hover:bg-white/5 flex items-center gap-2 transition-all"
-                      >
-                        <Edit2 size={14} className="text-[#c0ff00]" />
-                        <span>Редактировать</span>
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          if (confirm('Вы действительно хотите стереть это событие из хронологии?')) {
-                            await supabase.from('timeline_events').delete().eq('id', activeEvent.id);
-                            setActiveEvent(null);
-                            setShowActionMenu(false);
-                            loadEvents();
-                          }
-                        }}
-                        className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-all"
-                      >
-                        <Trash2 size={14} />
-                        <span>Удалить веху</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: activeEvent.content }} />
           </div>
         ) : (
-          /* ЭКРАН 3: ЧИСТЫЙ ВЕРТИКАЛЬНЫЙ ТАЙМЛАЙН БЕЗ КНОПОК УДАЛЕНИЯ НА ЖИВУЮ СТРУКТУРУ */
+          /* ЭКРАН 3: КЛАССИЧЕСКИЙ ВЕРТИКАЛЬНЫЙ ТАЙМЛАЙН ХРОНОЛОГИИ */
           <>
             <div className="flex items-center gap-2 px-1">
               <Calendar size={18} className="text-[#c0ff00]" />
@@ -361,11 +392,10 @@ export default function ArchiveTimelinePage() {
                       <div className="text-[9px] font-bold font-mono text-[#c0ff00] uppercase tracking-wider flex items-center gap-1 select-none">
                         <Clock size={10}/> {new Date(event.event_date).toLocaleDateString('ru-RU')}
                       </div>
-                      <h4 className="font-black text-sm text-white group-hover:text-[#c0ff00] transition-colors leading-snug">{event.title}</h4>
+                      <h4 className="font-black text-sm text-white group-hover:text-[#c0ff00] transition-colors leading-snug break-words">{event.title}</h4>
                       <p className="text-[11px] text-gray-400 font-medium line-clamp-2 leading-relaxed">{stripHtml(event.content)}</p>
                     </div>
 
-                    {/* ИСПРАВЛЕНО: Кнопка удаления полностью удалена с главного экрана таймлайна, оставлена только стрелка перехода */}
                     <div className="flex items-center shrink-0">
                       <ArrowRight size={15} className="text-gray-600 group-hover:text-white transition-all transform group-hover:translate-x-0.5" />
                     </div>
