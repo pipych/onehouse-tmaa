@@ -389,7 +389,7 @@ export default function Home() {
   }
 
   function copyToClipboard(text: string) {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    if (typeof document !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
         (window as any).Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -802,6 +802,14 @@ export default function Home() {
         {activeTab === 'profile' && (
           <div className="space-y-4 w-full">
             
+            {/* ДОБАВЛЕНО: Блок анимации логотипа и приветствия, который плавно смещает виджеты вниз */}
+            <div className="flex flex-col items-center text-center gap-2.5 pt-2 pb-4 w-full select-none">
+              <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-20 h-20 object-contain" />
+              <h3 className="text-sm md:text-base font-black text-white tracking-wide">
+                Добро пожаловать в OneApp, <span className="text-[#c0ff00]">{dbUser?.rp_name || 'Житель'}</span>.
+              </h3>
+            </div>
+
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                 <HomeIcon size={16} className="text-[#c0ff00]" />
@@ -818,7 +826,6 @@ export default function Home() {
                 className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                {/* ИСПРАВЛЕНО: Увеличена круглая подложка (w-11 h-11) и сама иконка (size={20}) */}
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0">
                   <BookOpen size={20} />
                 </div>
@@ -835,7 +842,6 @@ export default function Home() {
               >
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
-                {/* ИСПРАВЛЕНО: Увеличена круглая подложка (w-11 h-11) и сама иконка (size={20}) */}
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0">
                   <Map size={20} />
                 </div>
@@ -845,7 +851,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 3. ИСПРАВЛЕНО: Виджет последних новостей сделан больше по высоте */}
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ: Формат Medium (4x2) */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -860,7 +866,6 @@ export default function Home() {
                     <div 
                       key={post.id} 
                       onClick={() => router.push(`/media/${post.id}`)}
-                      /* Изменено: отступы p-4 и минимальная высота min-h-[115px] делают виджет выше и просторнее */
                       className="bg-black/20 border border-white/5 p-4 min-h-[115px] rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0"
                     >
                       <div className="flex flex-col gap-1 min-w-0">
@@ -998,7 +1003,7 @@ export default function Home() {
                   <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.</div>
                   <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-[#c0ff00]/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
                     <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c]/90 via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
                     <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden"><Info size={16} /></button>
                     <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-[#c0ff00] transition-colors shadow-lg backdrop-blur-sm"><Info size={18} /></div>
                     <div className="relative z-10 flex items-center md:flex-col md:text-center w-full"><div className="text-left md:text-center flex-1"><h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3><p className="text-[10px] md:text-sm text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p></div></div>
@@ -1009,7 +1014,7 @@ export default function Home() {
                   <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Rules apply.</div>
                   <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-red-500/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
                     <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat" style={{ backgroundImage: "url('/zapovedi.gif')", imageRendering: "pixelated" }} />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c] via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c]/90 via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
                     <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden"><Info size={16} /></button>
                     <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-red-400 transition-colors shadow-lg backdrop-blur-sm"><Info size={18} /></div>
                     <div className="relative z-10 flex items-center md:flex-col md:text-center w-full"><div className="text-left md:text-center flex-1"><h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3><p className="text-[10px] md:text-sm text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p></div></div>
