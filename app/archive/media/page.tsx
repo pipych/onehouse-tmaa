@@ -10,7 +10,10 @@ interface ArchivedPost {
   title: string;
   content: string;
   created_at: string;
-  author_name: string;
+  season: string;
+  author: {
+    rp_name: string;
+  } | null;
 }
 
 export default function ArchiveMediaPage() {
@@ -41,16 +44,11 @@ export default function ArchiveMediaPage() {
         const { data, error } = await supabase
           .from('posts')
           .select('*, author:users(rp_name)')
+          .eq('season', selectedSeason) // Автоматическая фильтрация из бд
           .order('created_at', { ascending: false });
         
         if (data && !error) {
-          setArchivedPosts(data.map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            content: p.content,
-            created_at: p.created_at,
-            author_name: p.author?.rp_name || 'Неизвестный'
-          })));
+          setArchivedPosts(data);
         }
       } catch (e) {}
       setLoading(false);
@@ -92,7 +90,6 @@ export default function ArchiveMediaPage() {
           {loading ? (
             <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-[#c0ff00]" size={24} /></div>
           ) : selectedSeason === 'Сезон 1' ? (
-            /* ИСПРАВЛЕНО: Для первого сезона выводим сообщение, что статьи утеряны */
             <div className="text-center py-12 text-xs font-mono font-bold text-red-400 bg-red-500/5 border border-red-500/10 rounded-[24px] tracking-wider">
               🚨 СТАТЬИ ПЕРВОГО СЕЗОНА УТЕРЯНЫ ПРИ МИГРАЦИИ ЯДРА
             </div>
@@ -100,12 +97,16 @@ export default function ArchiveMediaPage() {
             <div className="text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-2xl">СТАТЕЙ НЕ НАЙДЕНО</div>
           ) : (
             archivedPosts.map(post => (
-              <div key={post.id} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 p-5 rounded-[24px] shadow-xl space-y-3 hover:border-white/10 transition-colors">
+              <div 
+                key={post.id} 
+                onClick={() => router.push(`/media/${post.id}`)}
+                className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 p-5 rounded-[24px] shadow-xl space-y-3 hover:border-white/10 transition-colors cursor-pointer group"
+              >
                 <div className="flex items-center justify-between text-[10px] font-bold font-mono text-gray-500 uppercase tracking-wider">
-                  <span className="flex items-center gap-1"><User size={12} className="text-[#c0ff00]" /> {post.author_name}</span>
+                  <span className="flex items-center gap-1"><User size={12} className="text-[#c0ff00]" /> {post.author?.rp_name || 'Неизвестный'}</span>
                   <span className="flex items-center gap-1"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</span>
                 </div>
-                <h3 className="text-base font-black text-white leading-tight">{post.title}</h3>
+                <h3 className="text-base font-black text-white group-hover:text-[#c0ff00] transition-colors leading-tight">{post.title}</h3>
                 <p className="text-xs text-gray-400 leading-relaxed line-clamp-3">{stripHtml(post.content)}</p>
               </div>
             ))
