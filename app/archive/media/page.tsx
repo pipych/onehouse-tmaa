@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../../lib/supabase';
-import { ArrowLeft, FolderArchive, ChevronDown, Newspaper, Clock, User, BookOpen } from 'lucide-react';
+// ИСПРАВЛЕНО: Добавлен правильный путь к базе данных (поднимаемся на 3 уровня вверх)
+import { supabase } from '../../../lib/supabase';
+import { ArrowLeft, FolderArchive, ChevronDown, Newspaper, Clock, User, BookOpen, RefreshCw } from 'lucide-react';
 
 interface ArchivedPost {
   id: string;
@@ -23,7 +24,6 @@ export default function ArchiveMediaPage() {
 
   const seasons = ['Сезон 1', 'Сезон 2'];
 
-  // Функция для очистки HTML-тегов в превью статьи
   function stripHtml(html: string) {
     if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
     const tmp = document.createElement("DIV");
@@ -31,10 +31,10 @@ export default function ArchiveMediaPage() {
     return tmp.textContent || tmp.innerText || "";
   }
 
-  // Сюда можно повесить реальный запрос к таблице архивных постов (например, 'archived_posts')
   async function loadArchivedMedia() {
     setLoading(true);
-    // Мок-данные для теста, пока ты не создал таблицу под архив в Supabase
+    
+    // Временные тестовые данные, пока не привяжешь реальный фетч из Supabase
     const mockData: ArchivedPost[] = [
       {
         id: 'arch-1',
@@ -54,10 +54,9 @@ export default function ArchiveMediaPage() {
       }
     ];
 
-    // Фильтруем контент локально по выбранному сезону
     const filtered = mockData.filter(post => post.season === selectedSeason);
     setArchivedPosts(filtered);
-    setLoading(false);
+    let задержкаДляВизуала = setTimeout(() => setLoading(false), 200);
   }
 
   useEffect(() => {
