@@ -18,12 +18,12 @@ export default function ArchiveDocsPage() {
   const [loading, setLoading] = useState(false);
 
   // Стейты просмотра и редактирования
-  const [activeDoc, setActiveDoc] = useState<any>(null); // Выбранный документ
+  const [activeDoc, setActiveDoc] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [docTitle, setDocTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Стейты тулбара редактора из основной страницы
+  // Стейты тулбара оригинального редактора
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
@@ -36,7 +36,6 @@ export default function ArchiveDocsPage() {
     ['admin', 'редактор', 'editor'].includes(r.toLowerCase())
   ) || false;
 
-  // Очистка HTML тегов для красивого превью в списке
   function stripHtml(html: string) {
     if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
     const tmp = document.createElement("DIV");
@@ -44,7 +43,6 @@ export default function ArchiveDocsPage() {
     return tmp.textContent || tmp.innerText || "";
   }
 
-  // Загрузка документов из базы
   async function loadDocuments() {
     setLoading(true);
     try {
@@ -65,7 +63,6 @@ export default function ArchiveDocsPage() {
     setLoading(false);
   }
 
-  // Функции оригинального текстового редактора
   function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
@@ -100,7 +97,6 @@ export default function ArchiveDocsPage() {
     }
   }
 
-  // Сохранение документа (Создание или Обновление существующего)
   async function handleSaveDocument() {
     if (!docTitle.trim() || !editorRef.current || isSubmitting) return;
     setIsSubmitting(true);
@@ -109,7 +105,6 @@ export default function ArchiveDocsPage() {
 
     try {
       if (activeDoc?.isNew) {
-        // Создание новой записи
         const { error } = await supabase
           .from('constitution')
           .insert([{
@@ -119,7 +114,6 @@ export default function ArchiveDocsPage() {
           }]);
         if (error) throw error;
       } else {
-        // Обновление старой записи
         const { error } = await supabase
           .from('constitution')
           .update({ title: docTitle.trim(), content: updatedContent })
@@ -136,9 +130,8 @@ export default function ArchiveDocsPage() {
     setIsSubmitting(false);
   }
 
-  // Удаление архивного документа
   async function handleDeleteDocument(id: string, e: React.MouseEvent) {
-    e.stopPropagation(); // Предотвращаем открытие документа при клике на корзину
+    e.stopPropagation();
     if (!confirm('Вы действительно хотите удалить этот документ из архива?')) return;
     await supabase.from('constitution').delete().eq('id', id);
     loadDocuments();
@@ -157,7 +150,6 @@ export default function ArchiveDocsPage() {
     loadDocuments();
   }, [selectedSeason]);
 
-  // Следим за фокусом в редакторе для обновления стилей кнопок тулбара
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.innerHTML = activeDoc?.content || '';
@@ -174,7 +166,7 @@ export default function ArchiveDocsPage() {
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-6 relative">
         
-        {/* Панель инструментов редактора из app/page.tsx */}
+        {/* ВСПЛЫВАЮЩИЙ ТУЛБАР РЕДАКТОРА */}
         {isEditing && (
           <div className="fixed z-50 bottom-4 left-4 right-4 md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto flex items-center justify-center animate-fade-in">
             <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-center">
@@ -187,7 +179,7 @@ export default function ArchiveDocsPage() {
               <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={14}/></button>
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={14}/></button>
-              <button onClick={() => { setIsEditing(false); if(activeDoc.isNew) setActiveDoc(null); }} className="p-1.5 text-gray-500 hover:text-red-400 rounded-xl md:rounded-full transition-colors ml-auto active:scale-75"><X size={14} /></button>
+              <button onClick={() => { setIsEditing(false); if(activeDoc?.isNew) setActiveDoc(null); }} className="p-1.5 text-gray-500 hover:text-red-400 rounded-xl md:rounded-full transition-colors ml-auto active:scale-75"><X size={14} /></button>
             </div>
           </div>
         )}
@@ -205,7 +197,6 @@ export default function ArchiveDocsPage() {
             <ArrowLeft size={20} />
           </button>
 
-          {/* Селектор сезонов и кнопка сохранения */}
           <div className="flex items-center gap-2">
             {isEditing && (
               <button 
@@ -234,7 +225,6 @@ export default function ArchiveDocsPage() {
               </div>
             )}
             
-            {/* ИСПРАВЛЕНО: Кнопка «Создать указ» переделана в аккуратный плюсик в кружке Apple HIG */}
             {!activeDoc && isEditor && (
               <button 
                 onClick={() => {
@@ -250,15 +240,16 @@ export default function ArchiveDocsPage() {
           </div>
         </div>
 
-        {/* ЭКРАН 1: РЕЖИМ РЕДАКТИРОВАНИЯ (ДЛЯ СОЗДАНИЯ И РЕЖАКТУРЫ) */}
+        {/* ЭКРАН 1: РЕЖИМ РЕДАКТИРОВАНИЯ ИЛИ СОЗДАНИЯ */}
         {activeDoc && isEditing ? (
           <div className="space-y-4 scale-100 w-full pt-2 animate-fade-in">
+            {/* ИСПРАВЛЕНО: Белое уродливое поле (1000027030.png) полностью заменено на темный прозрачный инпут */}
             <input 
               type="text" 
               placeholder="Название архивного документа" 
               value={docTitle} 
               onChange={e => setDocTitle(e.target.value)} 
-              className="ui-input !font-black !text-base"
+              className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl padding-4 p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl"
             />
             <div 
               ref={editorRef} 
@@ -268,7 +259,7 @@ export default function ArchiveDocsPage() {
             />
           </div>
         ) : activeDoc ? (
-          /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМТР ДОКУМЕНТА ПО НАЖАТИЮ */
+          /* ЭКРАН 2: ПОЛНОЭКРАННЫЙ ПРОСМОТР ДОКУМЕНТА */
           <div className="space-y-4 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
               <h2 className="text-xl font-black text-white leading-tight">{activeDoc.title || (activeDoc.id === 1 ? 'Конституция' : 'Заповеди дома')}</h2>
@@ -278,7 +269,7 @@ export default function ArchiveDocsPage() {
                     setDocTitle(activeDoc.title || (activeDoc.id === 1 ? 'Конституция' : 'Заповеди дома'));
                     setIsEditing(true);
                   }} 
-                  className="ui-pill-btn !py-1.5 !px-3"
+                  className="bg-black/40 border border-white/10 py-1.5 px-3.5 rounded-full text-xs font-bold text-gray-200 hover:text-white transition-all flex items-center gap-1.5 active:scale-95 shadow-md"
                 >
                   <Edit2 size={12} /><span>Редактировать</span>
                 </button>
@@ -324,7 +315,6 @@ export default function ArchiveDocsPage() {
                         </span>
                       </div>
                     </div>
-                    {/* ИСПРАВЛЕНО: Кнопка удаления строго защищена проверкой роли isEditor */}
                     {isEditor && (
                       <button 
                         onClick={(e) => handleDeleteDocument(doc.id, e)}
@@ -341,6 +331,19 @@ export default function ArchiveDocsPage() {
         )}
 
       </div>
+
+      {/* ИСПРАВЛЕНО: Глобальные стили для восстановления разметки заголовков на этой изолированной странице */}
+      <style jsx global>{`
+        .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
+        .prose h1, [contenteditable] h1 { font-size: 1.45rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.4rem !important; margin-bottom: 0.6rem !important; line-height: 1.25 !important; }
+        .prose h2, [contenteditable] h2 { font-size: 1.15rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1.1rem !important; margin-bottom: 0.5rem !important; line-height: 1.25 !important; }
+        .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; }
+        .prose b, .prose strong { color: #ffffff !important; font-weight: 700; }
+        .prose i, .prose em { color: #d1d5db !important; font-style: italic; }
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 }
