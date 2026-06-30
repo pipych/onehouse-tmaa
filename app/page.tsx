@@ -99,7 +99,7 @@ export default function Home() {
   });
 
   // Флаги загрузки картинок в облако
-  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+  const [isUploadingProfile, setLoadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
   // Флаги миграции картинок базы в WebP
@@ -151,8 +151,10 @@ export default function Home() {
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
   // =========================================================================
-  // 3. ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК (ПЕРЕНЕСЕНА НАВЕРХ ДЛЯ БЕЗОПАСНОСТИ ТИПОВ)
+  // 3. СИСТЕМНЫЕ ФУНКЦИИ КОМПОНЕНТА (ПЕРЕНЕСЕНЫ НАВЕРХ ДЛЯ БЕЗОПАСНОСТИ ТИПОВ)
   // =========================================================================
+  
+  // Функция переключения вкладок и табов
   function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
     setSelectedPlayer(null); 
     setIsEditingProfile(false); 
@@ -162,6 +164,18 @@ export default function Home() {
     setIsEditing(false);
     setSearchQuery('');
     if (tab === 'profile') loadLatestPosts();
+  }
+
+  // ДИНАМИЧЕСКИЙ ПАРСЕР ЦВЕТОВЫХ ТЕГОВ И ТЕКСТА ДЛЯ ВИДЖЕТА ХОСТИНГА (ИСПРАВЛЕНО)
+  function getServerStatusText(statusCode: number) {
+    switch(statusCode) {
+      case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
+      case 1: return { text: 'ОНЛАЙН', color: 'text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
+      case 2: return { text: 'ЗАПУСКАЕТСЯ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
+      case 3: return { text: 'ОСТАНАВЛИВАЕТСЯ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
+      case 4: return { text: 'ПЕРЕЗАГРУЗКА...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
+      default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
+    }
   }
   
   // Авто-сортировка жителей: мертвые персонажи падают в самый низ списка
@@ -175,7 +189,7 @@ export default function Home() {
     });
 
   // =========================================================================
-  // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И СЖАТИЕ ИЗОБРАЖЕНИЙ
+  // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И СЖАТИЕ ИЗОБРАЖЕНИЙ ЧЕРЕЗ CANVAS
   // =========================================================================
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
@@ -212,7 +226,7 @@ export default function Home() {
   }
 
   // =========================================================================
-  // 5. РАБОТА С СЕРВЕРНЫМ API И СУПАБЕЙЗОМ (УПРАВЛЕНИЕ И КЛИПБОРД)
+  // 5. РАБОТА С ХОСТИНГОМ И СУПАБЕЙЗОМ (УПРАВЛЕНИЕ И КЛИПБОРД)
   // =========================================================================
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP?')) return;
@@ -489,7 +503,7 @@ export default function Home() {
   }
 
   // =========================================================================
-  // 6. ХУКИ ИНИЦИАЛИЗАЦИИ И СТРОГОЙ ПРОВЕРКИ TELEGRAM WEBAPP СЕССИИ
+  // 6. ХУКИ ИНИЦИАЛИЗАЦИИ И СТРОГОЙ АВТОРИЗАЦИИ ВНУТРИ TELEGRAM WEBAPP СЕССИИ
   // =========================================================================
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -523,7 +537,7 @@ export default function Home() {
   }, [isEditing, activeDocument]);
 
   // =========================================================================
-  // 7. СИСТЕМНЫЕ ЭКРАНЫ ОЖИДАНИЯ ЗАГРУЗКИ И ОШИБОК БИЛДА
+  // 7. СИСТЕМНЫЕ ЭКРАНЫ ОЖИДАНИЯ ЗАГРУЗКИ БИЛДА
   // =========================================================================
   if (loading) {
     return (
@@ -578,10 +592,71 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ОСНОВНОЙ РАБОЧИЙ МАССИВ СЕТКИ И СТРАНИЦ */}
+      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ ЖИТЕЛЯ */}
+      {selectedPlayer && (
+        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
+          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
+
+          {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer.roles)) || isAdmin) && !isEditingProfile && (
+            <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
+          )}
+
+          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
+            <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
+          </div>
+
+          <div className="space-y-2 w-full">
+            {isEditingProfile ? (
+              <div className="space-y-3 max-w-xs mx-auto w-full animate-fade-in">
+                <input type="text" placeholder="Имя профиля" value={newRpName} onChange={(e) => setNewRpName(e.target.value)} className="ui-input text-center font-bold" />
+                <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
+                  <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewAvatarUrl, setLoadingProfile)} disabled={isUploadingProfile} />
+                  <Upload size={14} className={isUploadingProfile ? "animate-bounce" : ""} />
+                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим...' : 'Загрузить из галереи'}</span>
+                </label>
+                <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2"><Save size={14} /><span>Сохранить всё</span></button>
+              </div>
+            ) : (
+              <div className="w-full space-y-1">
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
+                <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
+                  <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-full h-[1px] bg-white/5 my-2" />
+          <div className="text-left space-y-2 w-full">
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
+            <div className="flex flex-wrap gap-2 items-center">
+              {selectedPlayer.roles?.map((role, idx) => (
+                <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
+                  <span>• {role.toUpperCase()}</span>
+                  {isAdmin && <button onClick={() => handleRemoveRoleFromUser(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
+                </span>
+              ))}
+              {isAdmin && (
+                <div className="relative inline-block">
+                  <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all shadow-sm"><Plus size={14} /></button>
+                  {showRoleSelector && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 backdrop-blur-xl">
+                      {customRoles.filter(cr => !selectedPlayer.roles?.includes(cr.name)).map((cr, idx) => (
+                        <button key={idx} onClick={() => handleAddRoleToUser(cr.name)} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-2" style={{color: cr.color}}><span className="w-2 h-2 rounded-full" style={{backgroundColor: cr.color}}/>{cr.name.toUpperCase()}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК ОКОН ОТРЕНДЕРЕННЫХ ВКЛАДОК */}
       <main className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
-        
-        {/* ОТРИСОВКА ВКЛАДКИ №1: ГЛАВНАЯ СТРАНИЦА ПРОФИЛЯ */}
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
@@ -593,10 +668,9 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-4 gap-4 w-full">
-              
-              {/* ВИДЖЕТ №1: КОНСТИТУЦИЯ */}
+              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
-                onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
+                onClick={() => handleTabChange('constitution')}
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
@@ -607,7 +681,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ВИДЖЕТ №2: КАРТА СЕРВЕРА */}
+              {/* 2. ВИДЖЕТ КАРТЫ СЕРВЕРА */}
               <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
@@ -618,7 +692,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ВИДЖЕТ №3: ЛЕНТА ПУБЛИКАЦИЙ И СТАТЕЙ МЕДИА */}
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ СЕРВЕРА */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -637,7 +711,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ВИДЖЕТ №4: СТАТУС ИГРОВОГО СЕРВЕРА EXAROTON (ПОЛНОСТЬЮ СКОМПАКТИРОВАННЫЙ ПО ВЫСОТЕ ВАРИАНТ) */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА EXAROTON */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[230px]">
                 <button onClick={fetchServerStatus} className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
@@ -691,13 +765,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* ОТРИСОВКА ВКЛАДКИ №2: АРХИВ ПРОШЛЫХ СЕЗОНОВ */}
+        {/* СЛУЖЕБНЫЕ ВКЛАДКИ И РОУТЫ СИСТЕМЫ */}
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
-        
-        {/* ОТРИСОВКА ВКЛАДКИ №3: ЛЕНТА ЖУРНАЛИСТИКИ .МЕДИА */}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
 
-        {/* ОТРИСОВКА ВКЛАДКИ №4: СТРАНИЦА СВОДА ЗАКОНОВ И КОНСТИТУЦИИ */}
+        {/* ВКЛАДКА: СВОД ПРАВИЛ И СПЛИТ-ВЬЮ КОНСТИТУЦИИ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -718,7 +790,7 @@ export default function Home() {
                   <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs">ВЫБЕРИТЕ ДОКУМЕНТ</div>
                 ) : (
                   <div className="space-y-4 w-full">
-                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
+                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
                   </div>
                 )}
               </div>
@@ -726,7 +798,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ОТРИСОВКА ВКЛАДКИ №5: СПИСОК ИГРОКОВ (ЖИТЕЛЕЙ) СЕРВЕРА */}
+        {/* ВКЛАДКА: СПИСОК ЖИТЕЛЕЙ СЕРВЕРА С РОЛЯМИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -758,7 +830,7 @@ export default function Home() {
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
+                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] opacity-60 grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
@@ -778,7 +850,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ОТРИСОВКА ВКЛАДКИ №6: ПАНЕЛЬ АДМИНИСТРАТОРА (ДОБАВЛЕНИЕ ЖИТЕЛЕЙ И НАСТРОЙКА РОЛЕЙ) */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -816,8 +887,8 @@ export default function Home() {
         )}
       </main>
 
-      {/* ПК-НАВИГАЦИЯ: БОКОВОЙ ВЕРТИКАЛЬНЫЙ САЙДБАР С АВАТАРКОЙ (ИСПРАВЛЕНО: РАЗМЕР КНОПОК 23ПО HIG) */}
-      <aside className="hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500">
+      {/* ПК САЙДБАР С КОМПАКТНЫМИ ИКОНКАМИ ПО GAIDLINES HIG */}
+      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
@@ -833,8 +904,8 @@ export default function Home() {
        </nav>
       </aside>
 
-      {/* ТАББАР ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (НИЖНЯЯ ПАНЕЛЬ СМАРТФОНОВ) */}
-      <nav className="md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500">
+      {/* МОБИЛЬНЫЙ ТАББАР ДЛЯ ТЕЛЕФОНОВ */}
+      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
           <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><Newspaper size={22} /></button>
