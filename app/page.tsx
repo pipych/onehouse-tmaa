@@ -406,6 +406,13 @@ export default function Home() {
     }
   }
 
+  function stripHtml(html: string) {
+    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -581,7 +588,8 @@ export default function Home() {
 
               {/* 2. ВИДЖЕТ КАРТЫ СЕРВЕРА */}
               <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
-                <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
+                {/* Исправлено по образцу image_9ad2e3.png: плашка SOON в неоновом стиле */}
+                <div className="absolute top-3 right-3 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><MapIcon size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
@@ -600,9 +608,13 @@ export default function Home() {
                   <button onClick={() => handleTabChange('media')} className="text-[11px] font-bold text-[#c0ff00] hover:underline">Все статьи</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 h-full">
-                  {latestPosts.map((post) => (
-                    <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-black/20 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0">
-                      <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug">{post.title}</span>
+                  {latestPosts.map((post, idx) => (
+                    <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-black/20 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0 relative">
+                      {/* Добавлена плашка NEW в стиле image_9ad2e3.png для самого последнего поста */}
+                      {idx === 0 && (
+                        <div className="absolute top-2 right-2 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00] text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-10">New</div>
+                      )}
+                      <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug pr-7">{post.title}</span>
                       <span className="text-[10px] text-gray-500 font-medium truncate">{post.author?.rp_name || 'Неизвестный'}</span>
                     </div>
                   ))}
@@ -658,7 +670,6 @@ export default function Home() {
                   <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
                 </div>
               </div>
-
             </div>
           </div>
         )}
@@ -782,7 +793,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* ПК САЙДБАР С ВСПЛЫВАЮЩИМИ ПОДПИСЯМИ НАВЕДЕНИЯ ПО HIG */}
+      {/* ПК САЙДБАР */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
         {dbUser && (
           <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
@@ -825,7 +836,7 @@ export default function Home() {
         </nav>
       </aside>
 
-      {/* МОБИЛЬНЫЙ ТАББАР В ФОРМЕ КРУГЛОЙ ПИЛЮЛИ С АДМИНКОЙ И ВЕРХНИМ СИМВОЛЬНЫМ РЕГИСТРОМ */}
+      {/* МОБИЛЬНЫЙ ТАББАР */}
       <nav className={`md:hidden fixed bottom-6 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         <div className="flex w-full items-center justify-around px-2">
           
