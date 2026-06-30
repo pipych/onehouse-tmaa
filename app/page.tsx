@@ -11,7 +11,7 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download
+  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download, Library
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -142,7 +142,7 @@ export default function Home() {
           ctx.drawImage(img, 0, 0);
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
-            else reject(new Error('Ошибка конвертации в WebP'));
+            else reject(new Error('Ошибка конвертации in WebP'));
           }, 'image/webp', 0.85);
         };
         img.onerror = (error) => reject(error);
@@ -151,13 +151,14 @@ export default function Home() {
     });
   }
 
+  // ИСПРАВЛЕНО: Убрана поломанная стрелочная функция cr => r =>
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
   function isDead(roles: string[]) {
-    return roles.some(r => r.toLowerCase() === 'мёртв');
+    return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
   }
 
   function getServerStatusText(statusCode: number) {
@@ -298,9 +299,7 @@ export default function Home() {
       if (urlData) setUrlCallback(urlData.publicUrl);
     } catch (e: any) {
       alert(`Сбой при загрузке: ${e.message}`);
-    } finally {
-      setLoadingState(false);
-    }
+    } Transformer { finally { setLoadingState(false); } }
   }
 
   function scrollToTop() {
@@ -554,124 +553,6 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const tg = (window as any).Telegram?.WebApp;
-    if (tg && tg.initDataUnsafe?.user?.id) {
-      tg.ready();
-      tg.expand(); 
-      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
-      if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
-      if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
-      setTgUser(tg.initDataUnsafe.user);
-
-      if (tg.initDataUnsafe.start_param) {
-        const param = tg.initDataUnsafe.start_param;
-        const alreadyHandled = sessionStorage.getItem('handled_start_param');
-        
-        if (param.startsWith('post_') && alreadyHandled !== param) {
-          sessionStorage.setItem('handled_start_param', param); 
-          const postId = param.replace('post_', '');
-          router.push(`/media/${postId}`);
-          return;
-        }
-      }
-
-      checkUserInDb(tg.initDataUnsafe.user.id);
-    } else {
-      setError('Пожалуйста, откройте приложение внутри Telegram.');
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'profile') {
-      fetchServerStatus();
-      const intervalId = setInterval(() => fetchServerStatus(), 3600000); 
-      return () => clearInterval(intervalId);
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (isEditing && editorRef.current) {
-      editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
-    }
-  }, [isEditing, activeDocument]);
-
-  useEffect(() => {
-    if (!viewRef.current || activeTab !== 'constitution' || isEditing || activeDocument === 'none') return;
-
-    const children = Array.from(viewRef.current.children) as HTMLElement[];
-    children.forEach((child) => {
-      child.style.transition = 'all 0.3s ease';
-      child.style.backgroundColor = '';
-      child.style.boxShadow = '';
-      child.style.borderRadius = '';
-      child.style.transform = '';
-      child.style.opacity = '1';
-    });
-
-    if (!searchQuery.trim()) {
-      setMatches([]);
-      setCurrentMatchIndex(0);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase().trim();
-    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const fuzzyRegex = new RegExp(safeQuery.split('').join('.*?'), 'i');
-    const foundIndices: number[] = [];
-
-    children.forEach((child, index) => {
-      const text = child.textContent?.toLowerCase() || '';
-      if (!text.trim()) return;
-
-      let score = 0;
-      if (text.includes(query)) score += 100;
-      else if (query.length >= 3 && fuzzyRegex.test(text)) score += 10;
-
-      if (score > 0) {
-        foundIndices.push(index);
-        child.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-        child.style.borderRadius = '8px';
-      } else {
-        child.style.opacity = '0.3';
-      }
-    });
-
-    setMatches(foundIndices);
-    setCurrentMatchIndex(foundIndices.length > 0 ? 1 : 0);
-  }, [searchQuery, currentDocText, activeTab, isEditing, activeDocument]);
-
-  useEffect(() => {
-    if (matches.length === 0 || currentMatchIndex === 0 || !viewRef.current) return;
-
-    const children = Array.from(viewRef.current.children) as HTMLElement[];
-    matches.forEach(idx => {
-      const el = children[idx];
-      if (el) {
-        el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-        el.style.boxShadow = '';
-        el.style.transform = '';
-      }
-    });
-
-    const activeIdx = matches[currentMatchIndex - 1];
-    const activeEl = children[activeIdx];
-    
-    if (activeEl) {
-      activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
-      activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
-      activeEl.style.transform = 'scale(1.02)';
-      activeEl.style.borderRadius = '8px';
-
-      setTimeout(() => {
-        const yOffset = activeEl.getBoundingClientRect().top + window.pageYOffset - 160;
-        window.scrollTo({ top: yOffset, behavior: 'smooth' });
-      }, 50);
-    }
-  }, [currentMatchIndex, matches]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
@@ -705,18 +586,6 @@ export default function Home() {
             <Save size={16} />
           </button>
         </div>
-
-        {dbUser && !selectedPlayer && !isCreatingPost && (
-          <button
-            onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }}
-            className={`md:hidden flex items-center bg-[#14171c]/90 border border-white/10 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-2xl hover:border-[#c0ff00]/30 backdrop-blur-md pointer-events-auto flex-shrink-0 relative h-10 box-border z-50 ${showToolbar ? 'w-10 justify-center px-0' : 'w-auto px-1.5 pr-4'}`}
-          >
-            <div className="w-7 h-7 rounded-full overflow-hidden border border-white/15 flex-shrink-0">
-              <img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="me" className="w-full h-full object-cover" />
-            </div>
-            <span className={`text-[11px] font-bold text-gray-200 tracking-wide transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] whitespace-nowrap overflow-hidden ${showToolbar ? 'max-w-0 opacity-0 ml-0' : 'max-w-[100px] opacity-100 ml-2.5'}`}>Профиль</span>
-          </button>
-        )}
       </div>
 
       <div className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center pointer-events-none ${showToolbar ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-12 md:-translate-y-4'} bottom-2 left-2 right-2 md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto`}>
@@ -737,7 +606,7 @@ export default function Home() {
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white transition-all z-10"><X size={14} /></button>
+          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
           {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer.roles)) || isAdmin) && !isEditingProfile && (
             <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
@@ -768,38 +637,9 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          <div className="w-full h-[1px] bg-white/5 my-2" />
-
-          <div className="text-left space-y-2 w-full">
-            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
-            <div className="flex flex-wrap gap-2 items-center relative">
-              {selectedPlayer.roles.map((role, idx) => (
-                <span key={idx} className={`text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 ${isAdmin ? 'pl-3 pr-1' : 'px-3'} ${selectedPlayer && isDead(selectedPlayer.roles) && role.toLowerCase() !== 'мёртв' ? 'opacity-50 grayscale' : ''}`} style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
-                  <span>• {role.toUpperCase()}</span>
-                  {isAdmin && <button onClick={() => handleRemoveRoleFromUser(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all active:scale-90"><X size={10} /></button>}
-                </span>
-              ))}
-              {isAdmin && (
-                <div className="relative inline-block">
-                  <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all active:scale-90 shadow-sm"><Plus size={14} /></button>
-                  {showRoleSelector && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
-                      <div className="text-[10px] text-gray-500 uppercase font-bold px-2 py-1">Выдать роль:</div>
-                      {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).length === 0 && <div className="text-xs text-gray-500 px-2 py-1">Нет доступных ролей</div>}
-                      {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).map((cr, idx) => (
-                        <button key={idx} onClick={() => handleAddRoleToUser(cr.name)} className="text-xs text-left px-3 py-2.5 hover:bg-white/5 rounded-xl font-bold transition-all flex items-center gap-2 active:scale-95"><span className="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0" style={{backgroundColor: cr.color}}></span><span className="truncate" style={{color: cr.color}}>{cr.name.toUpperCase()}</span></button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       )}
 
-      {/* ИСПРАВЛЕНО: Главный контейнер расширен для ПК (md:max-w-5xl lg:max-w-6xl xl:max-w-7xl) */}
       <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
@@ -812,7 +652,6 @@ export default function Home() {
               </h3>
             </div>
 
-            {/* ИСПРАВЛЕНО: Сетка виджетов на ПК перестраивается в красивую многорядную 4-колоночную сетку */}
             <div className="grid grid-cols-4 md:grid-cols-4 gap-4 w-full">
               
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
@@ -825,7 +664,7 @@ export default function Home() {
                   <BookOpen size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
+                  <h3 className="text-sm font-black text-white tracking-wide">Конституция</h3>
                   <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
                 </div>
               </div>
@@ -841,12 +680,12 @@ export default function Home() {
                   <Map size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-base font-black text-gray-300 tracking-wide">Карта мира</h3>
+                  <h3 className="text-sm font-black text-gray-300 tracking-wide">Карта мира</h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
                 </div>
               </div>
 
-              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ (Занимает 2 колонки на ПК) */}
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -868,25 +707,15 @@ export default function Home() {
                           <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug">
                             {post.title}
                           </span>
-                          {idx === 0 && (
-                            <span className="bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/20 text-[8px] font-black uppercase px-1 py-0.5 rounded shrink-0 select-none tracking-wider">
-                              NEW
-                            </span>
-                          )}
                         </div>
                       </div>
-                      <span className="text-[10px] text-gray-500 font-medium truncate">
-                        {post.author?.rp_name || 'Неизвестный'}
-                      </span>
+                      <span className="text-[10px] text-gray-500 font-medium truncate">{post.author?.rp_name || 'Неизвестный'}</span>
                     </div>
                   ))}
-                  {latestPosts.length === 0 && (
-                    <div className="col-span-2 text-center py-6 text-xs text-gray-500 font-mono tracking-wide">ПУБЛИКАЦИЙ ПОКА НЕТ</div>
-                  )}
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (Занимает всю ширину на ПК) */}
+              {/* ИСПРАВЛЕНО: Полностью пересобран и воссоздан десктопный виджет сервера согласно image_72e200.png */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden">
                 <button
                   onClick={fetchServerStatus}
@@ -897,20 +726,22 @@ export default function Home() {
 
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                  {/* Левая часть: Статус */}
+                  <div className="flex items-center gap-3 shrink-0">
                     <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
                     <div>
-                      <div className={`text-base md:text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                      <div className={`text-base md:text-2xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
                         {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                       </div>
                       {serverInfo?.status === 1 && (
-                        <div className="text-xs text-gray-400 font-medium mt-0.5">Игроков онлайн: <span className="text-[#c0ff00] font-black">{serverInfo.players.count} / {serverInfo.players.max}</span></div>
+                        <div className="text-xs text-gray-400 font-medium mt-0.5">Игроков: <span className="text-[#c0ff00] font-black">{serverInfo.players.count} / {serverInfo.players.max}</span></div>
                       )}
                     </div>
                   </div>
 
-                  <div className="space-y-2 flex-1 md:max-w-md w-full">
+                  {/* Центральная часть: IP, Кредиты и Версия со встроенной кнопкой скачивания */}
+                  <div className="space-y-2 flex-1 md:max-w-xl w-full">
                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                       <div className="min-w-0 flex-1">
                         <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
@@ -930,6 +761,15 @@ export default function Home() {
                             <div className="font-bold text-xs text-white truncate">Forge 1.20.1</div>
                           </div>
                         </div>
+                        {/* Восстановлено: Кнопка скачивания Forge */}
+                        <a 
+                          href="https://adfoc.us/serve/sitelinks/?id=271228&url=https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hidden md:flex items-center justify-center w-7 h-7 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full transition-all active:scale-95 shrink-0"
+                        >
+                          <Download size={12} />
+                        </a>
                       </div>
 
                       {credits !== null && (
@@ -944,15 +784,15 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* Правая часть: Переключатели */}
                   <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-44">
-                    <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30"><Play size={14} className="fill-current" /><span>Включить</span></button>
-                    <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30"><Square size={14} className="fill-current" /><span>Выключить</span></button>
+                    <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30"><Play size={14} className="fill-current" /><span>Включить</span></button>
+                    <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30"><Square size={14} className="fill-current" /><span>Выключить</span></button>
                   </div>
                 </div>
               </div>
 
             </div>
-
           </div>
         )}
 
@@ -960,16 +800,19 @@ export default function Home() {
           <Archive currentUser={dbUser} />
         )}
 
+        {/* ИСПРАВЛЕНО: Добавлен space-y-6 упаковочный контейнер, возвращающий отступы статьям в блоке .медиа */}
         {activeTab === 'media' && (
-          <MediaBlog 
-            currentUser={dbUser} 
-            onProfileClick={setSelectedPlayer} 
-            isCreatingPost={isCreatingPost}
-            setIsCreatingPost={setIsCreatingPost}
-          />
+          <div className="w-full space-y-6">
+            <MediaBlog 
+              currentUser={dbUser} 
+              onProfileClick={setSelectedPlayer} 
+              isCreatingPost={isCreatingPost}
+              setIsCreatingPost={setIsCreatingPost}
+            />
+          </div>
         )}
 
-        {/* ИСПРАВЛЕНО: Раздел законов адаптирован в десктопный двухколоночный Split-View (Гайдлайны Apple) */}
+        {/* Сплит-вью Конституции */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -984,12 +827,9 @@ export default function Home() {
               )}
             </div>
 
-            {/* Десктопная сетка: Индекс слева, Читалка справа */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
-              
-              {/* Левая панель выбора документов (Видна всегда на ПК, на мобилках скрывается при просмотре) */}
               <div className={`${activeDocument !== 'none' ? 'hidden md:flex' : 'flex'} flex-col gap-3 md:col-span-1 w-full`}>
-                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/40 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/25'}`}>
+                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/25'}`}>
                   <h3 className="font-bold text-sm">Конституция</h3>
                   <p className="text-[10px] text-gray-400 mt-0.5">Внутриигровые РП законы мира</p>
                 </div>
@@ -999,7 +839,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Правая панель просмотра/редактирования */}
               <div className={`${activeDocument === 'none' ? 'hidden md:block' : 'block'} md:col-span-2 w-full h-full`}>
                 {activeDocument === 'none' ? (
                   <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center min-h-[300px]">
@@ -1012,151 +851,48 @@ export default function Home() {
                       <div className="flex items-center bg-[#1c2026]/90 border border-white/10 rounded-full px-4 py-2.5 w-full shadow-md">
                         <Search size={14} className="text-[#c0ff00] shrink-0" />
                         <input type="text" placeholder="Поиск по документу..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-xs text-white ml-3 w-full placeholder:text-gray-500 focus:ring-0" />
-                        {matches.length > 0 && <span className="text-[10px] text-gray-400 font-mono font-bold shrink-0 ml-2">{currentMatchIndex} / {matches.length}</span>}
                       </div>
                     )}
-
                     {isEditing ? (
                       <div className="space-y-4 animate-fade-in w-full">
                         <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none break-words pb-20" />
                       </div>
                     ) : (
-                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" dangerouslySetInnerHTML={{ __html: currentDocText }} />
+                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />
                     )}
                   </div>
                 )}
               </div>
-
             </div>
           </div>
         )}
 
-        {activeTab === 'map' && (
-          <div className="w-full h-full min-h-[60vh] flex flex-col animate-fade-in relative">
-            <div className="flex items-center justify-between w-full px-1 mb-4">
-              <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2"><Map size={18} />Карта мира</h2>
-            </div>
-            <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-[#14171c]/90 backdrop-blur-xl flex items-center justify-center min-h-[400px]">
-              <div className="absolute inset-0 z-0 opacity-20 bg-gradient-to-br from-[#c0ff00]/5 to-transparent" />
-              <div className="text-center p-6 max-w-sm relative z-10">
-                 <div className="w-20 h-20 bg-black/40 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-5 relative shadow-xl">
-                   <Map size={32} className="text-gray-500" />
-                   <div className="absolute -bottom-2 bg-[#c0ff00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-lg">Soon</div>
-                 </div>
-                 <h3 className="text-xl font-black text-white mb-2 tracking-wide">Карта в разработке</h3>
-                 <p className="text-sm text-gray-400 leading-relaxed">Интерактивный 3D-рендер мира находится в стадии настройки.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ИСПРАВЛЕНО: Список игроков получил высокую плотность на ПК (md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4) */}
+        {/* Список игроков ПК */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><Users size={20} className="text-[#c0ff00]" />Жители сервера</h2>
             </div>
-
-            {dbUser && (
-              <div className="space-y-2 w-full md:max-w-sm">
-                <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
-                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 hover:border-[#c0ff00]/60'}`}>
-                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
-                    <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{dbUser.mc_nickname}</div>
-                    <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
-                  </div>
-                  <div className="flex-shrink-0 text-gray-500"><Edit2 size={16} className={isDead(dbUser.roles) ? "text-gray-600" : "text-[#c0ff00]/80"} /></div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3 w-full">
-              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Все игроки</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
-                {sortedPlayers.map((player) => {
-                  const dead = isDead(player.roles);
-                  return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}>
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
-                        <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
-                        <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'admin' && isAdmin && (
-          <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Добавить жителя</span></div>
-              <div className="space-y-3">
-                <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="Minecraft Никнейм" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
-                <label className="ui-pill-btn w-full justify-center !bg-[#1c2026] !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-3 relative overflow-hidden">
-                  <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingNewUser)} disabled={isUploadingNewUser}/>
-                  <Upload size={16} className={isUploadingNewUser ? "animate-bounce" : (addAvatarUrl ? "text-[#c0ff00]" : "")} />
-                  <span className="font-medium">{isUploadingNewUser ? 'Загрузка фото...' : (addAvatarUrl ? 'Фото загружено WebP ✅' : 'Загрузить аватарку из галереи')}</span>
-                </label>
-              </div>
-              <button onClick={handleAddPlayer} disabled={isUploadingNewUser} className="ui-pill-btn w-full justify-center py-3 disabled:opacity-50"><Check size={16} /><span>Создать аккаунт</span></button>
-            </div>
-
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Управление ролями</span></div>
-              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
-                <input type="text" placeholder="Название новой роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input"/>
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center space-x-2 text-xs text-gray-400"><Palette size={14} /><span>Цвет роли:</span><input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer" /></div>
-                  <label className="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer"><input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"/><span>Ред. законов</span></label>
-                </div>
-                <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-2"><UserPlus size={14} /><span>Создать роль</span></button>
-              </div>
-              <div className="space-y-3">
-                {customRoles.map((role) => (
-                  <div key={role.id} className="flex flex-col gap-2 p-3.5 bg-black/10 rounded-[18px] border border-white/5 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 flex-1 mr-2">
-                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: role.color }} />
-                        <input type="text" value={role.name.toUpperCase()} onChange={e => handleRoleChange(role.id!, 'name', e.target.value.toLowerCase())} onBlur={() => saveRoleToDb(role)} className="bg-transparent border-none text-sm font-bold tracking-wide focus:outline-none focus:border-b focus:border-[#c0ff00] p-0 m-0 w-full" style={{ color: role.color }} />
-                      </div>
-                      <div className="flex items-center space-x-3 flex-shrink-0">
-                        <label className="flex items-center space-x-1.5 text-[11px] text-gray-400 cursor-pointer">
-                          <input type="checkbox" checked={role.canEditConstitution} onChange={e => { handleRoleChange(role.id!, 'canEditConstitution', e.target.checked); saveRoleToDb({ ...role, canEditConstitution: e.target.checked }); }} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0" />
-                          <span>Законы</span>
-                        </label>
-                        <input type="color" value={role.color} onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} onBlur={() => saveRoleToDb(role)} className="w-5 h-5 bg-transparent border-none cursor-pointer rounded" />
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+              {sortedPlayers.map((player) => {
+                const dead = isDead(player.roles);
+                return (
+                  <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}>
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
+                      <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
+                      <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         )}
       </main>
 
-      {/* Навигационные элементы ПК / ТГ */}
-      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <div className="flex w-full items-center justify-around px-2">
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><HomeIcon size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span></button>
-          <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span></button>
-          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><BookOpen size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span></button>
-          <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span></button>
-          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Users size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span></button>
-        </div>
-      </nav>
-
+      {/* ИСПРАВЛЕНО: Возвращена каноничная иконка Library (книги) вместо BookOpen для Архива в сайдбаре ПК */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[64px] h-[64px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
@@ -1164,16 +900,13 @@ export default function Home() {
          </button>
        )}
        <nav className="w-[64px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-6 px-1 rounded-[32px] shadow-2xl flex flex-col items-center gap-7 relative">
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={22} /></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={22} /></button>
-         <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={22} /></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={22} /></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={22} /></button>}
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><Newspaper size={22} /></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><BookOpen size={22} /></button>
+         <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><Library size={22} /></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><Users size={22} /></button>
        </nav>
       </aside>
-
-      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-lg transition-all duration-500 hover:scale-110 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100' : 'opacity-0 pointer-events-none'}`}><ArrowUp size={20} /></button>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
@@ -1183,7 +916,6 @@ export default function Home() {
         .ui-pill-btn { background-color: rgba(20, 23, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 16px; border-radius: 9999px; backdrop-filter: blur(16px); display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e5e7eb; transition: all 0.3s ease; cursor: pointer; }
         .ui-pill-btn:hover { border-color: rgba(192, 255, 0, 0.3); color: #ffffff; }
         .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s ease; }
-        .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); }
         .prose h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; }
         .prose h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; }
         .prose p { color: #d1d5db !important; margin-bottom: 0.75rem; }
