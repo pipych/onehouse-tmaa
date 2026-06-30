@@ -63,7 +63,6 @@ export default function Home() {
   
   const [constitutionText, setConstitutionText] = useState('');
   const [commandmentsText, setCommandmentsText] = useState('');
-  const [activeDocument, slateActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [isEditing, setIsEditing] = useState(false);
   
@@ -407,13 +406,6 @@ export default function Home() {
     }
   }
 
-  function stripHtml(html: string) {
-    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
-  }
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -666,6 +658,7 @@ export default function Home() {
                   <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
                 </div>
               </div>
+
             </div>
           </div>
         )}
@@ -832,9 +825,9 @@ export default function Home() {
         </nav>
       </aside>
 
-      {/* НАСТОЯЩИЙ МОБИЛЬНЫЙ ТАББАР-ПИЛЮЛЯ С ДИНАМИЧЕСКИМИ ПРАВАМИ И СУБ-КЕЙС ПОДПИСЯМИ */}
+      {/* МОБИЛЬНЫЙ ТАББАР В ФОРМЕ КРУГЛОЙ ПИЛЮЛИ С АДМИНКОЙ И ВЕРХНИМ СИМВОЛЬНЫМ РЕГИСТРОМ */}
       <nav className={`md:hidden fixed bottom-6 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <div className="flex w-full items-center justify-around px-1">
+        <div className="flex w-full items-center justify-around px-2">
           
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
             <HomeIcon size={22} />
