@@ -1,18 +1,18 @@
 'use client';
 
-// ОПТИМИЗАЦИЯ NEXT.JS: ДИНАМИЧЕСКИЙ РЕНДЕРИНГ НА СЕРВЕРЕ ДЛЯ СВЕЖИХ ДАННЫХ
+// ОПТИМИЗАЦИЯ NEXT.JS: ДИНАМИЧЕСКИЙ РЕНДЕРИНГ НА СЕРВЕРЕ ДЛЯ ВСЕГДА СВЕЖИХ ДАННЫХ
 export const dynamic = 'force-dynamic';
 
 // ИМПОРТ СИСТЕМНЫХ БИБЛИОТЕК И РЕАКТИВНЫХ ХУКОВ
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-// ИМПОРТ ИНИЦИАЛИЗИРОВАННОГО КЛИЕНТА БАЗЫ ДАННЫХ SUPABASE И КОМПОНЕНТОВ СТРАНИЦ
+// ИМПОРТ ИНИЦИАЛИЗИРОВАННОГО КЛИЕНТА БАЗЫ ДАННЫХ SUPABASE И СМЕЖНЫХ КОМПОНЕНТОВ
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
 
-// ИМПОРТ ЛИНЕЙКИ СТИЛЬНЫХ ИКОНОК ИЗ ПАКЕТА LUCIDE-REACT
+// ИМПОРТ СТИЛЬНЫХ ИКОНОК ИЗ ПАКЕТА LUCIDE-REACT
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
@@ -20,7 +20,7 @@ import {
   Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download, Library
 } from 'lucide-react';
 
-// ВСПОМОГАТЕЛЬНЫЙ КОМПОНЕНТ: КАСТОМНАЯ SVG-ИКОНКА НАКОВАЛЬНИ ДЛЯ ОТОБРАЖЕНИЯ FORGE СБОРОК
+// ВСПОМОГАТЕЛЬНЫЙ КОМПОНЕНТ: SVG-ИКОНКА НАКОВАЛЬНИ ДЛЯ ОТОБРАЖЕНИЯ СБОРОК FORGE
 const AnvilIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
@@ -32,7 +32,7 @@ const AnvilIcon = ({ size = 18, className = "" }) => (
   </svg>
 );
 
-// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА ДАННЫХ ЖИТЕЛЯ СЕРВЕРА ИЗ ТАБЛИЦЫ USERS
+// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА ДАННЫХ ЖИТЕЛЯ ИЗ ТАБЛИЦЫ USERS
 interface Player {
   id: string;
   tg_id: number;
@@ -44,7 +44,7 @@ interface Player {
   party?: string;
 }
 
-// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА НАСТРОЕК СИСТЕМНЫХ РОЛЕЙ ИЗ ТАБЛИЦЫ ROLES
+// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА НАСТРОЕК РОЛЕЙ ИЗ ТАБЛИЦЫ ROLES
 interface CustomRole {
   id?: string;
   name: string;
@@ -53,65 +53,63 @@ interface CustomRole {
 }
 
 export default function Home() {
-  // ИНИЦИАЛИЗАЦИЯ РОУТЕРА И БАЗОВЫХ СТЭЙТОВ СЕССИИ ПОЛЬЗОВАТЕЛЯ
+  // ИНИЦИАЛИЗАЦИЯ РОУТЕРА И БАЗОВЫХ СТЭЙТОВ СЕССИИ ПОЛЬЗОВАТЕЛЯ ИЗ ТГ
   const router = useRouter();
   const [tgUser, setTgUser] = useState<any>(null); // Данные юзера из Telegram WebApp
   const [dbUser, setDbUser] = useState<Player | null>(null); // Профиль игрока из Supabase
-  const [loading, setLoading] = useState(true); // Состояние первичного экрана загрузки
-  const [error, setError] = useState<string | null>(null); // Текст ошибок авторизации
+  const [loading, setLoading] = useState(true); // Экран первичной загрузки интерфейса
+  const [error, setError] = useState<string | null>(null); // Логирование ошибок авторизации
   
-  // НАВИГАЦИЯ: СТЭЙТ ТЕКУЩЕЙ АКТИВНОЙ ВКЛАДКИ И СПИСОК ЖИТЕЛЕЙ
+  // НАВИГАЦИЯ: СТЭЙТ АКТИВНОЙ ВКЛАДКИ И МАССИВ ЖИТЕЛЕЙ СЕРВЕРА
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive'>('profile');
-  const [players, setPlayers] = useState<Player[]>([]); // Полный массив игроков сервера
+  const [players, setPlayers] = useState<Player[]>([]); 
   
-  // ДОКУМЕНТЫ: ХРАНЕНИЕ ТЕКСТОВ ПРАВИЛ, КОНСТИТУЦИИ И ФЛАГИ РЕДАКТИРОВАНИЯ
+  // ДОКУМЕНТЫ: ХРАНЕНИЕ ТЕКСТОВ КОНСТИТУЦИИ, ПРАВИЛ И ФЛАГИ РЕДАКТОРА
   const [constitutionText, setConstitutionText] = useState('');
   const [commandmentsText, setCommandmentsText] = useState('');
   const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [isEditing, setIsEditing] = useState(false);
   
-  // РЕДАКТИРОВАНИЕ ПРОФИЛЯ: ДАННЫЕ ДЛЯ ОБНОВЛЕНИЯ АККАУНТА
+  // РЕДАКТИРОВАНИЕ ЛИЧНОГО ПРОФИЛЯ: ДАННЫЕ ДЛЯ ОБНОВЛЕНИЯ АККАУНТА
   const [newRpName, setNewRpName] = useState('');
   const [newAvatarUrl, setNewAvatarUrl] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null); // Просматриваемый игрок
-  const [showRoleSelector, setShowRoleSelector] = useState(false); // Окно выдачи ролей админом
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null); 
+  const [showRoleSelector, setShowRoleSelector] = useState(false); 
 
   const [showTooltip, setShowTooltip] = useState<'none' | 'constitution' | 'commandments'>('none');
 
-  // ИНСТРУМЕНТЫ ПОИСКА: СТЭЙТЫ ИНДЕКСАЦИИ СОВПАДЕНИЙ В ТЕКСТЕ ЗАКОНОВ
+  // ИНСТРУМЕНТЫ ПОИСКА ПО ЗАКОНАМ: СТЭЙТЫ И СЧЕТЧИКИ СОВПАДЕНИЙ
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false); 
 
-  // ТЕКСТОВЫЙ РЕДАКТОР: СОСТОЯНИЕ АКТИВНЫХ СТИЛЕЙ ТУЛБАРА ФОРМАТИРОВАНИЯ
+  // СТЕЙТЫ ТУЛБАРА ФОРМАТИРОВАНИЯ ТЕКСТА РЕДАКТОРА
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  // ЗАГРУЗКА МЕДИАФАЙЛОВ: ИНДИКАТОРЫ ПРОЦЕССА ВЫГРУЗКИ В STORAGE
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
-  // МИГРАЦИЯ МЕДИА: СТЭЙТЫ ГЛОБАЛЬНОЙ КОНВЕРТАЦИИ СТАРЫХ ФОТО В КЛИЕНТСКИЙ WEBP
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
 
-  // МОНИТОРИНГ ХОСТИНГА: ДАННЫЕ О СТАТУСЕ И КРЕДИТАХ СЕРВЕРА EXAROTON
+  // МОНИТОРИНГ ХОСТИНГА: ДАННЫЕ О СТАТУСЕ И СЧЕТЕ КРЕДИТОВ СЕРВЕРА EXAROTON
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
-  // НОВОСТИ: ХРАНЕНИЕ СТАТЕЙ ДЛЯ МИНИ-ВИДЖЕТА ПУБЛИКАЦИЙ ГЛАВНОГО ЭКРАНА
+  // ЛЕНТА ПУБЛИКАЦИЙ: ХРАНЕНИЕ ПОСТОВ ДЛЯ МИНИ-ВИДЖЕТА НОВОСТЕЙ НА ГЛАВНОЙ
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
   
-  // СЕТЕВЫЕ НАСТРОЙКИ: ПОСТОЯННЫЙ СТАТИЧЕСКИЙ СЕТЕВОЙ АДРЕС ИГРОВОГО МИРА
+  // СЕТЕВЫЕ НАСТРОЙКИ: ПОСТОЯННЫЙ СТАТИЧЕСКИЙ СЕТЕВОЙ АДРЕС СЕРВЕРА
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
-  // АДМИН-ПАНЕЛЬ: ПОЛЯ СОЗДАНИЯ СВЕЖЕГО АККАУНТА ЖИТЕЛЯ СЕРВЕРА
+  // АДМИН-ПАНЕЛЬ: ПОЛЯ СОЗДАНИЯ СВЕЖЕГО АККАУНТА ИГРОКА
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
@@ -120,7 +118,7 @@ export default function Home() {
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
 
-  // АДМИН-ПАНЕЛЬ: ПОЛЯ ДОБАВЛЕНИЯ И НАСТРОЙКИ НОВЫХ КАСТОМНЫХ РОЛЕЙ
+  // АДМИН-ПАНЕЛЬ: ПОЛЯ ДОБАВЛЕНИЯ И НАСТРОЙКИ СИСТЕМНЫХ РОЛЕЙ
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
@@ -128,19 +126,22 @@ export default function Home() {
 
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
-  // ОРИЕНТИРЫ НА ДОМ-ЭЛЕМЕНТЫ: ССЫЛКИ ДЛЯ МИНИ-РЕДАКТОРА
+  // ССЫЛКИ НА ДОМ-ЭЛЕМЕНТЫ ТЕКСТОВОГО РЕДАКТОРА ПАНЕЛИ
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // ВЫЧИСЛЯЕМЫЕ ПЕРЕМЕННЫЕ: ПРАВА ДОСТУПА ПО РОЛЯМ ИЗ БАЗЫ
+  // ВЫЧИСЛЯЕМЫЕ ПЕРЕМЕННЫЕ: ПРАВА ДОСТУПА ПО АКТИВНЫМ РОЛЯМ ИЗ БАЗЫ
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
+
   const canEditConstitution = dbUser?.roles?.some(r => {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   }) || false;
 
-  // ТАЙМЛАЙН СОРТИРОВКИ СПИСКА: МЕРТВЫЕ ПЕРСОНАЖИ ПРИНУДИТЕЛЬНО ПАДАЮТ В КОНЕЦ, ЖИВЫЕ — ВВЕРХУ ПО АЛФАВИТУ
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+  
+  // СОРТИРОВКА ТАЙМЛАЙНА ИГРОКОВ: МЕРТВЫЕ ПРИНУДИТЕЛЬНО ПАДАЮТ В КОНЕЦ, ЖИВЫЕ — ВВЕРХУ ПО АЛФАВИТУ
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
     .sort((a, b) => {
@@ -150,7 +151,7 @@ export default function Home() {
       return a.rp_name.localeCompare(b.rp_name);
     });
 
-  // ОПТИМИЗАТОР МЕДИА: СЖАТИЕ ФОТО ИЗ ГАЛЕРЕИ ТЕЛЕФОНА В ULTRA-LIGHT WEBP ФОРМАТ ЧЕРЕЗ CANVAS В БРАУЗЕРЕ
+  // ОПТИМИЗАТОР МЕДИА ЧЕРЕЗ CANVAS: КОНВЕРТИРУЕТ КЛИЕНТСКИЕ ФОТО В ЛЕГКИЙ КЛАССИЧЕСКИЙ WEBP
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -176,18 +177,18 @@ export default function Home() {
     });
   }
 
-  // СИСТЕМА ДИНАМИЧЕСКИХ ПАЛИТР: ОПРЕДЕЛЕНИЕ ЦВЕТА ПЛАШКИ РОЛИ НА ОСНОВЕ НАСТРОЕК ТАБЛИЦЫ ROLES
+  // СИСТЕМА ПАЛИТРЫ: ОПРЕДЕЛЕНИЕ ЦВЕТА ПЛАШКИ РОЛИ НА ОСНОВЕ ТАБЛИЦЫ ROLES ИЗ SUPABASE
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
-  // ПРОВЕРКА: ИМЕЕТ ЛИ ПЕРСОНАЖ ИГРОКА СМЕРТЕЛЬНЫЙ СТАТУС В СВОЕМ МАССИВЕ РОЛЕЙ
+  // ПРОВЕРКА СТАТУСА: ИМЕЕТ ЛИ ПЕРСОНАЖ ЖИВУЮ ИЛИ МЕРТВУЮ ОТМЕТКУ В МАССИВЕ РОЛЕЙ
   function isDead(roles: string[]) {
     return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
   }
 
-  // ДИНАМИЧЕСКИЙ ПАРСЕР СТАТУСОВ ХОСТИНГА ДЛЯ КРАСИВОГО СВЕЧЕНИЯ СЕРВЕРНОЙ ПЛИТКИ
+  // ДИНАМИЧЕСКИЙ ПАРСЕР СТАТУСОВ ДЛЯ ПРАВИЛЬНОЙ ОКРАСКИ И СВЕЧЕНИЯ СЕРВЕРНОГО ВИДЖЕТА
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -199,7 +200,7 @@ export default function Home() {
     }
   }
 
-  // АДМИН-СКРИПТ: СКАНИРОВАНИЕ ВСЕЙ БАЗЫ ДАННЫХ САЙТА И МИГРАЦИЯ СТАРЫХ КАРТИНОК В ОПТИМИЗИРОВАННЫЙ WEBP
+  // АДМИН-СКРИПТ: СКАНИРОВАНИЕ ВСЕЙ БАЗЫ ДАННЫХ И СЖАТИЕ СТАРЫХ КАРТИНОК ИЗ STORAGE В WEBP В ОДИН КЛИК
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP?')) return;
     setIsMigrating(true);
@@ -238,7 +239,7 @@ export default function Home() {
     }
   }
 
-  // ЗАГРУЗЧИК ФАЙЛОВ И МЕДИА В ХРАНИЛИЩЕ БАЗЫ С ПРИВЯЗКОЙ ОБРАТНОЙ ССЫЛКИ
+  // ОБРАБОТЧИК ВЫГРУЗКИ АВАТАРОК И ОБЛОЖЕК В КОРНЕВОЙ СТОРЕДЖ SUPABASE
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
@@ -257,12 +258,12 @@ export default function Home() {
     }
   }
 
-  // ПЛАВНЫЙ СКРОЛЛ СТРАНИЦЫ НАВЕРХ ДЛЯ УДОБСТВА НА ТЕЛЕФОНАХ
+  // ПЛАВНЫЙ ВОЗВРАТ И СКРОЛЛ ЭКРАНА В САМЫЙ ВВЕРХ
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ОБРАЩЕНИЕ К API: ЗАПРОС ХОСТИНГА EXAROTON И СЧЕТА КРЕДИТОВ СЕРВЕРА
+  // СЕТЕВОЙ МОНИТОРИНГ: ПОЛУЧЕНИЕ ИЗ ЭНДПОИНТА СТАТУСА СЕРВЕРА И ТЕКУЩЕГО ОНЛАЙНА ИГРОКОВ
   async function fetchServerStatus() {
     setIsServerLoading(true);
     try {
@@ -279,7 +280,7 @@ export default function Home() {
     }
   }
 
-  // ПОДГРУЗКА ПУБЛИКАЦИЙ ДЛЯ СТАТИЧЕСКОГО ФОРМАТА МИНИ-ВИДЖЕТА НОВОСТЕЙ
+  // ПОДГРУЗКА ИЗ БАЗЫ СВЕЖЕЙ СТАТЬИ ДЛЯ СТАТИЧЕСКОГО КОМПАКТНОГО МИНИ-ВИДЖЕТА НОВОСТЕЙ
   async function loadLatestPosts() {
     try {
       const { data, error } = await supabase
@@ -291,7 +292,7 @@ export default function Home() {
     } catch (e) {}
   }
 
-  // ОБРАБОТКА ИНСТРУМЕНТОВ РЕДАКТОРА: АНАЛИЗ ВЫДЕЛЕННОГО КУСКА ДЛЯ ТУЛБАРА ПРАВОК
+  // АНАЛИЗАТОР ВЫДЕЛЕНИЯ ТЕКСТА ДЛЯ АВТОВЫРАВНИВАНИЯ И СТИЛИЗАЦИИ КНОПОК ТУЛБАРА В РЕДАКТОРЕ
   function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
@@ -308,7 +309,7 @@ export default function Home() {
     } catch (e) {}
   }
 
-  // ИСПОЛНЕНИЕ КОМАНД СТИЛИЗАЦИИ ВНУТРИ ТЕКСТОВОГО БЛОКА CONTENTEDITABLE
+  // КОМАНДНЫЙ ИСПОЛНИТЕЛЬ РЕДАКТОРА: ФОРМАТИРОВАНИЕ HTML ВНУТРИ CONTENTEDITABLE БЛОКА
   function execEditorCommand(command: string, value: string = '') {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
@@ -327,7 +328,7 @@ export default function Home() {
     }
   }
 
-  // УПРАВЛЕНИЕ ХОСТИНГОМ: ОТПРАВКА СИГНАЛОВ ВКЛЮЧЕНИЯ ИЛИ ВЫКЛЮЧЕНИЯ НА EXAROTON БЭКЕНД
+  // УПРАВЛЕНИЕ ХОСТИНГОМ: ПЕРЕДАЧА СИГНАЛОВ ВКЛЮЧЕНИЯ И ВЫКЛЮЧЕНИЯ НА БЭКЕНД EXAROTON API
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
     try {
@@ -346,7 +347,7 @@ export default function Home() {
     }
   }
 
-  // СИСТЕМНЫЙ КЛИПБОРД: КОПИРОВАНИЕ ДАННЫХ И IP АДРЕСА С ТАКТИЛЬНЫМ ТГ-ОТКЛИКОМ СМАРТФОНА
+  // КЛИПБОРД: БЫСТРОЕ КОПИРОВАНИЕ IP АДРЕСА С ТАКТИЛЬНОЙ ТГ-ВИБРАЦИЕЙ ТЕЛЕФОНА
   function copyToClipboard(text: string) {
     if (typeof document !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -356,7 +357,7 @@ export default function Home() {
     }
   }
 
-  // БЕЗУПРЕЧНАЯ СИНХРОНИЗАЦИЯ С SUPABASE: ПОИСК АККАУНТА ПО УНИКАЛЬНОМУ TELEGRAM ID
+  // АВТОРИЗАЦИЯ И СИНХРОНИЗАЦИЯ: ПОИСК И ЗАКРЕПЛЕНИЕ ЖИТЕЛЯ ПО УНИКАЛЬНОМУ TELEGRAM ID
   async function checkUserInDb(tgId: number) {
     try {
       const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
@@ -378,7 +379,7 @@ export default function Home() {
     }
   }
 
-  // ЗАГРУЗЧИКИ СУПАБЕЙЗА: ПОДГРУЗКА РОЛЕЙ, КОНСТИТУЦИИ И СПИСКА ИГРОКОВ СЕРВЕРА
+  // ГЛОБАЛЬНЫЕ СИНХРОНИЗАТОРЫ ТАБЛИЦ: ПОДГРУЗКА РОЛЕЙ, СПИСКА ИГРОКОВ И ЗАКОНОВ ИЗ SUPABASE
   async function loadRoles() {
     const { data } = await supabase.from('roles').select('*').order('name');
     if (data) {
@@ -406,7 +407,7 @@ export default function Home() {
     }
   }
 
-  // СОХРАНЕНИЕ ДАННЫХ И ДОКУМЕНТОВ В ТАБЛИЦЫ БАЗЫ ДАННЫХ И СИНХРОНИЗАЦИЯ СТЭЙТОВ
+  // СОХРАНЕНИЕ ДАННЫХ И КОРРЕКТИРОВОК В ТАБЛИЦЫ БАЗЫ ДАННЫХ С АВТООБНОВЛЕНИЕМ СТЭЙТОВ САЙТА
   async function saveDocument() {
     if (!editorRef.current || activeDocument === 'none') return;
     const updatedContent = editorRef.current.innerHTML;
@@ -485,7 +486,7 @@ export default function Home() {
     }
   }
 
-  // ХУК АВТОРИЗАЦИИ ТЕЛЕГРАМА: ГАРАНТИРУЕТ ЗАЩИТУ ОТ СТОРОННИХ ВХОДОВ И РАЗВОРАЧИВАЕТ WEBAPP СЕССИЮ
+  // ХУК ИНИЦИАЛИЗАЦИИ И СТРОГОЙ АВТОРИЗАЦИИ ВНУТРИ TELEGRAM WEBAPP СЕССИИ ОКНА
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -503,7 +504,7 @@ export default function Home() {
     }
   }, []);
 
-  // ТАЙМЕР ХОСТИНГА: КАЖДЫЙ ЧАС ЗАПРАШИВАЕТ СВЕЖИЙ СЧЕТ И СТАТУС С КАНАЛОВ EXAROTON
+  // ТАЙМЕР АВТООБНОВЛЕНИЯ СЕРВЕРА: РЕГУЛЯРНЫЙ СБОРОЧНЫЙ ЗАПРОС РАЗ В ЧАС ДЛЯ КРЕДИТОВ EXAROTON
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchServerStatus();
@@ -534,7 +535,7 @@ export default function Home() {
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
-      {/* ДЕКОРАТИВНЫЕ ЗАДНИЕ СЛОИ И ВИДЕОФОН ДЛЯ ПК */}
+      {/* СТИЛЬНЫЕ ЗАДНИЕ СЛОИ И ВИДЕОФОНЫ ПАНЕЛИ ДЛЯ ПК ВЕРСИИ */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -545,7 +546,7 @@ export default function Home() {
 
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
 
-      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОГО ПРОФИЛЯ ЖИТЕЛЯ */}
+      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОГО ПРОФИЛЯ ЖИТЕЛЯ С ВЕРНЫМ ВЫВОДОМ РОЛЕЙ */}
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
@@ -608,10 +609,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК ПРИЛОЖЕНИЯ */}
+      {/* ГЛАВНЫЙ КОНТЕНТНЫЙ БЛОК ОКОН ОТРЕНДЕРЕННЫХ ВКЛАДОК */}
       <main key={activeTab} className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         
-        {/* ВКЛАДКА: ГЛАВНЫЙ ЭКРАН (ПРОФИЛЬ И СЕРВЕР) */}
+        {/* ВКЛАДКА: ГЛАВНЫЙ ЭКРАН (ПРОФИЛЬ, ХОСТИНГ И СЕТКА APPLE ВИДЖЕТОВ) */}
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
             
@@ -623,9 +624,7 @@ export default function Home() {
               </h3>
             </div>
 
-            {/* НЕВИДИМАЯ СЕТКА APPLE-ВИДЖЕТОВ */}
             <div className="grid grid-cols-4 gap-4 w-full">
-              
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
@@ -669,7 +668,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА ЧЕРЕЗ API EXAROTON */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА С ФИКСИРОВАННЫМИ КНОПКАМИ И ОТСТУПАМИ (ИСПРАВЛЕНО) */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-6 md:p-7 rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-6 min-h-[300px]">
                 <button onClick={fetchServerStatus} className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
@@ -718,16 +717,15 @@ export default function Home() {
                   <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Square size={12} className="fill-current" /><span>Выключить</span></button>
                 </div>
               </div>
-
             </div>
           </div>
         )}
 
-        {/* СЛУЖЕБНЫЕ ВКЛАДКИ И РОУТЫ СИСТЕМЫ */}
+        {/* СИСТЕМНЫЕ КОРНЕВЫЕ ВКЛАДКИ ДЕПЛОЯ И СЕРВЕРА */}
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
 
-        {/* ВКЛАДКА: СВОД ПРАВИЛ И СПЛИТ-ВЬЮ КОНСТИТУЦИИ */}
+        {/* ВКЛАДКА: СВОД ПРАВИЛ И КОНСТИТУЦИИ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -735,7 +733,7 @@ export default function Home() {
               {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
-              <div className={`${activeDocument !== 'none' ? 'hidden md:flex' : 'flex'} flex-col gap-3 md:col-span-1 w-full`}>
+              <div className="flex flex-col gap-3 md:col-span-1 w-full">
                 <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
                   <h3 className="font-bold text-sm">Конституция</h3>
                 </div>
@@ -748,7 +746,7 @@ export default function Home() {
                   <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs">ВЫБЕРИТЕ ДОКУМЕНТ</div>
                 ) : (
                   <div className="space-y-4 w-full">
-                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
+                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
                   </div>
                 )}
               </div>
@@ -756,7 +754,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ВКЛАДКА: СПИСОК ЖИТЕЛЕЙ СЕРВЕРА С РОЛЯМИ */}
+        {/* ВКЛАДКА: СПИСОК ВСЕХ ИГРОКОВ СЕРВЕРА С РОЛЯМИ И МОИМ АККАУНТОМ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -788,7 +786,7 @@ export default function Home() {
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] opacity-60 grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
+                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
@@ -808,7 +806,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ВКЛАДКА: АДМИНИСТРАТИВНАЯ ПАНЕЛЬ СЕРВЕРА */}
+        {/* ВКЛАДКА: АДМИНИСТРАТИВНЫЙ ПУЛЬТ УПРАВЛЕНИЯ */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -846,7 +844,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* НАВИГАЦИЯ ДЛЯ КОМПЬЮТЕРОВ (БОКОВАЯ СТИЛЬНАЯ ПАНЕЛЬ С КРУПНЫМИ АВАТАРКАМИ) */}
+      {/* ПК НАВИГАЦИОННЫЙ САЙДБАР (БОКОВАЯ СТИЛЬНАЯ ПАНЕЛЬ С КОМПАКТНЫМИ ИКОНКАМИ) */}
       <aside className="hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500">
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
@@ -863,7 +861,7 @@ export default function Home() {
        </nav>
       </aside>
 
-      {/* МОБИЛЬНЫЙ ТАББАР (НИЖНЯЯ НАВИГАЦИЯ ДЛЯ СМАРТФОНОВ) */}
+      {/* МОБИЛЬНЫЙ НАВИГАЦИОННЫЙ ТАББАР (НИЖНЕЕ МЕНЮ СМАРТФОНОВ) */}
       <nav className="md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500">
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
