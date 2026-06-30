@@ -14,7 +14,8 @@ import Archive from '../components/Archive';
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper
+  Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
+  Map as MapIcon
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -533,7 +534,11 @@ export default function Home() {
             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
             <div className="flex flex-wrap gap-2 items-center">
               {selectedPlayer.roles?.map((role, idx) => (
-                <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
+                <span 
+                  key={idx} 
+                  className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" 
+                  style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}
+                >
                   <span>• {role.toUpperCase()}</span>
                   {isAdmin && <button onClick={() => handleRemoveRoleFromUser(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
                 </span>
@@ -585,7 +590,7 @@ export default function Home() {
               <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><Map size={20} /></div>
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><MapIcon size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
                   <h3 className="text-sm md:text-gray-300 font-black tracking-wide">Карта мира</h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
@@ -619,7 +624,7 @@ export default function Home() {
                 <div className="relative z-10 flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
                     <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
-                    <div className={`text-sm md:text-base font-black tracking-wider uppercase ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
+                    <div className={`text-sm md:text-base font-black tracking-wider uppercase ${serverInfo ? getServerStatusText(serverInfo.status).text : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
                   </div>
                   {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2 py-0.5 rounded-lg text-[10px] font-bold text-gray-400">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
                 </div>
@@ -660,7 +665,6 @@ export default function Home() {
                   <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
                 </div>
               </div>
-
             </div>
           </div>
         )}
