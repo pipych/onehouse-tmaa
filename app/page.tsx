@@ -406,13 +406,6 @@ export default function Home() {
     }
   }
 
-  function stripHtml(html: string) {
-    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
-  }
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -586,15 +579,16 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 2. ВИДЖЕТ КАРТЫ СЕРВЕРА */}
-              <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
-                {/* Рамка плашки затемнена с border-[#c0ff00] до border-[#c0ff00]/30 для удаления «вырвиглазного» эффекта */}
-                <div className="absolute top-3 right-3 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-20">Soon</div>
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><MapIcon size={20} /></div>
+              {/* 2. НОВЫЙ КВАДРАТНЫЙ ВИДЖЕТ АРХИВА СЕЗОНОВ НА МЕСТЕ КАРТЫ */}
+              <div 
+                onClick={() => handleTabChange('archive')}
+                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
+              >
+                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Library size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-gray-300 font-black tracking-wide">Карта мира</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
                 </div>
               </div>
 
@@ -610,7 +604,6 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-2.5 h-full">
                   {latestPosts.map((post, idx) => (
                     <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-black/20 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0 relative">
-                      {/* Рамка плашки NEW также затемнена до border-[#c0ff00]/30 по аналогии */}
                       {idx === 0 && (
                         <div className="absolute top-2 right-2 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-10">New</div>
                       )}
@@ -670,6 +663,21 @@ export default function Home() {
                   <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
                 </div>
               </div>
+
+              {/* 5. КАРТА МИРА: СМЕЩЕНА НИЖЕ В СЕТКУ В СВОБОДНЫЕ СЛОТЫ */}
+              <div 
+                onClick={() => handleTabChange('map')} 
+                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
+              >
+                <div className="absolute top-3 right-3 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-20">Soon</div>
+                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><MapIcon size={20} /></div>
+                <div className="space-y-0.5 relative z-10">
+                  <h3 className="text-sm md:text-gray-300 font-black tracking-wide">Карта мира</h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
