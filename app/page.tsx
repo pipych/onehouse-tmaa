@@ -1,12 +1,18 @@
 'use client';
 
+// ОПТИМИЗАЦИЯ NEXT.JS: ДИНАМИЧЕСКИЙ РЕНДЕРИНГ НА СЕРВЕРЕ ДЛЯ СВЕЖИХ ДАННЫХ
 export const dynamic = 'force-dynamic';
 
+// ИМПОРТ СИСТЕМНЫХ БИБЛИОТЕК И РЕАКТИВНЫХ ХУКОВ
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+
+// ИМПОРТ ИНИЦИАЛИЗИРОВАННОГО КЛИЕНТА БАЗЫ ДАННЫХ SUPABASE И КОМПОНЕНТОВ СТРАНИЦ
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
+
+// ИМПОРТ ЛИНЕЙКИ СТИЛЬНЫХ ИКОНОК ИЗ ПАКЕТА LUCIDE-REACT
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
@@ -14,6 +20,7 @@ import {
   Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download, Library
 } from 'lucide-react';
 
+// ВСПОМОГАТЕЛЬНЫЙ КОМПОНЕНТ: КАСТОМНАЯ SVG-ИКОНКА НАКОВАЛЬНИ ДЛЯ ОТОБРАЖЕНИЯ FORGE СБОРОК
 const AnvilIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
@@ -25,6 +32,7 @@ const AnvilIcon = ({ size = 18, className = "" }) => (
   </svg>
 );
 
+// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА ДАННЫХ ЖИТЕЛЯ СЕРВЕРА ИЗ ТАБЛИЦЫ USERS
 interface Player {
   id: string;
   tg_id: number;
@@ -36,6 +44,7 @@ interface Player {
   party?: string;
 }
 
+// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА НАСТРОЕК СИСТЕМНЫХ РОЛЕЙ ИЗ ТАБЛИЦЫ ROLES
 interface CustomRole {
   id?: string;
   name: string;
@@ -44,53 +53,65 @@ interface CustomRole {
 }
 
 export default function Home() {
+  // ИНИЦИАЛИЗАЦИЯ РОУТЕРА И БАЗОВЫХ СТЭЙТОВ СЕССИИ ПОЛЬЗОВАТЕЛЯ
   const router = useRouter();
-  const [tgUser, setTgUser] = useState<any>(null);
-  const [dbUser, setDbUser] = useState<Player | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [tgUser, setTgUser] = useState<any>(null); // Данные юзера из Telegram WebApp
+  const [dbUser, setDbUser] = useState<Player | null>(null); // Профиль игрока из Supabase
+  const [loading, setLoading] = useState(true); // Состояние первичного экрана загрузки
+  const [error, setError] = useState<string | null>(null); // Текст ошибок авторизации
   
+  // НАВИГАЦИЯ: СТЭЙТ ТЕКУЩЕЙ АКТИВНОЙ ВКЛАДКИ И СПИСОК ЖИТЕЛЕЙ
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive'>('profile');
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]); // Полный массив игроков сервера
   
+  // ДОКУМЕНТЫ: ХРАНЕНИЕ ТЕКСТОВ ПРАВИЛ, КОНСТИТУЦИИ И ФЛАГИ РЕДАКТИРОВАНИЯ
   const [constitutionText, setConstitutionText] = useState('');
   const [commandmentsText, setCommandmentsText] = useState('');
   const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [isEditing, setIsEditing] = useState(false);
   
+  // РЕДАКТИРОВАНИЕ ПРОФИЛЯ: ДАННЫЕ ДЛЯ ОБНОВЛЕНИЯ АККАУНТА
   const [newRpName, setNewRpName] = useState('');
   const [newAvatarUrl, setNewAvatarUrl] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null); // Просматриваемый игрок
+  const [showRoleSelector, setShowRoleSelector] = useState(false); // Окно выдачи ролей админом
 
   const [showTooltip, setShowTooltip] = useState<'none' | 'constitution' | 'commandments'>('none');
 
+  // ИНСТРУМЕНТЫ ПОИСКА: СТЭЙТЫ ИНДЕКСАЦИИ СОВПАДЕНИЙ В ТЕКСТЕ ЗАКОНОВ
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false); 
 
+  // ТЕКСТОВЫЙ РЕДАКТОР: СОСТОЯНИЕ АКТИВНЫХ СТИЛЕЙ ТУЛБАРА ФОРМАТИРОВАНИЯ
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
+  // ЗАГРУЗКА МЕДИАФАЙЛОВ: ИНДИКАТОРЫ ПРОЦЕССА ВЫГРУЗКИ В STORAGE
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
+  // МИГРАЦИЯ МЕДИА: СТЭЙТЫ ГЛОБАЛЬНОЙ КОНВЕРТАЦИИ СТАРЫХ ФОТО В КЛИЕНТСКИЙ WEBP
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
 
+  // МОНИТОРИНГ ХОСТИНГА: ДАННЫЕ О СТАТУСЕ И КРЕДИТАХ СЕРВЕРА EXAROTON
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
+  // НОВОСТИ: ХРАНЕНИЕ СТАТЕЙ ДЛЯ МИНИ-ВИДЖЕТА ПУБЛИКАЦИЙ ГЛАВНОГО ЭКРАНА
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
   
+  // СЕТЕВЫЕ НАСТРОЙКИ: ПОСТОЯННЫЙ СТАТИЧЕСКИЙ СЕТЕВОЙ АДРЕС ИГРОВОГО МИРА
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
+  // АДМИН-ПАНЕЛЬ: ПОЛЯ СОЗДАНИЯ СВЕЖЕГО АККАУНТА ЖИТЕЛЯ СЕРВЕРА
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
@@ -99,6 +120,7 @@ export default function Home() {
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
 
+  // АДМИН-ПАНЕЛЬ: ПОЛЯ ДОБАВЛЕНИЯ И НАСТРОЙКИ НОВЫХ КАСТОМНЫХ РОЛЕЙ
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
@@ -106,19 +128,19 @@ export default function Home() {
 
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
+  // ОРИЕНТИРЫ НА ДОМ-ЭЛЕМЕНТЫ: ССЫЛКИ ДЛЯ МИНИ-РЕДАКТОРА
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
+  // ВЫЧИСЛЯЕМЫЕ ПЕРЕМЕННЫЕ: ПРАВА ДОСТУПА ПО РОЛЯМ ИЗ БАЗЫ
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
-
   const canEditConstitution = dbUser?.roles?.some(r => {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   }) || false;
 
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
-  
+  // ТАЙМЛАЙН СОРТИРОВКИ СПИСКА: МЕРТВЫЕ ПЕРСОНАЖИ ПРИНУДИТЕЛЬНО ПАДАЮТ В КОНЕЦ, ЖИВЫЕ — ВВЕРХУ ПО АЛФАВИТУ
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
     .sort((a, b) => {
@@ -128,6 +150,7 @@ export default function Home() {
       return a.rp_name.localeCompare(b.rp_name);
     });
 
+  // ОПТИМИЗАТОР МЕДИА: СЖАТИЕ ФОТО ИЗ ГАЛЕРЕИ ТЕЛЕФОНА В ULTRA-LIGHT WEBP ФОРМАТ ЧЕРЕЗ CANVAS В БРАУЗЕРЕ
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -153,15 +176,18 @@ export default function Home() {
     });
   }
 
+  // СИСТЕМА ДИНАМИЧЕСКИХ ПАЛИТР: ОПРЕДЕЛЕНИЕ ЦВЕТА ПЛАШКИ РОЛИ НА ОСНОВЕ НАСТРОЕК ТАБЛИЦЫ ROLES
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
+  // ПРОВЕРКА: ИМЕЕТ ЛИ ПЕРСОНАЖ ИГРОКА СМЕРТЕЛЬНЫЙ СТАТУС В СВОЕМ МАССИВЕ РОЛЕЙ
   function isDead(roles: string[]) {
     return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
   }
 
+  // ДИНАМИЧЕСКИЙ ПАРСЕР СТАТУСОВ ХОСТИНГА ДЛЯ КРАСИВОГО СВЕЧЕНИЯ СЕРВЕРНОЙ ПЛИТКИ
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -173,6 +199,7 @@ export default function Home() {
     }
   }
 
+  // АДМИН-СКРИПТ: СКАНИРОВАНИЕ ВСЕЙ БАЗЫ ДАННЫХ САЙТА И МИГРАЦИЯ СТАРЫХ КАРТИНОК В ОПТИМИЗИРОВАННЫЙ WEBP
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP?')) return;
     setIsMigrating(true);
@@ -211,6 +238,7 @@ export default function Home() {
     }
   }
 
+  // ЗАГРУЗЧИК ФАЙЛОВ И МЕДИА В ХРАНИЛИЩЕ БАЗЫ С ПРИВЯЗКОЙ ОБРАТНОЙ ССЫЛКИ
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
@@ -229,10 +257,12 @@ export default function Home() {
     }
   }
 
+  // ПЛАВНЫЙ СКРОЛЛ СТРАНИЦЫ НАВЕРХ ДЛЯ УДОБСТВА НА ТЕЛЕФОНАХ
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // ОБРАЩЕНИЕ К API: ЗАПРОС ХОСТИНГА EXAROTON И СЧЕТА КРЕДИТОВ СЕРВЕРА
   async function fetchServerStatus() {
     setIsServerLoading(true);
     try {
@@ -249,6 +279,7 @@ export default function Home() {
     }
   }
 
+  // ПОДГРУЗКА ПУБЛИКАЦИЙ ДЛЯ СТАТИЧЕСКОГО ФОРМАТА МИНИ-ВИДЖЕТА НОВОСТЕЙ
   async function loadLatestPosts() {
     try {
       const { data, error } = await supabase
@@ -260,6 +291,7 @@ export default function Home() {
     } catch (e) {}
   }
 
+  // ОБРАБОТКА ИНСТРУМЕНТОВ РЕДАКТОРА: АНАЛИЗ ВЫДЕЛЕННОГО КУСКА ДЛЯ ТУЛБАРА ПРАВОК
   function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
@@ -276,6 +308,7 @@ export default function Home() {
     } catch (e) {}
   }
 
+  // ИСПОЛНЕНИЕ КОМАНД СТИЛИЗАЦИИ ВНУТРИ ТЕКСТОВОГО БЛОКА CONTENTEDITABLE
   function execEditorCommand(command: string, value: string = '') {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
@@ -294,6 +327,7 @@ export default function Home() {
     }
   }
 
+  // УПРАВЛЕНИЕ ХОСТИНГОМ: ОТПРАВКА СИГНАЛОВ ВКЛЮЧЕНИЯ ИЛИ ВЫКЛЮЧЕНИЯ НА EXAROTON БЭКЕНД
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
     try {
@@ -312,6 +346,7 @@ export default function Home() {
     }
   }
 
+  // СИСТЕМНЫЙ КЛИПБОРД: КОПИРОВАНИЕ ДАННЫХ И IP АДРЕСА С ТАКТИЛЬНЫМ ТГ-ОТКЛИКОМ СМАРТФОНА
   function copyToClipboard(text: string) {
     if (typeof document !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -321,6 +356,7 @@ export default function Home() {
     }
   }
 
+  // БЕЗУПРЕЧНАЯ СИНХРОНИЗАЦИЯ С SUPABASE: ПОИСК АККАУНТА ПО УНИКАЛЬНОМУ TELEGRAM ID
   async function checkUserInDb(tgId: number) {
     try {
       const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
@@ -342,6 +378,7 @@ export default function Home() {
     }
   }
 
+  // ЗАГРУЗЧИКИ СУПАБЕЙЗА: ПОДГРУЗКА РОЛЕЙ, КОНСТИТУЦИИ И СПИСКА ИГРОКОВ СЕРВЕРА
   async function loadRoles() {
     const { data } = await supabase.from('roles').select('*').order('name');
     if (data) {
@@ -369,6 +406,7 @@ export default function Home() {
     }
   }
 
+  // СОХРАНЕНИЕ ДАННЫХ И ДОКУМЕНТОВ В ТАБЛИЦЫ БАЗЫ ДАННЫХ И СИНХРОНИЗАЦИЯ СТЭЙТОВ
   async function saveDocument() {
     if (!editorRef.current || activeDocument === 'none') return;
     const updatedContent = editorRef.current.innerHTML;
@@ -403,24 +441,16 @@ export default function Home() {
     const { error } = await supabase.from('users').insert([{
       tg_id: tgIdNum, tg_username: addTgUsername || 'unknown', mc_nickname: addMcNickname, rp_name: addRpName, avatar_url: addAvatarUrl || 'https://via.placeholder.com/150', roles: addRoles, party: addParty || 'Нет партии'
     }]);
-    if (error) {
-      alert(`Ошибка: ${error.message}`);
-    } else {
-      setAddTgId(''); setAddTgUsername(''); setAddMcNickname(''); setAddRpName(''); setAddAvatarUrl(''); setAddParty(''); loadPlayers();
-    }
+    if (error) alert(`Ошибка: ${error.message}`);
+    else { setAddTgId(''); setAddTgUsername(''); setAddMcNickname(''); setAddRpName(''); setAddAvatarUrl(''); setAddParty(''); loadPlayers(); }
   }
 
   async function handleCreateRole() {
     if (!newRoleName.trim()) return;
     const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
     const { error = null } = await supabase.from('roles').insert([newRole]);
-    if (!error) {
-      setNewRoleName('');
-      setNewRolePerm(false);
-      loadRoles();
-    } else {
-      alert(`Ошибка: Имя роли должно быть уникальным`);
-    }
+    if (!error) { setNewRoleName(''); setNewRolePerm(false); loadRoles(); }
+    else alert(`Ошибка: Имя роли должно быть уникальным`);
   }
 
   function handleRoleChange(id: string, field: string, value: any) {
@@ -429,11 +459,7 @@ export default function Home() {
 
   async function saveRoleToDb(role: CustomRole) {
     if (!role.id) return;
-    await supabase.from('roles').update({
-      name: role.name,
-      color: role.color,
-      can_edit_constitution: role.canEditConstitution
-    }).eq('id', role.id);
+    await supabase.from('roles').update({ name: role.name, color: role.color, can_edit_constitution: role.canEditConstitution }).eq('id', role.id);
   }
 
   async function handleAddRoleToUser(roleName: string) {
@@ -459,15 +485,7 @@ export default function Home() {
     }
   }
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
-    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
-    setActiveTab(tab);
-    setActiveDocument('none'); 
-    setIsEditing(false);
-    setSearchQuery('');
-    if (tab === 'profile') loadLatestPosts();
-  }
-
+  // ХУК АВТОРИЗАЦИИ ТЕЛЕГРАМА: ГАРАНТИРУЕТ ЗАЩИТУ ОТ СТОРОННИХ ВХОДОВ И РАЗВОРАЧИВАЕТ WEBAPP СЕССИЮ
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -485,6 +503,7 @@ export default function Home() {
     }
   }, []);
 
+  // ТАЙМЕР ХОСТИНГА: КАЖДЫЙ ЧАС ЗАПРАШИВАЕТ СВЕЖИЙ СЧЕТ И СТАТУС С КАНАЛОВ EXAROTON
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchServerStatus();
@@ -499,9 +518,23 @@ export default function Home() {
     }
   }, [isEditing, activeDocument]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
+        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
+        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="min-h-screen bg-[#090b0e] text-red-400 flex items-center justify-center font-mono text-xs p-4 text-center">{error}</div>;
+  }
+
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
+      {/* ДЕКОРАТИВНЫЕ ЗАДНИЕ СЛОИ И ВИДЕОФОН ДЛЯ ПК */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -512,7 +545,7 @@ export default function Home() {
 
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
 
-      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ */}
+      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ДЕТАЛЬНОГО ПРОФИЛЯ ЖИТЕЛЯ */}
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
@@ -575,7 +608,10 @@ export default function Home() {
         </div>
       )}
 
+      {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК ПРИЛОЖЕНИЯ */}
       <main key={activeTab} className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
+        
+        {/* ВКЛАДКА: ГЛАВНЫЙ ЭКРАН (ПРОФИЛЬ И СЕРВЕР) */}
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
             
@@ -587,7 +623,9 @@ export default function Home() {
               </h3>
             </div>
 
+            {/* НЕВИДИМАЯ СЕТКА APPLE-ВИДЖЕТОВ */}
             <div className="grid grid-cols-4 gap-4 w-full">
+              
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
@@ -601,7 +639,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 2. ВИДЖЕТ КАРТЫ */}
+              {/* 2. ВИДЖЕТ КАРТЫ СЕРВЕРА */}
               <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
@@ -612,7 +650,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ */}
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ СЕРВЕРА */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -631,8 +669,8 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
-              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[230px]">
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА ЧЕРЕЗ API EXAROTON */}
+              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-6 md:p-7 rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-6 min-h-[300px]">
                 <button onClick={fetchServerStatus} className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
                 
@@ -675,33 +713,21 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ИСПРАВЛЕНО: Кнопки «Включить»/«Выключить» больше не растягиваются по высоте, жестко ограничены h-11 и зафиксированы mt-auto */}
                 <div className="flex gap-3 relative z-10 w-full mt-auto">
-                  <button 
-                    onClick={() => handleServerAction('start')} 
-                    disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} 
-                    className="flex-1 h-11 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"
-                  >
-                    <Play size={13} className="fill-current" />
-                    <span>Включить</span>
-                  </button>
-                  <button 
-                    onClick={() => handleServerAction('stop')} 
-                    disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} 
-                    className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"
-                  >
-                    <Square size={12} className="fill-current" />
-                    <span>Выключить</span>
-                  </button>
+                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-11 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Play size={12} className="fill-current" /><span>Включить</span></button>
+                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Square size={12} className="fill-current" /><span>Выключить</span></button>
                 </div>
               </div>
+
             </div>
           </div>
         )}
 
+        {/* СЛУЖЕБНЫЕ ВКЛАДКИ И РОУТЫ СИСТЕМЫ */}
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
 
+        {/* ВКЛАДКА: СВОД ПРАВИЛ И СПЛИТ-ВЬЮ КОНСТИТУЦИИ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -722,7 +748,7 @@ export default function Home() {
                   <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs">ВЫБЕРИТЕ ДОКУМЕНТ</div>
                 ) : (
                   <div className="space-y-4 w-full">
-                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
+                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
                   </div>
                 )}
               </div>
@@ -730,6 +756,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ВКЛАДКА: СПИСОК ЖИТЕЛЕЙ СЕРВЕРА С РОЛЯМИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -781,6 +808,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* ВКЛАДКА: АДМИНИСТРАТИВНАЯ ПАНЕЛЬ СЕРВЕРА */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -818,8 +846,8 @@ export default function Home() {
         )}
       </main>
 
-      {/* ПК Сайдбар */}
-      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
+      {/* НАВИГАЦИЯ ДЛЯ КОМПЬЮТЕРОВ (БОКОВАЯ СТИЛЬНАЯ ПАНЕЛЬ С КРУПНЫМИ АВАТАРКАМИ) */}
+      <aside className="hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500">
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
@@ -835,8 +863,8 @@ export default function Home() {
        </nav>
       </aside>
 
-      {/* Мобильный таббар */}
-      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+      {/* МОБИЛЬНЫЙ ТАББАР (НИЖНЯЯ НАВИГАЦИЯ ДЛЯ СМАРТФОНОВ) */}
+      <nav className="md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500">
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
           <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}><Newspaper size={22} /></button>
