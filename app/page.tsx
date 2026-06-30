@@ -669,49 +669,99 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (ОБНОВЛЕННЫЙ КЛАССИЧЕСКИЙ ВАРИАНТ) */}
-              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-6 md:p-7 rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-6 min-h-[300px]">
-                <button onClick={fetchServerStatus} className={`absolute top-6 right-6 p-2 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={18} /></button>
-                {serverInfo && <div className={`absolute -top-10 -right-10 w-40 h-40 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (ГЛАВНЫЙ ОГРАНИЧИТЕЛЬНЫЙ КОНТЕЙНЕР) */}
+              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5 animate-fade-in">
                 
+                {/* КНОПКА ПРИНУДИТЕЛЬНОГО ОБНОВЛЕНИЯ ДАННЫХ (ВЕРХНИЙ ПРАВЫЙ УГОЛ) */}
+                <button 
+                  onClick={fetchServerStatus} 
+                  className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}
+                >
+                  <RefreshCw size={14} />
+                </button>
+
+                {/* НЕОНОВОЕ СВЕЧЕНИЕ НА ЗАДНЕМ ПЛАНЕ (МЕНЯЕТ ЦВЕТ В ЗАВИСИМОСТИ ОТ СОСТОЯНИЯ СЕРВЕРА) */}
+                {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+                
+                {/* БЛОК 1: ИКОНКА СЕРВЕРА, ТЕКСТ ТЕКУЩЕГО СТАТУСА И СЧЕТЧИК ИГРОКОВ ОНЛАЙН */}
                 <div className="relative z-10 flex items-center justify-between w-full">
-                  <div className="flex items-center gap-4">
-                    <Server size={32} className={getServerStatusText(serverInfo?.status || 0).color} />
-                    <div className={`text-xl md:text-2xl font-black tracking-widest uppercase transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
+                  <div className="flex items-center gap-3">
+                    <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
+                    <div className={`text-base md:text-xl font-black tracking-wider ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                      {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
+                    </div>
                   </div>
-                  {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-3 py-2 rounded-xl text-xs font-black text-gray-300 shadow-inner">Online: <span className="text-[#c0ff00] font-mono text-sm">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
+                  {serverInfo?.status === 1 && (
+                    <div className="bg-black/30 border border-white/5 px-2.5 py-1 rounded-xl text-[11px] font-bold text-gray-300 shadow-inner">
+                      Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-4 w-full relative z-10">
-                  <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex items-center justify-between group transition-all hover:bg-black/30">
+                {/* БЛОК 2: ТЕХНИЧЕСКИЕ ПОЛЯ — IP АДРЕС, СБОРКА И БАЛАНС КРЕДИТОВ */}
+                <div className="space-y-2 w-full relative z-10">
+                  
+                  {/* КАРТОЧКА С IP АДРЕСОМ СЕРВЕРА И КНОПКОЙ КОПИРОВАНИЯ В ПАМЯТЬ */}
+                  <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group">
                     <div className="min-w-0 flex-1">
-                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">IP СЕРВЕРА (ОСНОВНОЙ)</div>
-                      <div className="font-mono text-base md:text-lg text-gray-100 truncate tracking-tight">{staticIp}</div>
+                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА (ОСНОВНОЙ)</div>
+                      <div className="font-mono text-xs text-gray-200 truncate">{staticIp}</div>
                     </div>
-                    <button onClick={() => copyToClipboard(staticIp)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0 active:scale-90 ml-3"><Copy size={20}/></button>
+                    <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0">
+                      <Copy size={14} />
+                    </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-black/20 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between group">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 bg-white/5 rounded-lg text-gray-400"><AnvilIcon size={18} /></div>
+
+                  {/* СЕТКА ИЗ ДВУХ СТИЛЬНЫХ ПЛАШЕК (ВЕРСИЯ СЛЕВА, КРЕДИТЫ СПРАВА) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    
+                    {/* ПЛАШКА ОТОБРАЖЕНИЯ МОДИФИКАЦИИ И КНОПКА СКАЧИВАНИЯ ИНСТАЛЛЕРА */}
+                    <div className="bg-black/20 border border-white/5 p-2.5 rounded-2xl flex items-center justify-between group">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="p-1.5 bg-white/5 rounded-lg text-gray-400"><AnvilIcon size={14} /></div>
                         <div className="min-w-0">
-                          <div className="text-[9px] text-gray-500 font-bold uppercase">ВЕРСИЯ</div>
-                          <div className="font-black text-sm text-white truncate">Forge 1.20.1</div>
+                          <div className="text-[8px] text-gray-500 font-bold uppercase">Версия</div>
+                          <div className="font-bold text-[11px] text-white truncate">Forge 1.20.1</div>
                         </div>
                       </div>
-                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full flex items-center justify-center transition-all shrink-0 active:scale-90"><Download size={14} /></a>
+                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-6 h-6 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full flex items-center justify-center transition-all shrink-0">
+                        <Download size={11} />
+                      </a>
                     </div>
+
+                    {/* ПЛАШКА КОЛИЧЕСТВА КРЕДИТОВ И ВРЕМЕНИ ДО ОТКЛЮЧЕНИЯ СЕРВЕРА */}
                     {credits !== null && (
-                      <div className="bg-black/20 border border-white/5 p-3.5 rounded-2xl flex items-center gap-3 group">
-                        <div className="p-2 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00]"><Coins size={18} /></div>
+                      <div className="bg-black/20 border border-white/5 p-2.5 rounded-2xl flex items-center gap-2 group">
+                        <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00] shrink-0"><Coins size={14} /></div>
                         <div className="min-w-0">
-                          <div className="text-[9px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} КР. ДО ОПЛАТЫ</div>
-                          <div className="font-mono text-sm text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
+                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} КР. ДО ОПЛАТЫ</div>
+                          <div className="font-mono text-[10px] text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* БЛОК 3: КНОПКИ ДЛЯ ПУЛЬТА УПРАВЛЕНИЯ (АККУРАТНЫЕ ПИЛЮЛИ h-11 ПРИЖАТЫЕ К НИЗУ) */}
+                <div className="flex gap-2 relative z-10 w-full mt-auto">
+                  <button 
+                    onClick={() => handleServerAction('start')} 
+                    disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} 
+                    className="flex-1 h-11 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"
+                  >
+                    <Play size={12} className="fill-current" />
+                    <span>Включить</span>
+                  </button>
+                  <button 
+                    onClick={() => handleServerAction('stop')} 
+                    disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} 
+                    className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"
+                  >
+                    <Square size={12} className="fill-current" />
+                    <span>Выключить</span>
+                  </button>
+                </div>
+              </div>
 
                 <div className="flex gap-4 relative z-10 w-full mt-auto pt-2">
                   <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-14 rounded-2xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-sm font-black uppercase tracking-[0.1em] flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 disabled:opacity-20 shadow-[0_0_20px_rgba(192,255,0,0.05)]"><Play size={16} className="fill-current" /><span>ВКЛЮЧИТЬ</span></button>
