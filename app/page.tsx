@@ -588,8 +588,8 @@ export default function Home() {
 
               {/* 2. ВИДЖЕТ КАРТЫ СЕРВЕРА */}
               <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
-                {/* Исправлено по образцу image_9ad2e3.png: плашка SOON в неоновом стиле */}
-                <div className="absolute top-3 right-3 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00] text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-20">Soon</div>
+                {/* Рамка плашки затемнена с border-[#c0ff00] до border-[#c0ff00]/30 для удаления «вырвиглазного» эффекта */}
+                <div className="absolute top-3 right-3 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><MapIcon size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
@@ -610,9 +610,9 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-2.5 h-full">
                   {latestPosts.map((post, idx) => (
                     <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-black/20 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0 relative">
-                      {/* Добавлена плашка NEW в стиле image_9ad2e3.png для самого последнего поста */}
+                      {/* Рамка плашки NEW также затемнена до border-[#c0ff00]/30 по аналогии */}
                       {idx === 0 && (
-                        <div className="absolute top-2 right-2 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00] text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-10">New</div>
+                        <div className="absolute top-2 right-2 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-10">New</div>
                       )}
                       <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug pr-7">{post.title}</span>
                       <span className="text-[10px] text-gray-500 font-medium truncate">{post.author?.rp_name || 'Неизвестный'}</span>
