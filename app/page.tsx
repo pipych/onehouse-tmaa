@@ -11,7 +11,7 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download, Library
+  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -50,7 +50,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // ИСПРАВЛЕНО: Добавлен стейт 'archive' в список доступных вкладок
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive'>('profile');
   const [players, setPlayers] = useState<Player[]>([]);
   
@@ -152,7 +151,6 @@ export default function Home() {
     });
   }
 
-  // ИСПРАВЛЕНО: Полностью удален баг cr => r => ломавший цвета ролей на сервере
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
@@ -162,7 +160,6 @@ export default function Home() {
     return roles.some(r => r.toLowerCase() === 'мёртв');
   }
 
-  // ИСПРАВЛЕНО: Добавлен честный getServerStatusText с динамической палитрой под эксаротон
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -702,7 +699,7 @@ export default function Home() {
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
       <div className="fixed top-0 left-0 right-0 h-28 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/95 to-transparent pointer-events-none z-30 w-full" />
 
-      <div className="fixed top-[96px] left-4 right-4 md:left-32 md:right-8 z-40 max-w-md md:max-w-[1200px] mx-auto flex items-center justify-end gap-2 pointer-events-none">
+      <div className="fixed top-[96px] left-4 right-4 md:left-40 md:right-12 z-40 max-w-md md:max-w-7xl mx-auto flex items-center justify-end gap-2 pointer-events-none">
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
@@ -740,7 +737,7 @@ export default function Home() {
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
+          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white transition-all z-10"><X size={14} /></button>
 
           {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer.roles)) || isAdmin) && !isEditingProfile && (
             <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
@@ -787,7 +784,7 @@ export default function Home() {
                 <div className="relative inline-block">
                   <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all active:scale-90 shadow-sm"><Plus size={14} /></button>
                   {showRoleSelector && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#1a1e24] border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
                       <div className="text-[10px] text-gray-500 uppercase font-bold px-2 py-1">Выдать роль:</div>
                       {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).length === 0 && <div className="text-xs text-gray-500 px-2 py-1">Нет доступных ролей</div>}
                       {customRoles.filter(cr => !selectedPlayer.roles.includes(cr.name)).map((cr, idx) => (
@@ -802,41 +799,41 @@ export default function Home() {
         </div>
       )}
 
-      <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[120px] max-w-md md:max-w-xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
+      {/* ИСПРАВЛЕНО: Главный контейнер расширен для ПК (md:max-w-5xl lg:max-w-6xl xl:max-w-7xl) */}
+      <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
-          <div className="space-y-4 w-full">
+          <div className="space-y-6 w-full">
             
-            {/* Зона приветствия с логотипом */}
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
-              <h3 className="text-base md:text-lg font-black text-white tracking-wide leading-tight">
+              <h3 className="text-base md:text-xl font-black text-white tracking-wide leading-tight">
                 Добро пожаловать в One App<br />
-                <span className="text-[#c0ff00] text-xl md:text-2xl font-black block mt-1.5">{dbUser?.rp_name || 'Житель'}</span>
+                <span className="text-[#c0ff00] text-xl md:text-3xl font-black block mt-1.5">{dbUser?.rp_name || 'Житель'}</span>
               </h3>
             </div>
 
-            {/* СЕТКА APPLE HIG (4 КОЛОНКИ) */}
-            <div className="grid grid-cols-4 gap-3.5 w-full">
+            {/* ИСПРАВЛЕНО: Сетка виджетов на ПК перестраивается в красивую многорядную 4-колоночную сетку */}
+            <div className="grid grid-cols-4 md:grid-cols-4 gap-4 w-full">
               
-              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ: Формат Small (2x2) */}
+              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
-                className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
+                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0">
                   <BookOpen size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm font-black text-white tracking-wide">Конституция</h3>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
                   <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
                 </div>
               </div>
 
-              {/* 2. ВИДЖЕТ КАРТЫ: Формат Small (2x2) */}
+              {/* 2. ВИДЖЕТ КАРТЫ */}
               <div 
                 onClick={() => handleTabChange('map')}
-                className="col-span-2 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
+                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
@@ -844,13 +841,13 @@ export default function Home() {
                   <Map size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm font-black text-gray-300 tracking-wide">Карта мира</h3>
+                  <h3 className="text-sm md:text-base font-black text-gray-300 tracking-wide">Карта мира</h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
                 </div>
               </div>
 
-              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ: Формат Medium (4x2) */}
-              <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-3.5">
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ (Занимает 2 колонки на ПК) */}
+              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Newspaper size={16} className="text-[#c0ff00]" />
@@ -859,12 +856,12 @@ export default function Home() {
                   <button onClick={() => handleTabChange('media')} className="text-[11px] font-bold text-[#c0ff00] hover:underline">Все статьи</button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5 h-full">
                   {latestPosts.map((post, idx) => (
                     <div 
                       key={post.id} 
                       onClick={() => router.push(`/media/${post.id}`)}
-                      className="bg-black/20 border border-white/5 p-4 min-h-[115px] rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0"
+                      className="bg-black/20 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0"
                     >
                       <div className="flex flex-col gap-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -883,14 +880,13 @@ export default function Home() {
                       </span>
                     </div>
                   ))}
-                  
                   {latestPosts.length === 0 && (
                     <div className="col-span-2 text-center py-6 text-xs text-gray-500 font-mono tracking-wide">ПУБЛИКАЦИЙ ПОКА НЕТ</div>
                   )}
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА: Формат Large (4x4) */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (Занимает всю ширину на ПК) */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden">
                 <button
                   onClick={fetchServerStatus}
@@ -901,27 +897,23 @@ export default function Home() {
 
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
 
-                <div className="relative z-10 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
-                      <div className={`text-base md:text-lg font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
+                    <div>
+                      <div className={`text-base md:text-xl font-black tracking-wider transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>
                         {serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}
                       </div>
+                      {serverInfo?.status === 1 && (
+                        <div className="text-xs text-gray-400 font-medium mt-0.5">Игроков онлайн: <span className="text-[#c0ff00] font-black">{serverInfo.players.count} / {serverInfo.players.max}</span></div>
+                      )}
                     </div>
-
-                    {serverInfo?.status === 1 && (
-                      <div className="bg-black/30 border border-white/5 px-3 py-1.5 rounded-xl text-center">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Онлайн</div>
-                        <div className="text-[#c0ff00] font-black text-sm leading-none">{serverInfo.players.count} / {serverInfo.players.max}</div>
-                      </div>
-                    )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex-1 md:max-w-md w-full">
                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                       <div className="min-w-0 flex-1">
-                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP (Статика)</div>
+                        <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
                         <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
                       </div>
                       <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors flex-shrink-0 active:scale-90 ml-2">
@@ -935,17 +927,9 @@ export default function Home() {
                           <div className="p-1.5 bg-[#a1a1aa]/10 rounded-lg text-[#a1a1aa] shrink-0"><AnvilIcon size={16} /></div>
                           <div className="min-w-0">
                             <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Версия</div>
-                            <div className="font-bold text-xs text-white truncate">Forge <span className="text-gray-400">1.20.1</span></div>
+                            <div className="font-bold text-xs text-white truncate">Forge 1.20.1</div>
                           </div>
                         </div>
-                        <a 
-                          href="https://adfoc.us/serve/sitelinks/?id=271228&url=https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hidden md:flex items-center justify-center w-8 h-8 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full transition-all active:scale-95 flex-shrink-0"
-                        >
-                          <Download size={14} />
-                        </a>
                       </div>
 
                       {credits !== null && (
@@ -960,9 +944,9 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-1">
-                    <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 disabled:grayscale transition-all"><Play size={14} className="fill-current" /><span>Включить</span></button>
-                    <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"><Square size={14} className="fill-current" /><span>Выключить</span></button>
+                  <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-44">
+                    <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30"><Play size={14} className="fill-current" /><span>Включить</span></button>
+                    <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30"><Square size={14} className="fill-current" /><span>Выключить</span></button>
                   </div>
                 </div>
               </div>
@@ -972,7 +956,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ДОБАВЛЕНО: Интеграция нового компонента вкладок Архива серверов */}
         {activeTab === 'archive' && (
           <Archive currentUser={dbUser} />
         )}
@@ -986,84 +969,74 @@ export default function Home() {
           />
         )}
 
+        {/* ИСПРАВЛЕНО: Раздел законов адаптирован в десктопный двухколоночный Split-View (Гайдлайны Apple) */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
               <div className="flex items-center gap-3">
                 {activeDocument !== 'none' && !isEditing && (
-                  <button onClick={() => setActiveDocument('none')} className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 shadow-md"><ArrowLeft size={16} /></button>
+                  <button onClick={() => setActiveDocument('none')} className="md:hidden p-1.5 bg-white/5 border border-white/10 rounded-full text-gray-400"><ArrowLeft size={16} /></button>
                 )}
-                <h2 className="text-lg font-bold text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={18} />{activeDocument === 'none' ? 'Свод правил сервера' : (activeDocument === 'constitution' ? 'Конституция' : 'Заповеди дома')}</h2>
+                <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={20} />Свод законов и правил</h2>
               </div>
               {activeDocument !== 'none' && canEditConstitution && !isEditing && (
                 <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>
               )}
             </div>
 
-            {activeDocument === 'none' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mt-6 w-full">
-                <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('constitution')}>
-                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">Это РП законы. Все законы внутри этого документа могут изменяться общим голосованием игроков в процессе игры.</div>
-                  <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-[#c0ff00]/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
-                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c]/90 via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
-                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('constitution'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden"><Info size={16} /></button>
-                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-[#c0ff00] transition-colors shadow-lg backdrop-blur-sm"><Info size={18} /></div>
-                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full"><div className="text-left md:text-center flex-1"><h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Конституция</h3><p className="text-[10px] md:text-sm text-[#c0ff00] font-medium leading-tight drop-shadow-md">Внутриигровые РП законы</p></div></div>
-                  </div>
+            {/* Десктопная сетка: Индекс слева, Читалка справа */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
+              
+              {/* Левая панель выбора документов (Видна всегда на ПК, на мобилках скрывается при просмотре) */}
+              <div className={`${activeDocument !== 'none' ? 'hidden md:flex' : 'flex'} flex-col gap-3 md:col-span-1 w-full`}>
+                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/40 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/25'}`}>
+                  <h3 className="font-bold text-sm">Конституция</h3>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Внутриигровые РП законы мира</p>
                 </div>
-
-                <div className="relative w-full group cursor-pointer" onClick={() => setActiveDocument('commandments')}>
-                  <div className="hidden md:block absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 z-50 w-[280px] p-4 bg-[#1a1e24] border border-red-500/30 rounded-2xl text-[12px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-2xl leading-relaxed text-center">Это внеигровые правила, которые нельзя нарушать для сохранения баланса игры. Rules apply.</div>
-                  <div className="relative overflow-hidden bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] md:rounded-[36px] border border-white/5 group-hover:border-red-500/40 transition-all shadow-xl flex flex-row md:flex-col items-center justify-start md:justify-center w-full h-[110px] md:h-[260px] p-5 md:p-8">
-                    <div className="absolute inset-0 z-0 opacity-30 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500 bg-[right_-10px_center] bg-[length:120px] md:bg-[right_-30px_bottom_-30px] md:bg-[length:240px] bg-no-repeat" style={{ backgroundImage: "url('/zapovedi.gif')", imageRendering: "pixelated" }} />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#14171c]/90 via-[#14171c]/90 to-transparent md:bg-gradient-to-t md:from-[#14171c] md:via-[#14171c]/80 md:to-transparent z-0" />
-                    <button onClick={(e) => { e.stopPropagation(); setShowTooltip('commandments'); }} className="absolute top-4 right-4 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all active:scale-90 md:hidden"><Info size={16} /></button>
-                    <div className="hidden md:flex absolute top-5 right-5 z-20 p-2 bg-black/40 border border-white/10 rounded-full text-gray-400 group-hover:text-red-400 transition-colors shadow-lg backdrop-blur-sm"><Info size={18} /></div>
-                    <div className="relative z-10 flex items-center md:flex-col md:text-center w-full"><div className="text-left md:text-center flex-1"><h3 className="text-base md:text-2xl font-black text-white mb-0.5 md:mb-2 tracking-wide drop-shadow-md">Заповеди дома</h3><p className="text-[10px] md:text-sm text-red-400 font-medium leading-tight drop-shadow-md">Внеигровые (Нон-РП) правила</p></div></div>
-                  </div>
+                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/25'}`}>
+                  <h3 className="font-bold text-sm">Заповеди дома</h3>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Внеигровые (Нон-РП) правила</p>
                 </div>
               </div>
-            )}
 
-            {activeDocument !== 'none' && !isEditing && (
-              <div className={`sticky z-30 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isScrolled ? 'top-[96px] pr-[135px] md:pr-0 md:-mt-2 md:pb-3 md:pt-2' : 'top-[96px] pr-0 mb-4'}`}>
-                <div className="flex items-center bg-[#1c2026]/90 backdrop-blur-xl border border-white/10 rounded-full px-4 py-3 w-full shadow-2xl transition-all">
-                  <Search size={16} className="text-[#c0ff00] flex-shrink-0" />
-                  <input type="text" placeholder={`Поиск по ${activeDocument === 'constitution' ? 'конституции' : 'заповедям'}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full flex-1 placeholder:text-gray-500" />
-                  {matches.length > 0 && (
-                    <div className="flex items-center gap-2 ml-2 border-l border-white/10 pl-3">
-                      <span className="text-[10px] text-gray-400 font-mono font-bold whitespace-nowrap">{currentMatchIndex} / {matches.length}</span>
-                      <div className="flex gap-1">
-                        <button onClick={prevMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90"><ChevronUp size={14}/></button>
-                        <button onClick={nextMatch} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90"><ChevronDown size={14}/></button>
+              {/* Правая панель просмотра/редактирования */}
+              <div className={`${activeDocument === 'none' ? 'hidden md:block' : 'block'} md:col-span-2 w-full h-full`}>
+                {activeDocument === 'none' ? (
+                  <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center min-h-[300px]">
+                    <BookOpen size={32} className="text-gray-700 mb-3" />
+                    <span>ВЫБЕРИТЕ ДОКУМЕНТ ДЛЯ ПРОСМОТРА</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4 w-full">
+                    {!isEditing && (
+                      <div className="flex items-center bg-[#1c2026]/90 border border-white/10 rounded-full px-4 py-2.5 w-full shadow-md">
+                        <Search size={14} className="text-[#c0ff00] shrink-0" />
+                        <input type="text" placeholder="Поиск по документу..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-xs text-white ml-3 w-full placeholder:text-gray-500 focus:ring-0" />
+                        {matches.length > 0 && <span className="text-[10px] text-gray-400 font-mono font-bold shrink-0 ml-2">{currentMatchIndex} / {matches.length}</span>}
                       </div>
-                    </div>
-                  )}
-                  {searchQuery && matches.length === 0 && <span className="text-[10px] font-bold text-red-400 ml-2 whitespace-nowrap">0 / 0</span>}
-                  {searchQuery && <button onClick={() => setSearchQuery('')} className="p-1.5 ml-2 bg-white/5 rounded-full text-gray-400 hover:text-red-400"><X size={14} /></button>}
-                </div>
-              </div>
-            )}
+                    )}
 
-            {activeDocument !== 'none' && isEditing && (
-              <div className="space-y-4 scale-100 w-full pt-2">
-                <div ref={editorRef} contentEditable className="w-full min-h-[600px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-20 md:pb-5" data-placeholder="Текст документа..." />
+                    {isEditing ? (
+                      <div className="space-y-4 animate-fade-in w-full">
+                        <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none break-words pb-20" />
+                      </div>
+                    ) : (
+                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" dangerouslySetInnerHTML={{ __html: currentDocText }} />
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-            
-            {activeDocument !== 'none' && !isEditing && (
-              <div ref={viewRef} className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed max-w-none text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" dangerouslySetInnerHTML={{ __html: currentDocText }} />
-            )}
+
+            </div>
           </div>
         )}
 
         {activeTab === 'map' && (
-          <div className="w-full h-full min-h-[60vh] md:min-h-[80vh] flex flex-col animate-fade-in relative">
+          <div className="w-full h-full min-h-[60vh] flex flex-col animate-fade-in relative">
             <div className="flex items-center justify-between w-full px-1 mb-4">
               <h2 className="text-lg font-bold text-gray-400 tracking-wide flex items-center gap-2"><Map size={18} />Карта мира</h2>
             </div>
-            <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-[#14171c]/90 backdrop-blur-xl flex items-center justify-center">
+            <div className="flex-grow w-full rounded-[28px] overflow-hidden border border-white/5 shadow-2xl relative bg-[#14171c]/90 backdrop-blur-xl flex items-center justify-center min-h-[400px]">
               <div className="absolute inset-0 z-0 opacity-20 bg-gradient-to-br from-[#c0ff00]/5 to-transparent" />
               <div className="text-center p-6 max-w-sm relative z-10">
                  <div className="w-20 h-20 bg-black/40 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-5 relative shadow-xl">
@@ -1071,22 +1044,23 @@ export default function Home() {
                    <div className="absolute -bottom-2 bg-[#c0ff00] text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-lg">Soon</div>
                  </div>
                  <h3 className="text-xl font-black text-white mb-2 tracking-wide">Карта в разработке</h3>
-                 <p className="text-sm text-gray-400 leading-relaxed">Интерактивный 3D-рендер мира находится в стадии настройки. Этот функционал появится в приложении немного позже.</p>
+                 <p className="text-sm text-gray-400 leading-relaxed">Интерактивный 3D-рендер мира находится в стадии настройки.</p>
               </div>
             </div>
           </div>
         )}
 
+        {/* ИСПРАВЛЕНО: Список игроков получил высокую плотность на ПК (md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4) */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
-              <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2"><Users size={18} className="text-[#c0ff00]" />Жители сервера</h2>
+              <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><Users size={20} className="text-[#c0ff00]" />Жители сервера</h2>
             </div>
 
             {dbUser && (
               <div className="space-y-2 w-full md:max-w-sm">
                 <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
-                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 shadow-[#c0ff00]/5 hover:border-[#c0ff00]/60'}`}>
+                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] border-white/5 opacity-70 grayscale' : 'bg-gradient-to-r from-[#14171c]/90 to-[#1c2026]/90 backdrop-blur-xl border-[#c0ff00]/40 hover:border-[#c0ff00]/60'}`}>
                   <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                   <div className="flex-1 min-w-0">
                     <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
@@ -1100,21 +1074,16 @@ export default function Home() {
 
             <div className="space-y-3 w-full">
               <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Все игроки</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}>
+                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md active:scale-[0.99] w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}>
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{player.mc_nickname}</div>
                         <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        {player.roles.slice(0, 1).map((r, i) => (
-                          <span key={i} className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full border" style={{ backgroundColor: `${getRoleColor(r)}10`, color: getRoleColor(r), borderColor: `${getRoleColor(r)}25` }}>{r}</span>
-                        ))}
                       </div>
                     </div>
                   );
@@ -1173,85 +1142,51 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
-            <div className="md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl mt-6">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
-                <RefreshCw size={16} className={isMigrating ? "animate-spin text-[#c0ff00]" : "text-[#c0ff00]"} />
-                <span>Глобальная оптимизация медиа (WebP конвертер)</span>
-              </div>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Этот инструмент в один клик пройдётся по всей базе данных (статьям блога и аватаркам пользователей), найдёт все изображения старых форматов (PNG/JPEG), на лету сожмет их в современный WebP (85% качества) через Canvas и обновит ссылки в таблицах. Это снизит трафик сайта на 65% прямо с экрана телефона.
-              </p>
-              {migrationProgress && (
-                <div className="text-xs font-mono bg-black/30 p-3 rounded-2xl border border-white/5 text-gray-300 break-all leading-normal">
-                  {migrationProgress}
-                </div>
-              )}
-              <button onClick={runWebPMigration} disabled={isMigrating} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black py-3 font-black text-xs uppercase tracking-wider disabled:opacity-40">
-                {isMigrating ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />}
-                <span>{isMigrating ? 'Конвертация медиафайлов...' : 'Запустить WebP миграцию по всему сайту'}</span>
-              </button>
-            </div>
           </div>
         )}
       </main>
 
-      {/* Мобильная навигация: добавлен раздел Архив */}
+      {/* Навигационные элементы ПК / ТГ */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><HomeIcon size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span></button>
           <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span></button>
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><BookOpen size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span></button>
-          {/* ИСПРАВЛЕНО: Кнопка Архива в мобильном меню */}
-          <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Library size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span></button>
+          <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span></button>
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Users size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span></button>
-          {isAdmin && <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><ShieldAlert size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span></button>}
         </div>
       </nav>
 
-      {/* Навигация для ПК (боковая панель): добавлен раздел Архив */}
-      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-8 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
+      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
-         <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 active:scale-95 z-50">
-           <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" /></div>
-           <div className="absolute left-[calc(100%+20px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Мой профиль</div>
+         <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[64px] h-[64px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
+           <div className="w-[52px] h-[52px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" /></div>
          </button>
        )}
-       <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-8 px-2 rounded-[40px] shadow-2xl flex flex-col items-center gap-8 relative">
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Главная</div></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">.медиа</div></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Законы</div></button>
-         {/* ИСПРАВЛЕНО: Кнопка Архива в ПК-панели */}
-         <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Library size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Архив</div></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Игроки</div></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-110 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={24} /><div className="absolute left-[calc(100%+28px)] px-4 py-2 bg-[#1a1e24] border border-[#c0ff00]/30 rounded-xl text-[13px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl">Админ-панель</div></button>}
+       <nav className="w-[64px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-6 px-1 rounded-[32px] shadow-2xl flex flex-col items-center gap-7 relative">
+         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
+         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Newspaper size={22} /></button>
+         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={22} /></button>
+         <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><BookOpen size={22} /></button>
+         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><Users size={22} /></button>
+         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500'}`}><ShieldAlert size={22} /></button>}
        </nav>
       </aside>
 
-      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-[0_0_20px_rgba(192,255,0,0.15)] transition-all duration-500 hover:scale-110 hover:bg-[#c0ff00] hover:text-black active:scale-90 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100 translate-y-0' : 'bottom-16 right-6 md:bottom-2 opacity-0 translate-y-10 pointer-events-none'}`}><ArrowUp size={20} /></button>
+      <button onClick={scrollToTop} className={`fixed z-40 p-3 bg-[#14171c]/90 backdrop-blur-md border border-[#c0ff00]/40 text-[#c0ff00] rounded-full shadow-lg transition-all duration-500 hover:scale-110 ${showScrollTop ? 'bottom-24 right-6 md:bottom-10 md:right-10 opacity-100' : 'opacity-0 pointer-events-none'}`}><ArrowUp size={20} /></button>
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
         body, html { font-family: 'Google Sans', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; max-w-full; overflow-x: clip; }
-        button, input, textarea, div, span { font-family: inherit; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes profileGrow { from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
-        .animate-fade-in { animation: fadeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        .animate-profile-grow { animation: profileGrow 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
-        .ui-pill-btn { background-color: rgba(20, 23, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 16px; border-radius: 9999px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e5e7eb; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
-        .ui-pill-btn:hover { border-color: rgba(192, 255, 0, 0.3); color: #ffffff; box-shadow: 0 10px 25px -5px rgba(192, 255, 0, 0.05); }
-        .ui-pill-btn:active { transform: scale(0.94); }
-        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-        .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); background-color: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 1px rgba(192, 255, 0, 0.1); }
-        .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        .prose h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-        .prose h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
-        .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; transition: all 0.3s ease; }
-        .prose b, .prose strong { color: #d1d5db !important; font-weight: 700; }
-        .prose i, .prose em { color: #d1d5db !important; font-style: italic; }
+        .ui-pill-btn { background-color: rgba(20, 23, 28, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 16px; border-radius: 9999px; backdrop-filter: blur(16px); display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #e5e7eb; transition: all 0.3s ease; cursor: pointer; }
+        .ui-pill-btn:hover { border-color: rgba(192, 255, 0, 0.3); color: #ffffff; }
+        .ui-input { width: 100%; background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 16px; padding: 12px 16px; font-size: 13px; color: #ffffff; outline: none; transition: all 0.25s ease; }
+        .ui-input:focus { border-color: rgba(192, 255, 0, 0.4); }
+        .prose h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; }
+        .prose h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; }
+        .prose p { color: #d1d5db !important; margin-bottom: 0.75rem; }
       `}</style>
     </div>
   );
