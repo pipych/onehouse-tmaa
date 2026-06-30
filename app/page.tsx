@@ -63,6 +63,7 @@ export default function Home() {
   
   const [constitutionText, setConstitutionText] = useState('');
   const [commandmentsText, setCommandmentsText] = useState('');
+  const [activeDocument, slateActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [isEditing, setIsEditing] = useState(false);
   
@@ -831,9 +832,9 @@ export default function Home() {
         </nav>
       </aside>
 
-      {/* УВЕЛИЧЕННЫЙ МОБИЛЬНЫЙ ТАББАР-ПИЛЮЛЯ С СУБ-КЕЙС ПОДПИСЯМИ ДЛЯ ТЕЛЕФОНОВ */}
-      <nav className={`md:hidden fixed bottom-6 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-[24px] z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <div className="flex w-full items-center justify-around px-2">
+      {/* НАСТОЯЩИЙ МОБИЛЬНЫЙ ТАББАР-ПИЛЮЛЯ С ДИНАМИЧЕСКИМИ ПРАВАМИ И СУБ-КЕЙС ПОДПИСЯМИ */}
+      <nav className={`md:hidden fixed bottom-6 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <div className="flex w-full items-center justify-around px-1">
           
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
             <HomeIcon size={22} />
@@ -859,6 +860,13 @@ export default function Home() {
             <Users size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
           </button>
+
+          {isAdmin && (
+            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+              <ShieldAlert size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span>
+            </button>
+          )}
 
         </div>
       </nav>
