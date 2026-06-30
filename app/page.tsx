@@ -3,11 +3,11 @@
 // ОПТИМИЗАЦИЯ NEXT.JS: ДИНАМИЧЕСКИЙ РЕНДЕРИНГ НА СЕРВЕРЕ ДЛЯ ВСЕГДА СВЕЖИХ ДАННЫХ
 export const dynamic = 'force-dynamic';
 
-// ИМПОРТ СИСТЕМНЫХ БИБЛИОТЕК И РЕАКТИВНЫХ ХУКОВ
+// ИМПОРТ СИСТЕМНЫХ БИБЛИОТЕК И РЕАКТИВНЫХ ХУКОВ NEXT/REACT
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-// ИМПОРТ ИНИЦИАЛИЗИРОВАННОГО КЛИЕНТА БАЗЫ ДАННЫХ SUPABASE И СМЕЖНЫХ КОМПОНЕНТОВ
+// ИМПОРТ ИНИЦИАЛИЗИРОВАННОГО КЛИЕНТА БАЗЫ ДАННЫХ SUPABASE И СМЕЖНЫХ КОМПОНЕНТОВ СТРАНИЦ
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
@@ -32,7 +32,7 @@ const AnvilIcon = ({ size = 18, className = "" }) => (
   </svg>
 );
 
-// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА ДАННЫХ ЖИТЕЛЯ ИЗ ТАБЛИЦЫ USERS
+// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА ДАННЫХ ЖИТЕЛЯ ИЗ ТАБЛИЦЫ USERS БАЗЫ ДАННЫХ
 interface Player {
   id: string;
   tg_id: number;
@@ -44,7 +44,7 @@ interface Player {
   party?: string;
 }
 
-// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА НАСТРОЕК РОЛЕЙ ИЗ ТАБЛИЦЫ ROLES
+// ИНТЕРФЕЙС ТИПОВ: СТРУКТУРА НАСТРОЕК СИСТЕМНЫХ РОЛЕЙ ИЗ ТАБЛИЦЫ ROLES
 interface CustomRole {
   id?: string;
   name: string;
@@ -53,7 +53,7 @@ interface CustomRole {
 }
 
 export default function Home() {
-  // ИНИЦИАЛИЗАЦИЯ РОУТЕРА И БАЗОВЫХ СТЭЙТОВ СЕССИИ ПОЛЬЗОВАТЕЛЯ ИЗ ТГ
+  // ИНИЦИАЛИЗАЦИЯ РОУТЕРА И БАЗОВЫХ СТЭЙТОВ СЕССИИ ПОЛЬЗОВАТЕЛЯ ИЗ ТЕЛЕГРАМА
   const router = useRouter();
   const [tgUser, setTgUser] = useState<any>(null); // Данные юзера из Telegram WebApp
   const [dbUser, setDbUser] = useState<Player | null>(null); // Профиль игрока из Supabase
@@ -79,21 +79,23 @@ export default function Home() {
 
   const [showTooltip, setShowTooltip] = useState<'none' | 'constitution' | 'commandments'>('none');
 
-  // ИНСТРУМЕНТЫ ПОИСКА ПО ЗАКОНАМ: СТЭЙТЫ И СЧЕТЧИКИ СОВПАДЕНИЙ
+  // ИНСТРУМЕНТЫ ПОИСКА ПО ЗАКОНАМ: СТЭЙТЫ И СЧЕТЧИКИ СОВПАДЕНИЙ ТЕКСТА
   const [searchQuery, setSearchQuery] = useState('');
   const [matches, setMatches] = useState<number[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false); 
 
-  // СТЕЙТЫ ТУЛБАРА ФОРМАТИРОВАНИЯ ТЕКСТА РЕДАКТОРА
+  // СТЕЙТЫ СТИЛЕЙ ДЛЯ ТУЛБАРА ВСПЛЫВАЮЩЕГО ТЕКСТОВОГО РЕДАКТОРА БЛОКА КОНСТИТУЦИИ
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
+  // ИНДИКАТОРЫ ПРОЦЕССА ВЫГРУЗКИ ИЗОБРАЖЕНИЙ В СТОРЕДЖ SUPABASE
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
 
+  // МИГРАЦИЯ МЕДИА: СТЭЙТЫ КОНВЕРТАЦИИ СТАРЫХ КАРТИНОК ИЗ STORAGE В КЛИЕНТСКИЙ WEBP
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationProgress, setMigrationProgress] = useState('');
 
@@ -103,13 +105,13 @@ export default function Home() {
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
   
-  // ЛЕНТА ПУБЛИКАЦИЙ: ХРАНЕНИЕ ПОСТОВ ДЛЯ МИНИ-ВИДЖЕТА НОВОСТЕЙ НА ГЛАВНОЙ
+  // ЛЕНТА ПУБЛИКАЦИЙ: ХРАНЕНИЕ ПОСТОВ ДЛЯ МИНИ-ВИДЖЕТА НОВОСТЕЙ НА ГЛАВНОЙ СТРАНИЦЕ
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
   
-  // СЕТЕВЫЕ НАСТРОЙКИ: ПОСТОЯННЫЙ СТАТИЧЕСКИЙ СЕТЕВОЙ АДРЕС СЕРВЕРА
+  // СЕТЕВЫЕ НАСТРОЙКИ: ПОСТОЯННЫЙ СТАТИЧЕСКИЙ АДРЕС ИГРОВОГО СЕРВЕРА КЛИЕНТА
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
-  // АДМИН-ПАНЕЛЬ: ПОЛЯ СОЗДАНИЯ СВЕЖЕГО АККАУНТА ИГРОКА
+  // АДМИН-ПАНЕЛЬ: ПОЛЯ РЕГИСТРАЦИИ НОВОГО АККАУНТА ЖИТЕЛЯ
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
@@ -118,7 +120,7 @@ export default function Home() {
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
 
-  // АДМИН-ПАНЕЛЬ: ПОЛЯ ДОБАВЛЕНИЯ И НАСТРОЙКИ СИСТЕМНЫХ РОЛЕЙ
+  // АДМИН-ПАНЕЛЬ: ПОЛЯ НАСТРОЙКИ СИСТЕМНЫХ КАСТОМНЫХ РОЛЕЙ И ИХ ЦВЕТОВ
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
@@ -126,11 +128,11 @@ export default function Home() {
 
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
-  // ССЫЛКИ НА ДОМ-ЭЛЕМЕНТЫ ТЕКСТОВОГО РЕДАКТОРА ПАНЕЛИ
+  // ССЫЛКИ НА ДОМ-ЭЛЕМЕНТЫ ТЕКСТОВОГО РЕДАКТОРА И ПАНЕЛИ ПРОСМОТРА
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // ВЫЧИСЛЯЕМЫЕ ПЕРЕМЕННЫЕ: ПРАВА ДОСТУПА ПО АКТИВНЫМ РОЛЯМ ИЗ БАЗЫ
+  // ВЫЧИСЛЯЕМЫЕ КОНСТАНТЫ: ОПРЕДЕЛЕНИЕ ПРАВ ДОСТУПА НА ОСНОВЕ МАССИВА РОЛЕЙ
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
 
@@ -140,8 +142,20 @@ export default function Home() {
   }) || false;
 
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+
+  // ИСПРАВЛЕНО: Функция переключения вкладок handleTabChange перенесена в самый верх области видимости Home()
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
+    setSelectedPlayer(null); 
+    setIsEditingProfile(false); 
+    setShowRoleSelector(false); 
+    setActiveTab(tab);
+    setActiveDocument('none'); 
+    setIsEditing(false);
+    setSearchQuery('');
+    if (tab === 'profile') loadLatestPosts();
+  }
   
-  // СОРТИРОВКА ТАЙМЛАЙНА ИГРОКОВ: МЕРТВЫЕ ПРИНУДИТЕЛЬНО ПАДАЮТ В КОНЕЦ, ЖИВЫЕ — ВВЕРХУ ПО АЛФАВИТУ
+  // СОРТИРОВКА ЖИТЕЛЕЙ: МЕРТВЫЕ ПРИНУДИТЕЛЬНО В КОНЕЦ, ЖИВЫЕ — НАВЕРХУ ПО АЛФАВИТУ
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
     .sort((a, b) => {
@@ -151,7 +165,7 @@ export default function Home() {
       return a.rp_name.localeCompare(b.rp_name);
     });
 
-  // ОПТИМИЗАТОР МЕДИА ЧЕРЕЗ CANVAS: КОНВЕРТИРУЕТ КЛИЕНТСКИЕ ФОТО В ЛЕГКИЙ КЛАССИЧЕСКИЙ WEBP
+  // ОПТИМИЗАТОР МЕДИАРЕСУРСОВ: СЖАТИЕ ФОТО ИЗ ГАЛЕРЕИ В УЛЬТРА-ЛЕГКИЙ БЕЗОПАСНЫЙ WEBP ФОРМАТ ЧЕРЕЗ CANVAS
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -177,18 +191,18 @@ export default function Home() {
     });
   }
 
-  // СИСТЕМА ПАЛИТРЫ: ОПРЕДЕЛЕНИЕ ЦВЕТА ПЛАШКИ РОЛИ НА ОСНОВЕ ТАБЛИЦЫ ROLES ИЗ SUPABASE
+  // ОПРЕДЕЛЕНИЕ ЦВЕТА ПЛАШКИ РОЛИ НА ОСНОВЕ ДАННЫХ ИЗ СУПАБЕЙЗА
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
-  // ПРОВЕРКА СТАТУСА: ИМЕЕТ ЛИ ПЕРСОНАЖ ЖИВУЮ ИЛИ МЕРТВУЮ ОТМЕТКУ В МАССИВЕ РОЛЕЙ
+  // ПРОВЕРКА СТАТУСА ПЕРСОНАЖА НА ОСНОВЕ ПРИСУТСТВИЯ РОЛИ МЁРТВ
   function isDead(roles: string[]) {
     return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
   }
 
-  // ДИНАМИЧЕСКИЙ ПАРСЕР СТАТУСОВ ДЛЯ ПРАВИЛЬНОЙ ОКРАСКИ И СВЕЧЕНИЯ СЕРВЕРНОГО ВИДЖЕТА
+  // ДИНАМИЧЕСКИЙ ПАРСЕР ЦВЕТОВЫХ ТЕГОВ ДЛЯ СТАТУСОВ ИГРОВОГО СЕРВЕРА
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -200,7 +214,7 @@ export default function Home() {
     }
   }
 
-  // АДМИН-СКРИПТ: СКАНИРОВАНИЕ ВСЕЙ БАЗЫ ДАННЫХ И СЖАТИЕ СТАРЫХ КАРТИНОК ИЗ STORAGE В WEBP В ОДИН КЛИК
+  // СЕРВЕРНЫЙ СКРИПТ АДМИНА: ОПТИМИЗАЦИЯ ВСЕХ СТАРЫХ КАРТИНОК ИЗ ЛЕНТЫ В WEBP
   async function runWebPMigration() {
     if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP?')) return;
     setIsMigrating(true);
@@ -239,7 +253,7 @@ export default function Home() {
     }
   }
 
-  // ОБРАБОТЧИК ВЫГРУЗКИ АВАТАРОК И ОБЛОЖЕК В КОРНЕВОЙ СТОРЕДЖ SUPABASE
+  // ЗАГРУЗЧИК ФАЙЛОВ И МЕДИА В ХРАНИЛИЩЕ БАЗЫ С ПРИВЯЗКОЙ ОБРАТНОЙ ССЫЛКИ
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
     try {
       setLoadingState(true);
@@ -258,7 +272,7 @@ export default function Home() {
     }
   }
 
-  // ПЛАВНЫЙ ВОЗВРАТ И СКРОЛЛ ЭКРАНА В САМЫЙ ВВЕРХ
+  // ПЛАВНЫЙ СКРОЛЛ СТРАНИЦЫ НАВЕРХ ДЛЯ УДОБСТВА НА ТЕЛЕФОНАХ
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -280,7 +294,7 @@ export default function Home() {
     }
   }
 
-  // ПОДГРУЗКА ИЗ БАЗЫ СВЕЖЕЙ СТАТЬИ ДЛЯ СТАТИЧЕСКОГО КОМПАКТНОГО МИНИ-ВИДЖЕТА НОВОСТЕЙ
+  // ПОДГРУЗКА ПУБЛИКАЦИЙ ДЛЯ СТАТИЧЕСКОГО ФОРМАТА МИНИ-ВИДЖЕТА НОВОСТЕЙ
   async function loadLatestPosts() {
     try {
       const { data, error } = await supabase
@@ -292,7 +306,7 @@ export default function Home() {
     } catch (e) {}
   }
 
-  // АНАЛИЗАТОР ВЫДЕЛЕНИЯ ТЕКСТА ДЛЯ АВТОВЫРАВНИВАНИЯ И СТИЛИЗАЦИИ КНОПОК ТУЛБАРА В РЕДАКТОРЕ
+  // ОБРАБОТКА ИНСТРУМЕНТОВ РЕДАКТОРА: АНАЛИЗ ВЫДЕЛЕННОГО КУСКА ДЛЯ ТУЛБАРА ПРАВОК
   function checkFormatting() {
     if (typeof document === 'undefined') return;
     try {
@@ -309,7 +323,7 @@ export default function Home() {
     } catch (e) {}
   }
 
-  // КОМАНДНЫЙ ИСПОЛНИТЕЛЬ РЕДАКТОРА: ФОРМАТИРОВАНИЕ HTML ВНУТРИ CONTENTEDITABLE БЛОКА
+  // ИСПОЛНЕНИЕ КОМАНД СТИЛИЗАЦИИ ВНУТРИ ТЕКСТОВОГО БЛОКА CONTENTEDITABLE
   function execEditorCommand(command: string, value: string = '') {
     if (typeof document !== 'undefined') {
       if (command === 'formatBlock') {
@@ -328,7 +342,7 @@ export default function Home() {
     }
   }
 
-  // УПРАВЛЕНИЕ ХОСТИНГОМ: ПЕРЕДАЧА СИГНАЛОВ ВКЛЮЧЕНИЯ И ВЫКЛЮЧЕНИЯ НА БЭКЕНД EXAROTON API
+  // УПРАВЛЕНИЕ ХОСТИНГОМ: ОТПРАВКА СИГНАЛОВ ВКЛЮЧЕНИЯ ИЛИ ВЫКЛЮЧЕНИЯ НА EXAROTON БЭКЕНД
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
     try {
@@ -347,7 +361,7 @@ export default function Home() {
     }
   }
 
-  // КЛИПБОРД: БЫСТРОЕ КОПИРОВАНИЕ IP АДРЕСА С ТАКТИЛЬНОЙ ТГ-ВИБРАЦИЕЙ ТЕЛЕФОНА
+  // СИСТЕМНЫЙ КЛИПБОРД: КОПИРОВАНИЕ ДАННЫХ И IP АДРЕСА С ТАКТИЛЬНЫМ ТГ-ОТКЛИКОМ СМАРТФОНА
   function copyToClipboard(text: string) {
     if (typeof document !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -357,7 +371,7 @@ export default function Home() {
     }
   }
 
-  // АВТОРИЗАЦИЯ И СИНХРОНИЗАЦИЯ: ПОИСК И ЗАКРЕПЛЕНИЕ ЖИТЕЛЯ ПО УНИКАЛЬНОМУ TELEGRAM ID
+  // БЕЗУПРЕЧНАЯ СИНХРОНИЗАЦИЯ С SUPABASE: ПОИСК АККАУНТА ПО УНИКАЛЬНОМУ TELEGRAM ID
   async function checkUserInDb(tgId: number) {
     try {
       const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
@@ -379,7 +393,7 @@ export default function Home() {
     }
   }
 
-  // ГЛОБАЛЬНЫЕ СИНХРОНИЗАТОРЫ ТАБЛИЦ: ПОДГРУЗКА РОЛЕЙ, СПИСКА ИГРОКОВ И ЗАКОНОВ ИЗ SUPABASE
+  // ЗАГРУЗЧИКИ СУПАБЕЙЗА: ПОДГРУЗКА РОЛЕЙ, КОНСТИТУЦИИ И СПИСКА ИГРОКОВ СЕРВЕРА
   async function loadRoles() {
     const { data } = await supabase.from('roles').select('*').order('name');
     if (data) {
@@ -407,7 +421,7 @@ export default function Home() {
     }
   }
 
-  // СОХРАНЕНИЕ ДАННЫХ И КОРРЕКТИРОВОК В ТАБЛИЦЫ БАЗЫ ДАННЫХ С АВТООБНОВЛЕНИЕМ СТЭЙТОВ САЙТА
+  // СОХРАНЕНИЕ ДАННЫХ И ДОКУМЕНТОВ В ТАБЛИЦЫ БАЗЫ ДАННЫХ И СИНХРОНИЗАЦИЯ СТЭЙТОВ
   async function saveDocument() {
     if (!editorRef.current || activeDocument === 'none') return;
     const updatedContent = editorRef.current.innerHTML;
@@ -519,23 +533,10 @@ export default function Home() {
     }
   }, [isEditing, activeDocument]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
-        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
-        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="min-h-screen bg-[#090b0e] text-red-400 flex items-center justify-center font-mono text-xs p-4 text-center">{error}</div>;
-  }
-
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
-      {/* СТИЛЬНЫЕ ЗАДНИЕ СЛОИ И ВИДЕОФОНЫ ПАНЕЛИ ДЛЯ ПК ВЕРСИИ */}
+      {/* ДЕКОРАТИВНЫЕ ЗАДНИЕ СЛОИ И ВИДЕОФОН ДЛЯ ПК */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -627,7 +628,7 @@ export default function Home() {
             <div className="grid grid-cols-4 gap-4 w-full">
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
-                onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
+                onClick={() => handleTabChange('constitution')}
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
@@ -668,64 +669,62 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА С ФИКСИРОВАННЫМИ КНОПКАМИ И ОТСТУПАМИ (ИСПРАВЛЕНО) */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (ОБНОВЛЕННЫЙ КЛАССИЧЕСКИЙ ВАРИАНТ) */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-6 md:p-7 rounded-[32px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-6 min-h-[300px]">
-                <button onClick={fetchServerStatus} className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
-                {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+                <button onClick={fetchServerStatus} className={`absolute top-6 right-6 p-2 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={18} /></button>
+                {serverInfo && <div className={`absolute -top-10 -right-10 w-40 h-40 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
                 
                 <div className="relative z-10 flex items-center justify-between w-full">
-                  <div className="flex items-center gap-3">
-                    <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
-                    <div className={`text-base md:text-xl font-black tracking-wider ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
+                  <div className="flex items-center gap-4">
+                    <Server size={32} className={getServerStatusText(serverInfo?.status || 0).color} />
+                    <div className={`text-xl md:text-2xl font-black tracking-widest uppercase transition-colors duration-300 ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
                   </div>
-                  {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2.5 py-1 rounded-xl text-[11px] font-bold text-gray-300">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
+                  {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-3 py-2 rounded-xl text-xs font-black text-gray-300 shadow-inner">Online: <span className="text-[#c0ff00] font-mono text-sm">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
                 </div>
 
-                <div className="space-y-2 w-full relative z-10">
-                  <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group">
+                <div className="space-y-4 w-full relative z-10">
+                  <div className="bg-black/20 border border-white/5 p-4 rounded-2xl flex items-center justify-between group transition-all hover:bg-black/30">
                     <div className="min-w-0 flex-1">
-                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
-                      <div className="font-mono text-xs text-gray-200 truncate">{staticIp}</div>
+                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">IP СЕРВЕРА (ОСНОВНОЙ)</div>
+                      <div className="font-mono text-base md:text-lg text-gray-100 truncate tracking-tight">{staticIp}</div>
                     </div>
-                    <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0"><Copy size={14}/></button>
+                    <button onClick={() => copyToClipboard(staticIp)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0 active:scale-90 ml-3"><Copy size={20}/></button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-black/20 border border-white/5 p-2.5 rounded-2xl flex items-center justify-between group">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="p-1.5 bg-white/5 rounded-lg text-gray-400"><AnvilIcon size={14} /></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-black/20 border border-white/5 p-3.5 rounded-2xl flex items-center justify-between group">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 bg-white/5 rounded-lg text-gray-400"><AnvilIcon size={18} /></div>
                         <div className="min-w-0">
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">Версия</div>
-                          <div className="font-bold text-[11px] text-white truncate">1.20.1</div>
+                          <div className="text-[9px] text-gray-500 font-bold uppercase">ВЕРСИЯ</div>
+                          <div className="font-black text-sm text-white truncate">Forge 1.20.1</div>
                         </div>
                       </div>
-                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-6 h-6 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full flex items-center justify-center transition-all shrink-0"><Download size={11} /></a>
+                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full flex items-center justify-center transition-all shrink-0 active:scale-90"><Download size={14} /></a>
                     </div>
                     {credits !== null && (
-                      <div className="bg-black/20 border border-white/5 p-2.5 rounded-2xl flex items-center gap-2 group">
-                        <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00]"><Coins size={14} /></div>
+                      <div className="bg-black/20 border border-white/5 p-3.5 rounded-2xl flex items-center gap-3 group">
+                        <div className="p-2 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00]"><Coins size={18} /></div>
                         <div className="min-w-0">
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} кр.</div>
-                          <div className="font-mono text-[10px] text-[#c0ff00] truncate">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
+                          <div className="text-[9px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} КР. ДО ОПЛАТЫ</div>
+                          <div className="font-mono text-sm text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex gap-3 relative z-10 w-full mt-auto">
-                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-11 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Play size={12} className="fill-current" /><span>Включить</span></button>
-                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Square size={12} className="fill-current" /><span>Выключить</span></button>
+                <div className="flex gap-4 relative z-10 w-full mt-auto pt-2">
+                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-14 rounded-2xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-sm font-black uppercase tracking-[0.1em] flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 disabled:opacity-20 shadow-[0_0_20px_rgba(192,255,0,0.05)]"><Play size={16} className="fill-current" /><span>ВКЛЮЧИТЬ</span></button>
+                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-sm font-black uppercase tracking-[0.1em] flex items-center justify-center gap-3 transition-all duration-300 active:scale-95 disabled:opacity-20 shadow-[0_0_20px_rgba(239,68,68,0.05)]"><Square size={14} className="fill-current" /><span>ВЫКЛЮЧИТЬ</span></button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* СИСТЕМНЫЕ КОРНЕВЫЕ ВКЛАДКИ ДЕПЛОЯ И СЕРВЕРА */}
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
 
-        {/* ВКЛАДКА: СВОД ПРАВИЛ И КОНСТИТУЦИИ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -754,7 +753,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ВКЛАДКА: СПИСОК ВСЕХ ИГРОКОВ СЕРВЕРА С РОЛЯМИ И МОИМ АККАУНТОМ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -786,7 +784,7 @@ export default function Home() {
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
+                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#0a0c0f] opacity-60 grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
@@ -806,7 +804,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ВКЛАДКА: АДМИНИСТРАТИВНЫЙ ПУЛЬТ УПРАВЛЕНИЯ */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -844,7 +841,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* ПК НАВИГАЦИОННЫЙ САЙДБАР (БОКОВАЯ СТИЛЬНАЯ ПАНЕЛЬ С КОМПАКТНЫМИ ИКОНКАМИ) */}
+      {/* ПК САЙДБАР С КОМПАКТНЫМИ ИКОНКАМИ ПО HIG */}
       <aside className="hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500">
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
@@ -861,7 +858,7 @@ export default function Home() {
        </nav>
       </aside>
 
-      {/* МОБИЛЬНЫЙ НАВИГАЦИОННЫЙ ТАББАР (НИЖНЕЕ МЕНЮ СМАРТФОНОВ) */}
+      {/* МОБИЛЬНЫЙ НАВИГАЦИОННЫЙ ТАББАР */}
       <nav className="md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500">
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
@@ -873,4 +870,4 @@ export default function Home() {
       </nav>
     </div>
   );
-}
+} // ИСПРАВЛЕНО: Закрывающая фигурная скобка Home() теперь находится строго на своем месте!
