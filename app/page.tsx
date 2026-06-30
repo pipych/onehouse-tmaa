@@ -110,8 +110,6 @@ export default function Home() {
   const viewRef = useRef<HTMLDivElement>(null);
 
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
-  
-  // ИСПРАВЛЕНО: Безопасное и точное определение роли администратора
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
 
   const canEditConstitution = dbUser?.roles?.some(r => {
@@ -180,7 +178,6 @@ export default function Home() {
     setIsMigrating(true);
     setMigrationProgress('Запуск процесса... Сбор данных таблиц.');
     try {
-      setMigrationProgress('Анализ обложек публикаций...');
       const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
       if (postsError) throw postsError;
 
@@ -496,6 +493,12 @@ export default function Home() {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (isEditing && editorRef.current) {
+      editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+    }
+  }, [isEditing, activeDocument]);
+
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
@@ -509,7 +512,7 @@ export default function Home() {
 
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
 
-      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ С ВОССТАНОВЛЕННЫМ ВЫВОДОМ РОЛЕЙ (image_806a59.png) */}
+      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ */}
       {selectedPlayer && (
         <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
@@ -545,7 +548,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* ИСПРАВЛЕНО: Полностью восстановлена вырезанная разметка отображения ролей в модальном окне */}
           <div className="w-full h-[1px] bg-white/5 my-2" />
           <div className="text-left space-y-2 w-full">
             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли и звания</div>
@@ -576,6 +578,7 @@ export default function Home() {
       <main key={activeTab} className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
+            
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
               <h3 className="text-base md:text-xl font-black text-white tracking-wide leading-tight">
@@ -585,7 +588,11 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-4 gap-4 w-full">
-              <div onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl">
+              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
+              <div 
+                onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
+                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
+              >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><BookOpen size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
@@ -594,6 +601,7 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* 2. ВИДЖЕТ КАРТЫ */}
               <div onClick={() => handleTabChange('map')} className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl">
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
@@ -604,6 +612,7 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -622,9 +631,11 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-4">
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
+              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[230px]">
                 <button onClick={fetchServerStatus} className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
+                
                 <div className="relative z-10 flex items-center justify-between w-full">
                   <div className="flex items-center gap-3">
                     <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
@@ -632,6 +643,7 @@ export default function Home() {
                   </div>
                   {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2.5 py-1 rounded-xl text-[11px] font-bold text-gray-300">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
                 </div>
+
                 <div className="space-y-2 w-full relative z-10">
                   <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group">
                     <div className="min-w-0 flex-1">
@@ -662,9 +674,25 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 relative z-10 w-full">
-                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20"><Play size={12} className="fill-current" /><span>Включить</span></button>
-                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20"><Square size={12} className="fill-current" /><span>Выключить</span></button>
+
+                {/* ИСПРАВЛЕНО: Кнопки «Включить»/«Выключить» больше не растягиваются по высоте, жестко ограничены h-11 и зафиксированы mt-auto */}
+                <div className="flex gap-3 relative z-10 w-full mt-auto">
+                  <button 
+                    onClick={() => handleServerAction('start')} 
+                    disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} 
+                    className="flex-1 h-11 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"
+                  >
+                    <Play size={13} className="fill-current" />
+                    <span>Включить</span>
+                  </button>
+                  <button 
+                    onClick={() => handleServerAction('stop')} 
+                    disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} 
+                    className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"
+                  >
+                    <Square size={12} className="fill-current" />
+                    <span>Выключить</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -681,7 +709,7 @@ export default function Home() {
               {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
-              <div className="flex flex-col gap-3 md:col-span-1 w-full">
+              <div className={`${activeDocument !== 'none' ? 'hidden md:flex' : 'flex'} flex-col gap-3 md:col-span-1 w-full`}>
                 <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
                   <h3 className="font-bold text-sm">Конституция</h3>
                 </div>
@@ -702,21 +730,19 @@ export default function Home() {
           </div>
         )}
 
-        {/* ИСПРАВЛЕНО: Полное восстановление вырезанных ролей, плашек ролей и блока "Мой личный профиль" (image_806a40.png) */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><Users size={20} className="text-[#c0ff00]" />Жители сервера</h2>
             </div>
 
-            {/* ИСПРАВЛЕНО: Возвращен блок "Мой личный профиль" в самый верх вкладки игроков */}
             {dbUser && (
               <div className="space-y-2 w-full md:max-w-sm">
                 <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
                 <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#0a0c0f] opacity-70 grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
-                  <div className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 ${isDead(dbUser.roles) ? 'border-gray-600' : 'border-[#c0ff00]'}`}><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                   <div className="flex-1 min-w-0">
-                    <span className={`text-base font-black truncate tracking-wide ${isDead(dbUser.roles) ? 'text-gray-500 line-through' : 'text-[#c0ff00]'}`}>{dbUser.rp_name}</span>
+                    <span className="text-base font-black truncate tracking-wide text-[#c0ff00]">{dbUser.rp_name}</span>
                     <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
                     <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                     <div className="flex flex-wrap gap-1 mt-1.5">
@@ -741,8 +767,6 @@ export default function Home() {
                         <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
                         <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
                         <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
-                        
-                        {/* ИСПРАВЛЕНО: Сюда возвращен вывод списка ролей для каждой карточки жителя */}
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {player.roles?.map((role, i) => (
                             <span key={i} className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded border" style={{ backgroundColor: `${getRoleColor(role)}10`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}20` }}>{role}</span>
@@ -757,7 +781,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ИСПРАВЛЕНО: Раздел панели управления (Админки) полностью возвращен на место */}
         {activeTab === 'admin' && isAdmin && (
           <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
@@ -795,7 +818,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* ПК САЙДБАР (ИСПРАВЛЕНО: Размер иконок уменьшен до компактных и сбалансированных size={23} по HIG) */}
+      {/* ПК Сайдбар */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
