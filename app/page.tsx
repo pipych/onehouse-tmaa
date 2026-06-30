@@ -406,6 +406,13 @@ export default function Home() {
     }
   }
 
+  function stripHtml(html: string) {
+    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -824,33 +831,33 @@ export default function Home() {
         </nav>
       </aside>
 
-      {/* МОБИЛЬНЫЙ ТАББАР-ПИЛЮЛЯ С ВИДИМЫМИ ПОДПИСЯМИ ДЛЯ ТЕЛЕФОНОВ */}
-      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-2.5 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <div className="flex w-full items-center justify-around px-1">
+      {/* УВЕЛИЧЕННЫЙ МОБИЛЬНЫЙ ТАББАР-ПИЛЮЛЯ С СУБ-КЕЙС ПОДПИСЯМИ ДЛЯ ТЕЛЕФОНОВ */}
+      <nav className={`md:hidden fixed bottom-6 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-[24px] z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <div className="flex w-full items-center justify-around px-2">
           
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <HomeIcon size={18} />
-            <span className="text-[9px] font-black mt-1 tracking-wide uppercase">Главная</span>
+            <HomeIcon size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
           </button>
 
           <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <Newspaper size={18} />
-            <span className="text-[9px] font-black mt-1 tracking-wide uppercase">Медиа</span>
+            <Newspaper size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Медиа</span>
           </button>
 
           <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <BookOpen size={18} />
-            <span className="text-[9px] font-black mt-1 tracking-wide uppercase">Законы</span>
+            <BookOpen size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span>
           </button>
 
           <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <Library size={18} />
-            <span className="text-[9px] font-black mt-1 tracking-wide uppercase">Архив</span>
+            <Library size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
           </button>
 
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <Users size={18} />
-            <span className="text-[9px] font-black mt-1 tracking-wide uppercase">Игроки</span>
+            <Users size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
           </button>
 
         </div>
