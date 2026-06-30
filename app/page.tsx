@@ -115,6 +115,9 @@ export default function Home() {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
+
+  // ИСПРАВЛЕНО: Вернул на место объявление переменной showToolbar, утерянное при прошлой сборке
+  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
   
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
@@ -297,7 +300,6 @@ export default function Home() {
       if (urlData) setUrlCallback(urlData.publicUrl);
     } catch (e: any) {
       alert(`Сбой при загрузке: ${e.message}`);
-    // ИСПРАВЛЕНО: Убрана опечатка со словом Transformer
     } finally { 
       setLoadingState(false); 
     }
@@ -846,8 +848,8 @@ export default function Home() {
                   </div>
 
                   <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-44">
-                    <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30"><Play size={14} className="fill-current" /><span>Включить</span></button>
-                    <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30"><Square size={14} className="fill-current" /><span>Выключить</span></button>
+                    <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30"><Play size={14} className="fill-current" /><span>Включить</span></button>
+                    <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30"><Square size={14} className="fill-current" /><span>Выключить</span></button>
                   </div>
                 </div>
               </div>
@@ -916,7 +918,7 @@ export default function Home() {
                         <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none break-words pb-20" />
                       </div>
                     ) : (
-                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />
+                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" dangerouslySetInnerHTML={{ __html: currentDocText }} />
                     )}
                   </div>
                 )}
@@ -959,7 +961,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ИСПРАВЛЕНО: Для Архива в сайдбаре ПК возвращена иконка стопки книг Library */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[64px] h-[64px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
