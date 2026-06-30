@@ -3,27 +3,20 @@
 // =========================================================================
 // 1. НАСТРОЙКИ NEXT.JS И СИСТЕМНЫЕ ИМПОРТЫ
 // =========================================================================
-export const dynamic = 'force-dynamic'; // Динамический рендеринг без жесткого кэша
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-
-// Импорт подключения к базе данных Supabase
 import { supabase } from '../lib/supabase';
-
-// Импорт дочерних компонентов (Лента медиа и Архив сезонов)
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
 
-// Импорт графических иконок из пакета Lucide-React
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, Square, Server, RefreshCw, Coins, Search, ChevronUp, ChevronDown, ArrowUp,
-  Info, ArrowLeft, Home as HomeIcon, Map, Newspaper, Download, Library
+  Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper
 } from 'lucide-react';
 
-// Компонент иконки наковальни для плашки сборки Forge
 const AnvilIcon = ({ size = 18, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
@@ -35,7 +28,6 @@ const AnvilIcon = ({ size = 18, className = "" }) => (
   </svg>
 );
 
-// Описание структуры данных Жителя (TypeScript тип)
 interface Player {
   id: string;
   tg_id: number;
@@ -47,7 +39,6 @@ interface Player {
   party?: string;
 }
 
-// Описание структуры данных Кастомной роли (TypeScript тип)
 interface CustomRole {
   id?: string;
   name: string;
@@ -56,69 +47,43 @@ interface CustomRole {
 }
 
 // =========================================================================
-// 2. ГЛАВНЫЙ КОМПОНЕНТ СТРАНИЦЫ И СТЭЙТЫ (СОСТОЯНИЯ)
+// 2. ГЛАВНЫЙ КОМПОНЕНТ СТРАНИЦЫ
 // =========================================================================
 export default function Home() {
   const router = useRouter();
   
-  // Состояния авторизации и загрузки
   const [tgUser, setTgUser] = useState<any>(null); 
   const [dbUser, setDbUser] = useState<Player | null>(null); 
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null); 
   
-  // Состояния навигации и списков
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive'>('profile');
   const [players, setPlayers] = useState<Player[]>([]); 
   
-  // Состояния текстов Конституции и Заповедей
   const [constitutionText, setConstitutionText] = useState('');
   const [commandmentsText, setCommandmentsText] = useState('');
   const [activeDocument, setActiveDocument] = useState<'none' | 'constitution' | 'commandments'>('none');
   const [isEditing, setIsEditing] = useState(false);
   
-  // Состояния редактирования личной карточки жителя
   const [newRpName, setNewRpName] = useState('');
   const [newAvatarUrl, setNewAvatarUrl] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null); 
   const [showRoleSelector, setShowRoleSelector] = useState(false); 
 
-  const [showTooltip, setShowTooltip] = useState<'none' | 'constitution' | 'commandments'>('none');
-
-  // Состояния встроенной поисковой машины по законам
-  const [searchQuery, setSearchQuery] = useState('');
-  const [matches, setMatches] = useState<number[]>([]);
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false); 
-
-  // Состояния кнопок форматирования текста (Жирный, Курсив и т.д.)
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  // Флаги загрузки картинок в облако
   const [isUploadingProfile, setLoadingProfile] = useState(false);
-  const [isUploadingNewUser, setIsUploadingNewUser] = useState(false);
-
-  // Флаги миграции картинок базы в WebP
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [migrationProgress, setMigrationProgress] = useState('');
-
-  // Состояния мониторинга сервера Exaroton
   const [serverInfo, setServerInfo] = useState<any>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isServerLoading, setIsServerLoading] = useState(false);
   const [serverActionLoading, setServerActionLoading] = useState(false);
-  
-  // Массив свежих постов для главного виджета
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
   
-  // Постоянный адрес подключения
   const staticIp = "onehouse2.exaroton.me:15879"; 
 
-  // Поля ввода формы создания нового игрока (Админка)
   const [addTgId, setAddTgId] = useState('');
   const [addTgUsername, setAddTgUsername] = useState('');
   const [addMcNickname, setAddMcNickname] = useState('');
@@ -127,19 +92,15 @@ export default function Home() {
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
 
-  // Поля ввода формы создания новых ролей (Админка)
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
-
   const [isCreatingPost, setIsCreatingPost] = useState(false);
 
-  // Ссылки на элементы редактора
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
 
-  // Вычисляемые системные флаги прав доступа
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
 
@@ -150,11 +111,6 @@ export default function Home() {
 
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
-  // =========================================================================
-  // 3. СИСТЕМНЫЕ ФУНКЦИИ КОМПОНЕНТА (ПЕРЕНЕСЕНЫ НАВЕРХ ДЛЯ БЕЗОПАСНОСТИ ТИПОВ)
-  // =========================================================================
-  
-  // Функция переключения вкладок и табов
   function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
     setSelectedPlayer(null); 
     setIsEditingProfile(false); 
@@ -162,11 +118,9 @@ export default function Home() {
     setActiveTab(tab);
     setActiveDocument('none'); 
     setIsEditing(false);
-    setSearchQuery('');
     if (tab === 'profile') loadLatestPosts();
   }
 
-  // ДИНАМИЧЕСКИЙ ПАРСЕР ЦВЕТОВЫХ ТЕГОВ И ТЕКСТА ДЛЯ ВИДЖЕТА ХОСТИНГА (ИСПРАВЛЕНО)
   function getServerStatusText(statusCode: number) {
     switch(statusCode) {
       case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
@@ -178,7 +132,6 @@ export default function Home() {
     }
   }
   
-  // Авто-сортировка жителей: мертвые персонажи падают в самый низ списка
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
     .sort((a, b) => {
@@ -188,9 +141,6 @@ export default function Home() {
       return a.rp_name.localeCompare(b.rp_name);
     });
 
-  // =========================================================================
-  // 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И СЖАТИЕ ИЗОБРАЖЕНИЙ ЧЕРЕЗ CANVAS
-  // =========================================================================
   function convertToWebP(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -203,16 +153,14 @@ export default function Home() {
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
-          if (!ctx) return reject(new Error('Не удалось создать контекст Canvas'));
+          if (!ctx) return reject(new Error('Canvas Error'));
           ctx.drawImage(img, 0, 0);
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
-            else reject(new Error('Ошибка конвертации в WebP'));
+            else reject(new Error('WebP Conversion Error'));
           }, 'image/webp', 0.85);
         };
-        img.onerror = (error) => reject(error);
       };
-      reader.onerror = (error) => reject(error);
     });
   }
 
@@ -223,47 +171,6 @@ export default function Home() {
 
   function isDead(roles: string[]) {
     return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
-  }
-
-  // =========================================================================
-  // 5. РАБОТА С ХОСТИНГОМ И СУПАБЕЙЗОМ (УПРАВЛЕНИЕ И КЛИПБОРД)
-  // =========================================================================
-  async function runWebPMigration() {
-    if (!confirm('Вы действительно хотите запустить оптимизацию всех старых изображений сайта в WebP?')) return;
-    setIsMigrating(true);
-    setMigrationProgress('Запуск процесса... Сбор данных таблиц.');
-    try {
-      const { data: posts, error: postsError } = await supabase.from('posts').select('id, cover_url');
-      if (postsError) throw postsError;
-
-      let postsCount = 0;
-      if (posts) {
-        for (let i = 0; i < posts.length; i++) {
-          const post = posts[i];
-          if (post.cover_url && !post.cover_url.endsWith('.webp')) {
-            try {
-              const res = await fetch(post.cover_url);
-              const blob = await res.blob();
-              const file = new File([blob], 'post.jpg', { type: blob.type });
-              const webpBlob = await convertToWebP(file);
-              const fileName = `migrated-post-cover-${post.id}-${Date.now()}.webp`;
-              await supabase.storage.from('avatars').upload(fileName, webpBlob, { contentType: 'image/webp', upsert: true });
-              const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-              if (urlData?.publicUrl) {
-                await supabase.from('posts').update({ cover_url: urlData.publicUrl }).eq('id', post.id);
-                postsCount++;
-              }
-            } catch (err) {}
-          }
-        }
-      }
-      setMigrationProgress(`✅ Готово! Конвертировано постов: ${postsCount}.`);
-      loadPlayers(); 
-    } catch (e: any) {
-      alert(`Ошибка: ${e.message}`);
-    } finally {
-      setIsMigrating(false);
-    }
   }
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
@@ -284,10 +191,6 @@ export default function Home() {
     }
   }
 
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   async function fetchServerStatus() {
     setIsServerLoading(true);
     try {
@@ -298,7 +201,7 @@ export default function Home() {
         setCredits(data.data.credits ?? null);
       }
     } catch (e) {
-      console.error('Ошибка получения статуса сервера:', e);
+      console.error(e);
     } finally {
       setIsServerLoading(false);
     }
@@ -359,9 +262,9 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.success) setTimeout(fetchServerStatus, 3000);
-      else alert('Не удалось выполнить действие: ' + (data.error || 'Неизвестная ошибка'));
+      else alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
     } catch (e) {
-      alert('Ошибка при отправке команды');
+      alert('Ошибка соединения');
     } finally {
       setServerActionLoading(false);
     }
@@ -380,7 +283,7 @@ export default function Home() {
     try {
       const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
       if (dbError || !user) {
-        setError(`Пользователь с TG ID ${tgId} не найден в базе Supabase.`);
+        setError(`Пользователь с TG ID ${tgId} не найден.`);
       } else {
         setDbUser(user);
         setNewRpName(user.rp_name);
@@ -391,7 +294,7 @@ export default function Home() {
         loadLatestPosts();
       }
     } catch (e: any) {
-      setError(`Ошибка базы данных: ${e.message}`);
+      setError(`Ошибка БД: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -434,7 +337,7 @@ export default function Home() {
       else setCommandmentsText(updatedContent);
       setIsEditing(false);
     } else {
-      alert(`Ошибка сохранения. Ошибка: ${error.message}`);
+      alert(`Ошибка: ${error.message}`);
     }
   }
 
@@ -448,7 +351,7 @@ export default function Home() {
       setIsEditingProfile(false);
       loadPlayers();
     } else {
-      alert(`Ошибка при сохранении: ${error.message}`);
+      alert(`Ошибка: ${error.message}`);
     }
   }
 
@@ -467,7 +370,7 @@ export default function Home() {
     const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
     const { error = null } = await supabase.from('roles').insert([newRole]);
     if (!error) { setNewRoleName(''); setNewRolePerm(false); loadRoles(); }
-    else alert(`Ошибка: Имя роли должно быть уникальным`);
+    else alert(`Ошибка создания роли`);
   }
 
   function handleRoleChange(id: string, field: string, value: any) {
@@ -502,9 +405,13 @@ export default function Home() {
     }
   }
 
-  // =========================================================================
-  // 6. ХУКИ ИНИЦИАЛИЗАЦИИ И СТРОГОЙ АВТОРИЗАЦИИ ВНУТРИ TELEGRAM WEBAPP СЕССИИ
-  // =========================================================================
+  function stripHtml(html: string) {
+    if (typeof document === 'undefined') return html.replace(/<[^>]*>?/gm, '');
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -525,7 +432,7 @@ export default function Home() {
   useEffect(() => {
     if (activeTab === 'profile') {
       fetchServerStatus();
-      const intervalId = setInterval(() => fetchServerStatus(), 3600000); 
+      const intervalId = setInterval(() => fetchServerStatus(), 360000); 
       return () => clearInterval(intervalId);
     }
   }, [activeTab]);
@@ -536,9 +443,6 @@ export default function Home() {
     }
   }, [isEditing, activeDocument]);
 
-  // =========================================================================
-  // 7. СИСТЕМНЫЕ ЭКРАНЫ ОЖИДАНИЯ ЗАГРУЗКИ БИЛДА
-  // =========================================================================
   if (loading) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
@@ -552,13 +456,9 @@ export default function Home() {
     return <div className="min-h-screen bg-[#090b0e] text-red-400 flex items-center justify-center font-mono text-xs p-4 text-center">{error}</div>;
   }
 
-  // =========================================================================
-  // 8. ОСНОВНАЯ JSX РАЗМЕТКА ИНТЕРФЕЙСА СТРАНИЦЫ
-  // =========================================================================
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
       
-      {/* ДЕКОРАТИВНЫЕ ЗАДНИЕ СЛОИ И ВИДЕОФОН ДЛЯ ПК */}
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
       <div className="fixed inset-0 -z-10 hidden md:block bg-[#090b0e]">
         <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -569,8 +469,8 @@ export default function Home() {
 
       <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${selectedPlayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
 
-      {/* ПЛАВАЮЩИЙ ТУЛБАР ТЕКСТОВОГО РЕДАКТОРА КОНСТИТУЦИИ */}
-      <div className={`fixed top-[96px] left-4 right-4 md:left-40 md:right-12 z-40 max-w-md md:max-w-7xl mx-auto flex items-center justify-end gap-2 pointer-events-none`}>
+      {/* ПЛАВАЮЩИЙ ТУЛБАР ТЕКСТОВОГО РЕДАКТОРА */}
+      <div className="fixed top-[96px] left-4 right-4 md:left-40 md:right-12 z-40 max-w-md md:max-w-7xl mx-auto flex items-center justify-end gap-2 pointer-events-none">
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
           <button onClick={saveDocument} className="pointer-events-auto bg-[#c0ff00] text-black w-10 h-10 rounded-full shadow-lg flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-transform">
             <Save size={16} />
@@ -592,9 +492,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ОРИГИНАЛЬНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ ЖИТЕЛЯ */}
+      {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ */}
       {selectedPlayer && (
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
+        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
           <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
@@ -602,7 +502,7 @@ export default function Home() {
             <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
           )}
 
-          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
+          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
             <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
           </div>
 
@@ -619,7 +519,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="w-full space-y-1">
-                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
                   <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
@@ -655,7 +555,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК ОКОН ОТРЕНДЕРЕННЫХ ВКЛАДОК */}
+      {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК */}
       <main className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
@@ -711,14 +611,11 @@ export default function Home() {
                 </div>
               </div>
 
-            {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (ОПТИМИЗИРОВАН ПО ВЫСОТЕ И ОТСТУПАМ) */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3">
-                
-                {/* КНОПКА ОБНОВЛЕНИЯ */}
                 <button onClick={fetchServerStatus} className={`absolute top-4 right-4 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
                 
-                {/* СТАТУС (УМЕНЬШЕН ШРИФТ) */}
                 <div className="relative z-10 flex items-center justify-between w-full">
                   <div className="flex items-center gap-2">
                     <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
@@ -727,7 +624,6 @@ export default function Home() {
                   {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2 py-0.5 rounded-lg text-[10px] font-bold text-gray-400">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
                 </div>
 
-                {/* ПОЛЕ IP И ПЛАШКИ (УВЕЛИЧЕН ТЕКСТ НА 1 РАЗМЕР) */}
                 <div className="space-y-2 w-full relative z-10">
                   <div className="bg-black/20 border border-white/5 p-2.5 rounded-xl flex items-center justify-between group">
                     <div className="min-w-0 flex-1">
@@ -759,18 +655,19 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* КНОПКИ УПРАВЛЕНИЯ (УВЕЛИЧЕН ТЕКСТ, ОТСТУПЫ) */}
                 <div className="flex gap-2 relative z-10 w-full mt-1">
                   <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-10 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Play size={12} />ВКЛЮЧИТЬ</button>
                   <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
                 </div>
               </div>
 
-        {/* СЛУЖЕБНЫЕ ВКЛАДКИ И РОУТЫ СИСТЕМЫ */}
+            </div>
+          </div>
+        )}
+
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
 
-        {/* ВКЛАДКА: СВОД ПРАВИЛ И СПЛИТ-ВЬЮ КОНСТИТУЦИИ */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -799,7 +696,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ВКЛАДКА: СПИСОК ЖИТЕЛЕЙ СЕРВЕРА С РОЛЯМИ */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -827,7 +723,7 @@ export default function Home() {
 
             <div className="space-y-3 w-full">
               <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Все игроки</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+              <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {sortedPlayers.map((player) => {
                   const dead = isDead(player.roles);
                   return (
@@ -888,24 +784,24 @@ export default function Home() {
         )}
       </main>
 
-      {/* ПК САЙДБАР С КОМПАКТНЫМИ ИКОНКАМИ ПО GAIDLINES HIG */}
+      {/* ПК САЙДБАР */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
-       {dbUser && (
-         <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
-           <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
-         </button>
-       )}
-       <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-6 px-1 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative">
-         <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><HomeIcon size={23} /></button>
-         <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><Newspaper size={23} /></button>
-         <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><BookOpen size={23} /></button>
-         <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><Library size={23} /></button>
-         <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><Users size={23} /></button>
-         {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><ShieldAlert size={23} /></button>}
-       </nav>
+        {dbUser && (
+          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
+            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
+          </button>
+        )}
+        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-6 px-1 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative">
+          <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><HomeIcon size={23} /></button>
+          <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><Newspaper size={23} /></button>
+          <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><BookOpen size={23} /></button>
+          <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><Library size={23} /></button>
+          <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><Users size={23} /></button>
+          {isAdmin && <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}><ShieldAlert size={23} /></button>}
+        </nav>
       </aside>
 
-      {/* МОБИЛЬНЫЙ ТАББАР ДЛЯ ТЕЛЕФОНОВ */}
+      {/* МОБИЛЬНЫЙ ТАББАР */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}><HomeIcon size={22} /></button>
