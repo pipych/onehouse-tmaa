@@ -115,7 +115,6 @@ export default function Home() {
     const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
     return found ? found.canEditConstitution : false;
   });
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
   
   const sortedPlayers = players
     .filter((player) => player.tg_id !== dbUser?.tg_id)
@@ -142,7 +141,7 @@ export default function Home() {
           ctx.drawImage(img, 0, 0);
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
-            else reject(new Error('Ошибка конвертации in WebP'));
+            else reject(new Error('Ошибка конвертации в WebP'));
           }, 'image/webp', 0.85);
         };
         img.onerror = (error) => reject(error);
@@ -151,7 +150,6 @@ export default function Home() {
     });
   }
 
-  // ИСПРАВЛЕНО: Убрана поломанная стрелочная функция cr => r =>
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
@@ -188,7 +186,7 @@ export default function Home() {
         for (let i = 0; i < posts.length; i++) {
           const post = posts[i];
           if (post.cover_url && !post.cover_url.endsWith('.webp')) {
-            setMigrationProgress(`Пережатие обложки статьи [${i + 1}/${posts.length}]...`);
+            setMigrationProgress(text => `Пережатие обложки статьи [${i + 1}/${posts.length}]...`);
             try {
               const res = await fetch(post.cover_url);
               const blob = await res.blob();
@@ -299,7 +297,10 @@ export default function Home() {
       if (urlData) setUrlCallback(urlData.publicUrl);
     } catch (e: any) {
       alert(`Сбой при загрузке: ${e.message}`);
-    } Transformer { finally { setLoadingState(false); } }
+    // ИСПРАВЛЕНО: Убрана опечатка со словом Transformer
+    } finally { 
+      setLoadingState(false); 
+    }
   }
 
   function scrollToTop() {
@@ -366,9 +367,6 @@ export default function Home() {
       setTimeout(checkFormatting, 50);
     }
   }
-
-  function nextMatch() { setCurrentMatchIndex(prev => prev < matches.length ? prev + 1 : 1); }
-  function prevMatch() { setCurrentMatchIndex(prev => prev > 1 ? prev - 1 : matches.length); }
 
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
@@ -553,18 +551,123 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
-        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
-        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg && tg.initDataUnsafe?.user?.id) {
+      tg.ready();
+      tg.expand(); 
+      if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
+      if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#090b0e');
+      if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
+      setTgUser(tg.initDataUnsafe.user);
 
-  if (error) {
-    return <div className="min-h-screen bg-[#090b0e] text-red-400 flex items-center justify-center font-mono text-xs p-4 text-center">{error}</div>;
-  }
+      if (tg.initDataUnsafe.start_param) {
+        const param = tg.initDataUnsafe.start_param;
+        const alreadyHandled = sessionStorage.getItem('handled_start_param');
+        
+        if (param.startsWith('post_') && alreadyHandled !== param) {
+          sessionStorage.setItem('handled_start_param', param); 
+          const postId = param.replace('post_', '');
+          router.push(`/media/${postId}`);
+          return;
+        }
+      }
+
+      checkUserInDb(tg.initDataUnsafe.user.id);
+    } else {
+      setError('Пожалуйста, откройте приложение внутри Telegram.');
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      fetchServerStatus();
+      const intervalId = setInterval(() => fetchServerStatus(), 3600000); 
+      return () => clearInterval(intervalId);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isEditing && editorRef.current) {
+      editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+    }
+  }, [isEditing, activeDocument]);
+
+  useEffect(() => {
+    if (!viewRef.current || activeTab !== 'constitution' || isEditing || activeDocument === 'none') return;
+
+    const children = Array.from(viewRef.current.children) as HTMLElement[];
+    children.forEach((child) => {
+      child.style.transition = 'all 0.3s ease';
+      child.style.backgroundColor = '';
+      child.style.boxShadow = '';
+      child.style.borderRadius = '';
+      child.style.transform = '';
+      child.style.opacity = '1';
+    });
+
+    if (!searchQuery.trim()) {
+      setMatches([]);
+      setCurrentMatchIndex(0);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const fuzzyRegex = new RegExp(safeQuery.split('').join('.*?'), 'i');
+    const foundIndices: number[] = [];
+
+    children.forEach((child, index) => {
+      const text = child.textContent?.toLowerCase() || '';
+      if (!text.trim()) return;
+
+      let score = 0;
+      if (text.includes(query)) score += 100;
+      else if (query.length >= 3 && fuzzyRegex.test(text)) score += 10;
+
+      if (score > 0) {
+        foundIndices.push(index);
+        child.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        child.style.borderRadius = '8px';
+      } else {
+        child.style.opacity = '0.3';
+      }
+    });
+
+    setMatches(foundIndices);
+    setCurrentMatchIndex(foundIndices.length > 0 ? 1 : 0);
+  }, [searchQuery, currentDocText, activeTab, isEditing, activeDocument]);
+
+  useEffect(() => {
+    if (matches.length === 0 || currentMatchIndex === 0 || !viewRef.current) return;
+
+    const children = Array.from(viewRef.current.children) as HTMLElement[];
+    matches.forEach(idx => {
+      const el = children[idx];
+      if (el) {
+        el.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        el.style.boxShadow = '';
+        el.style.transform = '';
+      }
+    });
+
+    const activeIdx = matches[currentMatchIndex - 1];
+    const activeEl = children[activeIdx];
+    
+    if (activeEl) {
+      activeEl.style.backgroundColor = 'rgba(192, 255, 0, 0.15)';
+      activeEl.style.boxShadow = '0 0 0 6px rgba(192, 255, 0, 0.15)';
+      activeEl.style.transform = 'scale(1.02)';
+      activeEl.style.borderRadius = '8px';
+
+      setTimeout(() => {
+        const yOffset = activeEl.getBoundingClientRect().top + window.pageYOffset - 160;
+        window.scrollTo({ top: yOffset, behavior: 'smooth' });
+      }, 50);
+    }
+  }, [currentMatchIndex, matches]);
 
   return (
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
@@ -599,46 +702,8 @@ export default function Home() {
           <div className="w-[1px] h-3.5 bg-white/10 mx-0.5 flex-shrink-0" />
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={14}/></button>
           <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 flex-shrink-0 ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={14}/></button>
-          <button onMouseDown={e => e.preventDefault()} onClick={() => setIsEditing(false)} className="p-1.5 text-gray-500 hover:text-red-400 rounded-xl md:rounded-full transition-colors ml-auto active:scale-75 flex-shrink-0"><X size={14} /></button>
         </div>
       </div>
-
-      {selectedPlayer && (
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
-          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-          <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
-
-          {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer.roles)) || isAdmin) && !isEditingProfile && (
-            <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
-          )}
-
-          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
-            <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
-          </div>
-
-          <div className="space-y-2 w-full">
-            {isEditingProfile ? (
-              <div className="space-y-3 max-w-xs mx-auto w-full animate-fade-in">
-                <input type="text" placeholder="Имя профиля" value={newRpName} onChange={(e) => setNewRpName(e.target.value)} className="ui-input text-center font-bold" />
-                <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
-                  <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewAvatarUrl, setIsUploadingProfile)} disabled={isUploadingProfile} />
-                  <Upload size={14} className={isUploadingProfile ? "animate-bounce" : ""} />
-                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим file...' : 'Загрузить из галереи'}</span>
-                </label>
-                <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2 disabled:opacity-50"><Save size={14} /><span>Сохранить всё</span></button>
-              </div>
-            ) : (
-              <div className="w-full space-y-1">
-                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
-                <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 ${selectedPlayer && isDead(selectedPlayer.roles) ? 'text-gray-500' : 'text-[#c0ff00]'}`}>
-                  <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
@@ -653,7 +718,6 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-4 md:grid-cols-4 gap-4 w-full">
-              
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
@@ -664,7 +728,7 @@ export default function Home() {
                   <BookOpen size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm font-black text-white tracking-wide">Конституция</h3>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
                   <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
                 </div>
               </div>
@@ -680,7 +744,7 @@ export default function Home() {
                   <Map size={20} />
                 </div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm font-black text-gray-300 tracking-wide">Карта мира</h3>
+                  <h3 className="text-sm md:text-gray-300 font-black tracking-wide">Карта мира</h3>
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
                 </div>
               </div>
@@ -715,7 +779,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ИСПРАВЛЕНО: Полностью пересобран и воссоздан десктопный виджет сервера согласно image_72e200.png */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
               <div className="col-span-4 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden">
                 <button
                   onClick={fetchServerStatus}
@@ -727,7 +791,6 @@ export default function Home() {
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                  {/* Левая часть: Статус */}
                   <div className="flex items-center gap-3 shrink-0">
                     <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
                     <div>
@@ -740,7 +803,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Центральная часть: IP, Кредиты и Версия со встроенной кнопкой скачивания */}
                   <div className="space-y-2 flex-1 md:max-w-xl w-full">
                     <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group transition-all hover:border-white/10">
                       <div className="min-w-0 flex-1">
@@ -761,9 +823,8 @@ export default function Home() {
                             <div className="font-bold text-xs text-white truncate">Forge 1.20.1</div>
                           </div>
                         </div>
-                        {/* Восстановлено: Кнопка скачивания Forge */}
                         <a 
-                          href="https://adfoc.us/serve/sitelinks/?id=271228&url=https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
+                          href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hidden md:flex items-center justify-center w-7 h-7 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full transition-all active:scale-95 shrink-0"
@@ -784,7 +845,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Правая часть: Переключатели */}
                   <div className="flex md:flex-col gap-2 shrink-0 w-full md:w-44">
                     <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-[#c0ff00]/10 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30"><Play size={14} className="fill-current" /><span>Включить</span></button>
                     <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 ui-pill-btn justify-center py-2.5 md:py-3 !bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20 disabled:opacity-30"><Square size={14} className="fill-current" /><span>Выключить</span></button>
@@ -800,7 +860,6 @@ export default function Home() {
           <Archive currentUser={dbUser} />
         )}
 
-        {/* ИСПРАВЛЕНО: Добавлен space-y-6 упаковочный контейнер, возвращающий отступы статьям в блоке .медиа */}
         {activeTab === 'media' && (
           <div className="w-full space-y-6">
             <MediaBlog 
@@ -812,7 +871,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Сплит-вью Конституции */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -842,7 +900,7 @@ export default function Home() {
               <div className={`${activeDocument === 'none' ? 'hidden md:block' : 'block'} md:col-span-2 w-full h-full`}>
                 {activeDocument === 'none' ? (
                   <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs flex flex-col items-center justify-center min-h-[300px]">
-                    <BookOpen size={32} className="text-gray-700 mb-3" />
+                    <BookOpen size={36} className="text-gray-700 mb-3" />
                     <span>ВЫБЕРИТЕ ДОКУМЕНТ ДЛЯ ПРОСМОТРА</span>
                   </div>
                 ) : (
@@ -867,7 +925,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Список игроков ПК */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -892,7 +949,17 @@ export default function Home() {
         )}
       </main>
 
-      {/* ИСПРАВЛЕНО: Возвращена каноничная иконка Library (книги) вместо BookOpen для Архива в сайдбаре ПК */}
+      <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <div className="flex w-full items-center justify-around px-2">
+          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><HomeIcon size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span></button>
+          <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'media' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Newspaper size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">.медиа</span></button>
+          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><BookOpen size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span></button>
+          <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Library size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span></button>
+          <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><Users size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span></button>
+        </div>
+      </nav>
+
+      {/* ИСПРАВЛЕНО: Для Архива в сайдбаре ПК возвращена иконка стопки книг Library */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[64px] h-[64px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
