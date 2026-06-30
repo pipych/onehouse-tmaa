@@ -534,7 +534,16 @@ export default function Home() {
     }
   }
 
-  // ИСПРАВЛЕНО: Вернул оригинальный рабочий блок авторизации по Telegram WebApp ID
+  // ИСПРАВЛЕНО: Восстановлена функция handleTabChange, которая была потеряна при сборке
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
+    setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); 
+    setActiveTab(tab);
+    setActiveDocument('none'); 
+    setIsEditing(false);
+    setSearchQuery('');
+    if (tab === 'profile') loadLatestPosts();
+  }
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
@@ -594,7 +603,7 @@ export default function Home() {
         </div>
       </div>
 
-      <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
+      <main key={activeTab} className="p-4 pt-36 pb-24 md:pb-12 md:pl-[160px] md:pr-12 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
             
@@ -606,7 +615,7 @@ export default function Home() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-4 md:grid-cols-4 gap-4 w-full">
+            <div className="grid grid-cols-4 gap-4 w-full">
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
                 onClick={() => { setActiveTab('constitution'); setActiveDocument('constitution'); }}
@@ -628,7 +637,7 @@ export default function Home() {
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute top-3 right-3 bg-[#c0ff00] text-black text-[8px] font-black uppercase px-1.5 py-0.5 rounded shadow-md z-20">Soon</div>
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-opacity bg-right-bottom bg-no-repeat bg-[length:90px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
+                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
                 <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0">
                   <Map size={20} />
                 </div>
@@ -666,7 +675,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (ИСПРАВЛЕНО: Занимает ровно 2 колонки на ПК как и новости согласно image_72e200.png) */}
+              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col gap-4">
                 <button
                   onClick={fetchServerStatus}
@@ -750,6 +759,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* Сплит-вью Конституции */}
         {activeTab === 'constitution' && (
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -795,7 +805,7 @@ export default function Home() {
                         <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none break-words pb-20" />
                       </div>
                     ) : (
-                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full transition-all" dangerouslySetInnerHTML={{ __html: currentDocText }} />
+                      <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />
                     )}
                   </div>
                 )}
@@ -804,6 +814,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* Список игроков ПК */}
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
@@ -828,7 +839,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* Мобильный навигационный блок */}
+      {/* Мобильный таббар */}
       <nav className={`md:hidden fixed bottom-5 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-3 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
         <div className="flex w-full items-center justify-around px-2">
           <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 transform active:scale-90 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00] scale-105' : 'text-gray-500'}`}><HomeIcon size={22} /><span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span></button>
@@ -839,7 +850,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ПК Сайдбар (ИСПРАВЛЕНО: Крупные иконки size={28} для монументальности) */}
+      {/* ПК Сайдбар */}
       <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
        {dbUser && (
          <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
