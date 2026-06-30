@@ -711,59 +711,60 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА EXAROTON */}
-              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[230px]">
-                <button onClick={fetchServerStatus} className={`absolute top-5 right-5 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
+            {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА (ОПТИМИЗИРОВАН ПО ВЫСОТЕ И ОТСТУПАМ) */}
+              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3">
+                
+                {/* КНОПКА ОБНОВЛЕНИЯ */}
+                <button onClick={fetchServerStatus} className={`absolute top-4 right-4 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
                 {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
                 
+                {/* СТАТУС (УМЕНЬШЕН ШРИФТ) */}
                 <div className="relative z-10 flex items-center justify-between w-full">
-                  <div className="flex items-center gap-3">
-                    <Server size={24} className={getServerStatusText(serverInfo?.status || 0).color} />
-                    <div className={`text-base md:text-xl font-black tracking-wider ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
+                  <div className="flex items-center gap-2">
+                    <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
+                    <div className={`text-sm md:text-base font-black tracking-wider uppercase ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
                   </div>
-                  {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2.5 py-1 rounded-xl text-[11px] font-bold text-gray-300">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
+                  {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2 py-0.5 rounded-lg text-[10px] font-bold text-gray-400">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
                 </div>
 
+                {/* ПОЛЕ IP И ПЛАШКИ (УВЕЛИЧЕН ТЕКСТ НА 1 РАЗМЕР) */}
                 <div className="space-y-2 w-full relative z-10">
-                  <div className="bg-black/20 border border-white/5 p-3 rounded-2xl flex items-center justify-between group">
+                  <div className="bg-black/20 border border-white/5 p-2.5 rounded-xl flex items-center justify-between group">
                     <div className="min-w-0 flex-1">
-                      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
-                      <div className="font-mono text-xs text-gray-200 truncate">{staticIp}</div>
+                      <div className="text-[8px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
+                      <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
                     </div>
-                    <button onClick={() => copyToClipboard(staticIp)} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0"><Copy size={14}/></button>
+                    <button onClick={() => copyToClipboard(staticIp)} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0 ml-2"><Copy size={14}/></button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-black/20 border border-white/5 p-2.5 rounded-2xl flex items-center justify-between group">
+                    <div className="bg-black/20 border border-white/5 p-2 rounded-xl flex items-center justify-between group">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="p-1.5 bg-white/5 rounded-lg text-gray-400"><AnvilIcon size={14} /></div>
+                        <div className="p-1 bg-white/5 rounded-md text-gray-400"><AnvilIcon size={14} /></div>
                         <div className="min-w-0">
                           <div className="text-[8px] text-gray-500 font-bold uppercase">Версия</div>
-                          <div className="font-bold text-[11px] text-white truncate">1.20.1</div>
+                          <div className="font-bold text-xs text-white truncate">1.20.1</div>
                         </div>
                       </div>
-                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-6 h-6 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-full flex items-center justify-center transition-all shrink-0"><Download size={11} /></a>
+                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-6 h-6 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-lg flex items-center justify-center transition-all shrink-0"><Download size={12} /></a>
                     </div>
                     {credits !== null && (
-                      <div className="bg-black/20 border border-white/5 p-2.5 rounded-2xl flex items-center gap-2 group">
-                        <div className="p-1.5 bg-[#c0ff00]/10 rounded-lg text-[#c0ff00]"><Coins size={14} /></div>
+                      <div className="bg-black/20 border border-white/5 p-2 rounded-xl flex items-center gap-2 group">
+                        <div className="p-1 bg-[#c0ff00]/10 rounded-md text-[#c0ff00]"><Coins size={14} /></div>
                         <div className="min-w-0">
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} кр.</div>
-                          <div className="font-mono text-[10px] text-[#c0ff00] truncate">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
+                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} КР.</div>
+                          <div className="font-mono text-[11px] text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex gap-2 relative z-10 w-full mt-auto">
-                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-11 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Play size={12} className="fill-current" /><span>Включить</span></button>
-                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-11 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-20"><Square size={12} className="fill-current" /><span>Выключить</span></button>
+                {/* КНОПКИ УПРАВЛЕНИЯ (УВЕЛИЧЕН ТЕКСТ, ОТСТУПЫ) */}
+                <div className="flex gap-2 relative z-10 w-full mt-1">
+                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-10 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Play size={12} />ВКЛЮЧИТЬ</button>
+                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
                 </div>
               </div>
-
-            </div>
-          </div>
-        )}
 
         {/* СЛУЖЕБНЫЕ ВКЛАДКИ И РОУТЫ СИСТЕМЫ */}
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
