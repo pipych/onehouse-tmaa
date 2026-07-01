@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
-import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical, X, Maximize } from 'lucide-react';
 
 export default function StandalonePostDetail() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function StandalonePostDetail() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
   const [activeMenu, setActiveMenu] = useState(false);
+  const [fullscreenAttachment, setFullscreenAttachment] = useState<'cover' | 'youtube' | null>(null);
 
   const canManage = currentUser && post && (post.author_id === currentUser.id || currentUser.roles?.includes('admin'));
 
@@ -102,11 +103,12 @@ export default function StandalonePostDetail() {
         {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[40px] overflow-hidden shadow-2xl flex flex-col mb-6">
           {embedUrl ? (
-            <div className="w-full aspect-video bg-black/50">
-              <iframe src={embedUrl} className="w-full h-full border-none" allowFullScreen />
+            <div className="w-full aspect-video bg-black/50 relative group">
+              <iframe src={embedUrl} className="w-full h-full border-none" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+              <button onClick={() => setFullscreenAttachment('youtube')} className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/80 border border-white/10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-all opacity-0 group-hover:opacity-100 z-10" title="На весь экран"><Maximize size={14} /></button>
             </div>
           ) : hasCover ? (
-            <div className="w-full h-64 md:h-96 relative">
+            <div onClick={() => setFullscreenAttachment('cover')} className="w-full aspect-video relative cursor-pointer overflow-hidden bg-black/50">
               <img src={post.cover_url} className="w-full h-full object-cover" alt="cover" />
             </div>
           ) : null}
@@ -256,6 +258,20 @@ export default function StandalonePostDetail() {
         </div>
 
       </div>
+
+      {/* Полноэкранный просмотр вложения */}
+      {fullscreenAttachment && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in" onClick={() => setFullscreenAttachment(null)}>
+          <button onClick={() => setFullscreenAttachment(null)} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full flex items-center justify-center text-white z-10 transition-all"><X size={22} /></button>
+          {fullscreenAttachment === 'cover' ? (
+            <img src={post.cover_url} className="max-w-full max-h-full object-contain rounded-xl" alt="cover" onClick={e => e.stopPropagation()} />
+          ) : (
+            <div className="w-full max-w-5xl aspect-video" onClick={e => e.stopPropagation()}>
+              <iframe src={embedUrl} className="w-full h-full rounded-xl" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+            </div>
+          )}
+        </div>
+      )}
 
       <style jsx global>{`
         body { font-family: var(--font-wix), sans-serif !important; background: #090b0e; }
