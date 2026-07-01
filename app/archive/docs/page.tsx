@@ -273,8 +273,8 @@ export default function ArchiveDocsPage() {
                     <span className="truncate">{activeDoc.title || `Документ #${activeDoc.id}`}</span>
                   </h2>
                   {isEditor && (
-                    <button onClick={() => { setDocTitle(activeDoc.title || ''); setIsEditing(true); }} className="bg-black/40 border border-white/10 py-1.5 px-3.5 rounded-full text-xs font-bold text-gray-200 hover:text-white transition-all flex items-center gap-1.5 shrink-0 shadow-md">
-                      <Edit2 size={12} /><span>Редактировать</span>
+                    <button onClick={() => { setDocTitle(activeDoc.title || ''); setIsEditing(true); }} className="w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all" title="Редактировать">
+                      <Edit2 size={14} />
                     </button>
                   )}
                 </div>

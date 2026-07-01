@@ -689,7 +689,7 @@ export default function Home() {
           <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
               <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={20} />Свод законов и правил</h2>
-              {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="ui-pill-btn"><Edit2 size={12} /><span>Редактировать</span></button>}
+              {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all"><Edit2 size={14} /></button>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
               <div className="flex flex-col gap-3 md:col-span-1 w-full">
