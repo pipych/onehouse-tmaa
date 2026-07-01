@@ -157,7 +157,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                     <div className="relative">
                       <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                       {activeMenuPostId === post.id && (
-                        <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-30 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl" onClick={e => e.stopPropagation()}>
                           <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
                           <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 text-sm font-bold text-red-400">Удалить</button>
                         </div>

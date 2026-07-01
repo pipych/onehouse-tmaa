@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
-import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical } from 'lucide-react';
 
 export default function StandalonePostDetail() {
   const router = useRouter();
@@ -19,6 +19,15 @@ export default function StandalonePostDetail() {
   const [replyContent, setReplyContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
+  const [activeMenu, setActiveMenu] = useState(false);
+
+  const canManage = currentUser && post && (post.author_id === currentUser.id || currentUser.roles?.includes('admin'));
+
+  async function handleDeletePost() {
+    if (!confirm('Удалить пост?')) return;
+    await supabase.from('posts').delete().eq('id', postId);
+    router.push('/');
+  }
 
   async function loadActivity() {
     if (!postId) return;
@@ -105,10 +114,21 @@ export default function StandalonePostDetail() {
           <div className="p-6 md:p-8 space-y-5">
             <div className="flex items-center gap-4">
               <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-10 h-10 rounded-full border border-[#c0ff00]/20 object-cover" />
-              <div>
+              <div className="flex-1">
                 <div className="text-sm font-bold text-white">{post.author?.rp_name}</div>
                 <div className="text-[10px] text-gray-500 font-bold uppercase">{new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
               </div>
+              {canManage && (
+                <div className="relative">
+                  <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
+                  {activeMenu && (
+                    <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
+                      <button onClick={handleDeletePost} className="w-full text-left px-3 py-2 text-sm font-bold text-red-400">Удалить</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <h1 className="text-xl md:text-3xl font-black text-white leading-tight">{post.title}</h1>
