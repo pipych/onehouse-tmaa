@@ -262,7 +262,7 @@ export default function StandalonePostDetail() {
       {/* Полноэкранный просмотр вложения */}
       {fullscreenAttachment && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in" onClick={() => setFullscreenAttachment(null)}>
-          <button onClick={() => setFullscreenAttachment(null)} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full flex items-center justify-center text-white z-10 transition-all"><X size={22} /></button>
+          <button onClick={() => setFullscreenAttachment(null)} className="absolute top-20 right-4 md:top-6 md:right-6 w-12 h-12 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full flex items-center justify-center text-white z-10 transition-all"><X size={22} /></button>
           {fullscreenAttachment === 'cover' ? (
             <img src={post.cover_url} className="max-w-full max-h-full object-contain rounded-xl" alt="cover" onClick={e => e.stopPropagation()} />
           ) : (
