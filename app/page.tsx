@@ -882,6 +882,14 @@ export default function Home() {
 
         </div>
       </nav>
+
+      <style jsx global>{`
+        .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
+        .prose h1, [contenteditable] h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+        .prose h2, [contenteditable] h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
+        .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; }
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
+      `}</style>
     </div>
   );
 }
