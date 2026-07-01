@@ -184,7 +184,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
                   <h3 className="text-lg md:text-2xl font-black text-white truncate leading-tight">{post.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
                   <div className="flex items-center justify-start gap-3 select-none" onClick={e => e.stopPropagation()}>
-                    <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'bg-red-800/10 border-red-800/60 text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
+                    <button onClick={(e) => handlePostLike(e, post.id)} style={postLikes[post.id]?.liked ? { borderColor: '#7f1d1d', backgroundColor: 'rgba(127,29,29,0.1)' } : undefined} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
                     <button onClick={() => router.push(`/media/${post.id}`)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
                   </div>
                 </div>
