@@ -139,7 +139,7 @@ export default function StandalonePostDetail() {
         </div>
 
         {/* Блок древовидных комментариев */}
-        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 shadow-2xl space-y-6">
+        <div id="comments" className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 shadow-2xl space-y-6 scroll-mt-32">
           <h3 className="text-sm font-black uppercase text-gray-400 tracking-wider">Комментарии ({comments.length})</h3>
           
           {/* Главная форма отправки */}

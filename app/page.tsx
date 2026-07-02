@@ -839,11 +839,13 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
               <div className="flex flex-col gap-3 md:col-span-1 w-full">
-                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
-                  <h3 className="font-bold text-sm">Конституция</h3>
+                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
+                  <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
+                  <h3 className="font-black text-lg relative z-10">Конституция</h3>
                 </div>
-                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
-                  <h3 className="font-bold text-sm">Заповеди дома</h3>
+                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
+                  <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/zapovedi.gif')" }} />
+                  <h3 className="font-black text-lg relative z-10">Заповеди дома</h3>
                 </div>
               </div>
               <div className="md:col-span-2 w-full">
