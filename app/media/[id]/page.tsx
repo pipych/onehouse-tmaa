@@ -73,6 +73,18 @@ export default function StandalonePostDetail() {
     loadActivity();
   }, [postId]);
 
+  // Скролл к комментариям при переходе с #comments
+  useEffect(() => {
+    if (typeof window === 'undefined' || !comments.length) return;
+    if (window.location.hash === '#comments') {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('comments');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [comments]);
+
   if (!post) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
