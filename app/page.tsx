@@ -258,109 +258,19 @@ export default function Home() {
   }
 
   // =================== УМНЫЙ ПОИСК ПО ДОКУМЕНТАМ ===================
-  function levenshtein(a: string, b: string): number {
-    const m = a.length, n = b.length;
-    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-    for (let i = 0; i <= m; i++) dp[i][0] = i;
-    for (let j = 0; j <= n; j++) dp[0][j] = j;
-    for (let i = 1; i <= m; i++) {
-      for (let j = 1; j <= n; j++) {
-        dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1;
-      }
-    }
-    return dp[m][n];
-  }
-
   function getHighlightedHtml(html: string, query: string): string {
     if (!query.trim()) return html;
     const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
     if (terms.length === 0) return html;
-    
-    // Извлекаем plain text для поиска позиций
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const plainText = tmp.textContent || '';
-    const lower = plainText.toLowerCase();
-    
-    // Собираем все позиции совпадений (точные + нечёткие)
-    const matches: { start: number; end: number }[] = [];
-    
+    let result = html;
     for (const term of terms) {
-      // Точные подстроки
-      let idx = 0;
-      while ((idx = lower.indexOf(term, idx)) !== -1) {
-        matches.push({ start: idx, end: idx + term.length });
-        idx += term.length;
-      }
-      
-      // Нечёткий поиск: по словам с расстоянием Левенштейна ≤2
-      if (term.length >= 3) {
-        const wordRegex = /[а-яёa-z0-9]+/gi;
-        let m;
-        while ((m = wordRegex.exec(lower)) !== null) {
-          if (m[0].length >= 3 && levenshtein(term, m[0]) <= Math.min(2, Math.floor(term.length / 3) + 1)) {
-            // Не дублируем, если позиция уже есть
-            if (!matches.some(ex => ex.start === m.index)) {
-              matches.push({ start: m.index, end: m.index + m[0].length });
-            }
-          }
-        }
-      }
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Ищем термин ТОЛЬКО в текстовом содержимом (между > и <), не в тегах
+      const regex = new RegExp(`(>[^<]*?)(${escaped})([^>]*?<)`, 'gi');
+      result = result.replace(regex, (_, before, found, after) => {
+        return before + `<mark class="search-hl" style="background:#c0ff00;color:#000;border-radius:2px;padding:0 2px;">${found}</mark>` + after;
+      });
     }
-    
-    if (matches.length === 0) return html;
-    
-    // Сортируем и убираем пересечения
-    matches.sort((a, b) => a.start - b.start);
-    const merged: { start: number; end: number }[] = [];
-    for (const m of matches) {
-      if (merged.length > 0 && m.start <= merged[merged.length - 1].end) {
-        merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, m.end);
-      } else {
-        merged.push({ ...m });
-      }
-    }
-    
-    // Строим HTML с подсветкой — оборачиваем совпадения в <mark>
-    let result = '';
-    let plainIdx = 0;
-    let htmlPos = 0;
-    const tagRegex = /<[^>]*>/g;
-    let tagMatch;
-    
-    for (const match of merged) {
-      // Продвигаемся по HTML до позиции совпадения
-      while (plainIdx < match.start) {
-        // Пропускаем HTML-теги
-        tagRegex.lastIndex = htmlPos;
-        if ((tagMatch = tagRegex.exec(html)) !== null && tagMatch.index === htmlPos) {
-          result += tagMatch[0];
-          htmlPos = tagRegex.lastIndex;
-        } else {
-          result += html[htmlPos];
-          htmlPos++;
-          plainIdx++;
-        }
-      }
-      
-      // Вставляем подсвеченное совпадение
-      let matchHtml = '';
-      while (plainIdx < match.end) {
-        tagRegex.lastIndex = htmlPos;
-        if ((tagMatch = tagRegex.exec(html)) !== null && tagMatch.index === htmlPos) {
-          matchHtml += tagMatch[0];
-          htmlPos = tagRegex.lastIndex;
-        } else {
-          matchHtml += html[htmlPos];
-          htmlPos++;
-          plainIdx++;
-        }
-      }
-      result += `<mark class="search-hl" style="background:#c0ff00;color:#000;border-radius:2px;padding:0 2px;">${matchHtml}</mark>`;
-    }
-    
-    // Остаток HTML
-    result += html.slice(htmlPos);
     return result;
   }
 
