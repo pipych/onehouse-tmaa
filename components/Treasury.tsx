@@ -32,22 +32,16 @@ export default function Treasury({ currentUser }: Props) {
         </h2>
       </div>
 
-      {/* Баланс — без фона, огромный шрифт */}
-      <div className="text-center mb-16">
-        <div className="text-[10px] text-gray-600 uppercase tracking-[0.3em] font-bold mb-4">Общий счёт казны</div>
-        <div className="text-7xl md:text-8xl font-black text-white tracking-tight leading-none">
-          <span className="text-[#c0ff00]">0</span>
-        </div>
-        <div className="text-2xl md:text-3xl font-black text-gray-400 mt-1">SPR</div>
-        <div className="inline-flex items-center gap-1.5 mt-4 px-3 py-1 bg-[#c0ff00]/10 border border-[#c0ff00]/20 rounded-full text-[10px] font-bold text-[#c0ff00]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#c0ff00] animate-pulse" />
-          Государственная казна OneHouse
+      {/* Баланс */}
+      <div className="text-center mb-20">
+        <div className="text-7xl md:text-8xl font-black tracking-tight">
+          <span className="text-[#c0ff00]">0</span><span className="text-gray-400"> SPR</span>
         </div>
       </div>
 
       {/* Кнопки действий */}
       {isManager && (
-        <div className="grid grid-cols-2 gap-3 w-full mb-14">
+        <div className="grid grid-cols-2 gap-3 w-full mb-20">
           <button className="flex items-center justify-center gap-2 p-4 bg-[#c0ff00]/10 border border-[#c0ff00]/20 rounded-[20px] text-[#c0ff00] text-sm font-bold">
             <Plus size={16} /> Пополнить
           </button>
