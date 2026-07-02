@@ -1053,6 +1053,16 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* Мобильная FAB — создание статьи */}
+      {activeTab === 'media' && dbUser && (
+        <button 
+          onClick={() => router.push('/media/editor')} 
+          className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
+        >
+          <Plus size={28} />
+        </button>
+      )}
+
       <style jsx global>{`
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
         .prose h1, [contenteditable] h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
