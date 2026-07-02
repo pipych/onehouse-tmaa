@@ -24,24 +24,24 @@ export default function Treasury({ currentUser }: Props) {
   ) ?? false;
 
   return (
-    <div className="animate-fade-in w-full max-w-md mx-auto flex flex-col items-center">
+    <div className="animate-fade-in w-full max-w-md mx-auto">
       {/* Заголовок */}
-      <div className="flex items-center justify-between w-full mb-12">
+      <div className="flex items-center justify-between w-full pb-12">
         <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3">
           <Landmark size={24} className="text-[#c0ff00]" /> .казна
         </h2>
       </div>
 
       {/* Баланс */}
-      <div className="text-center mb-20">
-        <div className="text-7xl md:text-8xl font-black tracking-tight">
-          <span className="text-[#c0ff00]">0</span><span className="text-gray-400"> SPR</span>
+      <div className="text-center py-16">
+        <div className="font-black tracking-tight leading-none" style={{ fontSize: 'clamp(4rem, 15vw, 9rem)' }}>
+          <span className="text-[#c0ff00]">0</span><span className="text-gray-600">SPR</span>
         </div>
       </div>
 
       {/* Кнопки действий */}
       {isManager && (
-        <div className="grid grid-cols-2 gap-3 w-full mb-20">
+        <div className="grid grid-cols-2 gap-3 w-full py-12">
           <button className="flex items-center justify-center gap-2 p-4 bg-[#c0ff00]/10 border border-[#c0ff00]/20 rounded-[20px] text-[#c0ff00] text-sm font-bold">
             <Plus size={16} /> Пополнить
           </button>
@@ -52,7 +52,7 @@ export default function Treasury({ currentUser }: Props) {
       )}
 
       {/* Транзакции */}
-      <div className="w-full space-y-5">
+      <div className="w-full pt-12 space-y-5">
         <div className="flex items-center gap-2 px-1">
           <Clock size={14} className="text-gray-500" />
           <span className="text-xs font-black uppercase tracking-wider text-gray-500">Транзакции</span>
