@@ -265,8 +265,19 @@ export default function Home() {
     let result = html;
     for (const term of terms) {
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Ищем термин ТОЛЬКО в текстовом содержимом (между > и <), не в тегах
-      const regex = new RegExp(`(>[^<]*?)(${escaped})([^>]*?<)`, 'gi');
+      // Строим паттерн: точное совпадение + префиксный поиск словоформ
+      let pattern: string;
+      if (term.length <= 4) {
+        // Короткие слова: только точное совпадение
+        pattern = escaped;
+      } else {
+        // Длинные слова: точное + корень (N-2 символов) + любые окончания
+        const stemLen = Math.max(3, term.length - 2);
+        const stem = term.slice(0, stemLen);
+        const stemEscaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        pattern = `${escaped}|\\b${stemEscaped}[а-яёa-z]*\\b`;
+      }
+      const regex = new RegExp(`(>[^<]*?)(${pattern})([^>]*?<)`, 'gi');
       result = result.replace(regex, (_, before, found, after) => {
         return before + `<mark class="search-hl" style="background:#c0ff00;color:#000;border-radius:2px;padding:0 2px;">${found}</mark>` + after;
       });
