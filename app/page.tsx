@@ -10,12 +10,13 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
+import Treasury from '../components/Treasury';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
-  Map as MapIcon, Search, ChevronUp, ChevronDown
+  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -58,7 +59,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null); 
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury'>('profile');
   const [players, setPlayers] = useState<Player[]>([]); 
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -115,7 +116,7 @@ export default function Home() {
 
   const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive') {
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury') {
     setSelectedPlayer(null); 
     setIsEditingProfile(false); 
     setShowRoleSelector(false); 
@@ -750,6 +751,7 @@ export default function Home() {
         )}
 
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
+        {activeTab === 'treasury' && <Treasury currentUser={dbUser} />}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
 
         {activeTab === 'constitution' && (
@@ -923,6 +925,11 @@ export default function Home() {
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
           </button>
 
+          <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
+            <Landmark size={23} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
+          </button>
+
           <button onClick={() => handleTabChange('players')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
             <Users size={23} />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
@@ -959,6 +966,11 @@ export default function Home() {
           <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
             <Library size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
+          </button>
+
+          <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+            <Landmark size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
           </button>
 
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
