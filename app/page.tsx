@@ -852,7 +852,7 @@ export default function Home() {
                 ) : (
                   <div className="space-y-4 w-full">
                     {!isEditing && (
-                      <div className="flex items-center gap-2 bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-2.5">
+                      <div className="flex items-center gap-2 bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-2.5 sticky top-24 z-20 backdrop-blur-md shadow-lg mb-4">
                         <Search size={16} className="text-gray-500 shrink-0" />
                         <input 
                           type="text" 
