@@ -838,19 +838,19 @@ export default function Home() {
               {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all"><Edit2 size={14} /></button>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
-              <div className="flex flex-col gap-3 md:col-span-1 w-full">
-                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
+              <div className="flex flex-col gap-5 md:col-span-1 w-full">
+                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
                   <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
                   <h3 className="font-black text-lg relative z-10">Конституция</h3>
                 </div>
-                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
+                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
                   <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/zapovedi.gif')" }} />
                   <h3 className="font-black text-lg relative z-10">Заповеди дома</h3>
                 </div>
               </div>
               <div className="md:col-span-2 w-full">
                 {activeDocument === 'none' ? (
-                  <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs">ВЫБЕРИТЕ ДОКУМЕНТ</div>
+                  <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]"><BookOpen size={36} className="text-gray-700 mb-3" /><span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span></div>
                 ) : (
                   <div className="space-y-4 w-full">
                     {!isEditing && (
