@@ -5,7 +5,7 @@
 // =========================================================================
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
@@ -15,7 +15,7 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
-  Map as MapIcon
+  Map as MapIcon, Search, ChevronUp, ChevronDown
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -98,6 +98,9 @@ export default function Home() {
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const [totalMatches, setTotalMatches] = useState(0);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -119,6 +122,7 @@ export default function Home() {
     setActiveTab(tab);
     setActiveDocument('none'); 
     setIsEditing(false);
+    setSearchQuery('');
     if (tab === 'profile') loadLatestPosts();
   }
 
@@ -252,6 +256,148 @@ export default function Home() {
       setTimeout(checkFormatting, 50);
     }
   }
+
+  // =================== УМНЫЙ ПОИСК ПО ДОКУМЕНТАМ ===================
+  function levenshtein(a: string, b: string): number {
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1;
+      }
+    }
+    return dp[m][n];
+  }
+
+  function getHighlightedHtml(html: string, query: string): string {
+    if (!query.trim()) return html;
+    const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+    if (terms.length === 0) return html;
+    
+    // Извлекаем plain text для поиска позиций
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const plainText = tmp.textContent || '';
+    const lower = plainText.toLowerCase();
+    
+    // Собираем все позиции совпадений (точные + нечёткие)
+    const matches: { start: number; end: number }[] = [];
+    
+    for (const term of terms) {
+      // Точные подстроки
+      let idx = 0;
+      while ((idx = lower.indexOf(term, idx)) !== -1) {
+        matches.push({ start: idx, end: idx + term.length });
+        idx += term.length;
+      }
+      
+      // Нечёткий поиск: по словам с расстоянием Левенштейна ≤2
+      if (term.length >= 3) {
+        const wordRegex = /[а-яёa-z0-9]+/gi;
+        let m;
+        while ((m = wordRegex.exec(lower)) !== null) {
+          if (m[0].length >= 3 && levenshtein(term, m[0]) <= Math.min(2, Math.floor(term.length / 3) + 1)) {
+            // Не дублируем, если позиция уже есть
+            if (!matches.some(ex => ex.start === m.index)) {
+              matches.push({ start: m.index, end: m.index + m[0].length });
+            }
+          }
+        }
+      }
+    }
+    
+    if (matches.length === 0) return html;
+    
+    // Сортируем и убираем пересечения
+    matches.sort((a, b) => a.start - b.start);
+    const merged: { start: number; end: number }[] = [];
+    for (const m of matches) {
+      if (merged.length > 0 && m.start <= merged[merged.length - 1].end) {
+        merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, m.end);
+      } else {
+        merged.push({ ...m });
+      }
+    }
+    
+    // Строим HTML с подсветкой — оборачиваем совпадения в <mark>
+    let result = '';
+    let plainIdx = 0;
+    let htmlPos = 0;
+    const tagRegex = /<[^>]*>/g;
+    let tagMatch;
+    
+    for (const match of merged) {
+      // Продвигаемся по HTML до позиции совпадения
+      while (plainIdx < match.start) {
+        // Пропускаем HTML-теги
+        tagRegex.lastIndex = htmlPos;
+        if ((tagMatch = tagRegex.exec(html)) !== null && tagMatch.index === htmlPos) {
+          result += tagMatch[0];
+          htmlPos = tagRegex.lastIndex;
+        } else {
+          result += html[htmlPos];
+          htmlPos++;
+          plainIdx++;
+        }
+      }
+      
+      // Вставляем подсвеченное совпадение
+      let matchHtml = '';
+      while (plainIdx < match.end) {
+        tagRegex.lastIndex = htmlPos;
+        if ((tagMatch = tagRegex.exec(html)) !== null && tagMatch.index === htmlPos) {
+          matchHtml += tagMatch[0];
+          htmlPos = tagRegex.lastIndex;
+        } else {
+          matchHtml += html[htmlPos];
+          htmlPos++;
+          plainIdx++;
+        }
+      }
+      result += `<mark class="search-hl" style="background:#c0ff00;color:#000;border-radius:2px;padding:0 2px;">${matchHtml}</mark>`;
+    }
+    
+    // Остаток HTML
+    result += html.slice(htmlPos);
+    return result;
+  }
+
+  const highlightedHtml = useMemo(() => {
+    const docText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
+    if (!searchQuery.trim()) return docText;
+    return getHighlightedHtml(docText, searchQuery);
+  }, [searchQuery, activeDocument, constitutionText, commandmentsText]);
+
+  function navigateSearch(direction: 'next' | 'prev') {
+    if (!viewRef.current) return;
+    const marks = viewRef.current.querySelectorAll('mark.search-hl');
+    if (marks.length === 0) return;
+    marks.forEach(m => { (m as HTMLElement).style.outline = 'none'; });
+    const newIdx = direction === 'next'
+      ? Math.min(activeMatchIndex + 1, marks.length - 1)
+      : Math.max(activeMatchIndex - 1, 0);
+    setActiveMatchIndex(newIdx);
+    const active = marks[newIdx] as HTMLElement;
+    active.style.outline = '2px solid #fff';
+    active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  useEffect(() => {
+    if (!viewRef.current) { setTotalMatches(0); setActiveMatchIndex(0); return; }
+    const t = setTimeout(() => {
+      const marks = viewRef.current?.querySelectorAll('mark.search-hl');
+      setTotalMatches(marks?.length || 0);
+      if (marks && marks.length > 0) {
+        setActiveMatchIndex(0);
+        (marks[0] as HTMLElement).style.outline = '2px solid #fff';
+      } else {
+        setActiveMatchIndex(0);
+      }
+    }, 50);
+    return () => clearTimeout(t);
+  }, [highlightedHtml]);
 
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
@@ -693,10 +839,10 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
               <div className="flex flex-col gap-3 md:col-span-1 w-full">
-                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
+                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
                   <h3 className="font-bold text-sm">Конституция</h3>
                 </div>
-                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
+                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-4 rounded-2xl border transition-all cursor-pointer ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white'}`}>
                   <h3 className="font-bold text-sm">Заповеди дома</h3>
                 </div>
               </div>
@@ -705,7 +851,31 @@ export default function Home() {
                   <div className="bg-[#14171c]/40 border border-white/5 rounded-[28px] p-8 text-center text-gray-500 font-mono text-xs">ВЫБЕРИТЕ ДОКУМЕНТ</div>
                 ) : (
                   <div className="space-y-4 w-full">
-                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: currentDocText }} />}
+                    {!isEditing && (
+                      <div className="flex items-center gap-2 bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-2.5">
+                        <Search size={16} className="text-gray-500 shrink-0" />
+                        <input 
+                          type="text" 
+                          placeholder="Поиск по документу…" 
+                          value={searchQuery} 
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className="flex-1 bg-transparent text-sm text-white outline-none placeholder-gray-500 min-w-0"
+                        />
+                        {totalMatches > 0 && (
+                          <span className="text-xs font-mono font-bold text-[#c0ff00] shrink-0 tabular-nums">{activeMatchIndex + 1}/{totalMatches}</span>
+                        )}
+                        {totalMatches > 0 && (
+                          <>
+                            <button onClick={() => navigateSearch('prev')} className="p-1 text-gray-400 hover:text-white transition-colors active:scale-75"><ChevronUp size={16} /></button>
+                            <button onClick={() => navigateSearch('next')} className="p-1 text-gray-400 hover:text-white transition-colors active:scale-75"><ChevronDown size={16} /></button>
+                          </>
+                        )}
+                        {searchQuery && (
+                          <button onClick={() => setSearchQuery('')} className="p-1 text-gray-500 hover:text-white transition-colors active:scale-75"><X size={14} /></button>
+                        )}
+                      </div>
+                    )}
+                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: highlightedHtml }} />}
                   </div>
                 )}
               </div>

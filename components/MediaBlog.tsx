@@ -121,11 +121,6 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
       <div className="flex items-center justify-between w-full select-none">
         <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
-        {currentUser && (
-          <button onClick={() => router.push('/media/editor')} className="w-12 h-12 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-90">
-            <Plus size={26} />
-          </button>
-        )}
       </div>
 
       <div className="flex flex-col gap-8 pb-8">
@@ -198,6 +193,11 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         <div className="flex justify-center mt-2 mb-4">
           <button onClick={() => { const n = currentPage + 1; setCurrentPage(n); fetchPosts(n, true); }} className="flex items-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 rounded-full text-xs font-bold text-gray-400">Показать еще</button>
         </div>
+      )}
+      {currentUser && (
+        <button onClick={() => router.push('/media/editor')} className="md:hidden fixed bottom-24 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-40 hover:scale-105">
+          <Plus size={28} />
+        </button>
       )}
     </div>
   );
