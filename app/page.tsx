@@ -927,6 +927,7 @@ export default function Home() {
 
           <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
             <Landmark size={23} />
+            <span className="text-[8px] font-black text-gray-600 mt-0.5 uppercase tracking-wider">soon</span>
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
           </button>
 
@@ -971,6 +972,7 @@ export default function Home() {
           <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
             <Landmark size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
+            <span className="text-[7px] font-black text-gray-600 uppercase">soon</span>
           </button>
 
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
