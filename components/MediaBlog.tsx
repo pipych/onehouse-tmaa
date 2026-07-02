@@ -195,7 +195,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         </div>
       )}
       {currentUser && (
-        <button onClick={() => router.push('/media/editor')} className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-40 hover:scale-105">
+        <button onClick={() => router.push('/media/editor')} className="fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50 hover:scale-105">
           <Plus size={28} />
         </button>
       )}
