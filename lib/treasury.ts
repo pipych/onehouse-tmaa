@@ -68,3 +68,17 @@ export async function addTransaction(tx: {
 
   return data;
 }
+
+export async function deleteTransaction(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('deleteTransaction error:', error);
+    return false;
+  }
+
+  return true;
+}

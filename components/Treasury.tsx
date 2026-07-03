@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Landmark, Plus, Minus, ArrowUpRight, ArrowDownLeft, Clock, X, Coins } from 'lucide-react';
-import { getBalance, getTransactions, addTransaction, TreasuryTransaction } from '../lib/treasury';
+import { Landmark, Plus, Minus, ArrowUpRight, ArrowDownLeft, Clock, X, Coins, MoreHorizontal, Trash2 } from 'lucide-react';
+import { getBalance, getTransactions, addTransaction, deleteTransaction, TreasuryTransaction } from '../lib/treasury';
 
 interface Player {
   id: string;
@@ -34,6 +34,13 @@ function formatSpr(n: number): string {
   return n.toLocaleString('ru-RU');
 }
 
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    + ' • '
+    + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function Treasury({ currentUser }: Props) {
   const isManager = currentUser?.roles?.some(r =>
     ['admin', 'админ', 'президент', 'president'].includes(r.toLowerCase())
@@ -45,12 +52,17 @@ export default function Treasury({ currentUser }: Props) {
   const [transactions, setTransactions] = useState<TreasuryTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Модалки
+  // Модалки пополнения/списания
   const [modal, setModal] = useState<'deposit' | 'withdrawal' | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Детали транзакции
+  const [detailTx, setDetailTx] = useState<TreasuryTransaction | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [bal, txs] = await Promise.all([getBalance(), getTransactions()]);
@@ -87,7 +99,6 @@ export default function Treasury({ currentUser }: Props) {
       return;
     }
 
-    // Закрыть модалку и обновить данные
     setModal(null);
     setCustomAmount('');
     setDescription('');
@@ -103,11 +114,28 @@ export default function Treasury({ currentUser }: Props) {
     handleSubmit(n);
   };
 
+  const handleDelete = async () => {
+    if (!detailTx) return;
+    setDeleting(true);
+    const ok = await deleteTransaction(detailTx.id);
+    if (ok) {
+      setDetailTx(null);
+      setShowMenu(false);
+      refreshAfterTx();
+    }
+    setDeleting(false);
+  };
+
   const closeModal = () => {
     setModal(null);
     setCustomAmount('');
     setDescription('');
     setError('');
+  };
+
+  const closeDetail = () => {
+    setDetailTx(null);
+    setShowMenu(false);
   };
 
   if (loading) {
@@ -182,7 +210,8 @@ export default function Treasury({ currentUser }: Props) {
             {transactions.map((tx) => (
               <div
                 key={tx.id}
-                className="bg-[#14171c]/90 border border-white/5 rounded-2xl p-4 flex items-center gap-4"
+                onClick={() => setDetailTx(tx)}
+                className="bg-[#14171c]/90 border border-white/5 rounded-2xl p-4 flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-transform hover:border-white/10"
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
@@ -215,15 +244,11 @@ export default function Treasury({ currentUser }: Props) {
         )}
       </div>
 
-      {/* Модалка */}
+      {/* Модалка пополнения/списания — выше */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* Оверлей */}
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center pt-24 sm:pt-0">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-
-          {/* Контент */}
-          <div className="relative bg-[#1a1d24] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up">
-            {/* Шапка */}
+          <div className="relative bg-[#1a1d24] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-black text-white">
                 {modal === 'deposit' ? 'Пополнить казну' : 'Списать из казны'}
@@ -233,7 +258,6 @@ export default function Treasury({ currentUser }: Props) {
               </button>
             </div>
 
-            {/* Быстрые суммы */}
             <div className="flex flex-wrap gap-2 mb-4">
               {(modal === 'deposit' ? DEPOSIT_AMOUNTS : WITHDRAW_AMOUNTS).map((n) => (
                 <button
@@ -251,7 +275,6 @@ export default function Treasury({ currentUser }: Props) {
               ))}
             </div>
 
-            {/* Кастомная сумма */}
             <div className="mb-4">
               <label className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1 block">
                 Своя сумма
@@ -279,7 +302,6 @@ export default function Treasury({ currentUser }: Props) {
               </div>
             </div>
 
-            {/* Описание */}
             <div className="mb-1">
               <label className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1 block">
                 Описание (необязательно)
@@ -294,10 +316,94 @@ export default function Treasury({ currentUser }: Props) {
               />
             </div>
 
-            {/* Ошибка */}
             {error && (
               <div className="mt-3 text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2">{error}</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Детали транзакции */}
+      {detailTx && (
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center pt-24 sm:pt-0">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeDetail} />
+          <div className="relative bg-[#1a1d24] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up">
+            {/* Шапка с тремя точками */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    detailTx.type === 'deposit' ? 'bg-green-500/10' : 'bg-red-500/10'
+                  }`}
+                >
+                  {detailTx.type === 'deposit' ? (
+                    <ArrowDownLeft size={18} className="text-green-400" />
+                  ) : (
+                    <ArrowUpRight size={18} className="text-red-400" />
+                  )}
+                </div>
+                <span
+                  className={`text-lg font-black ${
+                    detailTx.type === 'deposit' ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
+                  {detailTx.type === 'deposit' ? '+' : '−'}{formatSpr(detailTx.amount)} SPR
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isManager && (
+                  <div className="relative">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                      className="text-gray-500 hover:text-white transition-colors p-1"
+                    >
+                      <MoreHorizontal size={20} />
+                    </button>
+                    {showMenu && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                        <div className="absolute right-0 top-full mt-1 bg-[#0d0f12] border border-white/10 rounded-xl p-1.5 z-20 shadow-2xl min-w-[130px]">
+                          <button
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-red-400 text-sm font-bold hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 size={14} />
+                            {deleting ? 'Удаление...' : 'Удалить'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                <button onClick={closeDetail} className="text-gray-500 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Детали */}
+            <div className="space-y-4">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Описание</div>
+                <div className="text-white text-sm font-bold">{detailTx.description}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Тип операции</div>
+                <div className={`text-sm font-bold ${detailTx.type === 'deposit' ? 'text-green-400' : 'text-red-400'}`}>
+                  {detailTx.type === 'deposit' ? 'Пополнение' : 'Списание'}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Кто провёл</div>
+                <div className="text-white text-sm font-bold">{detailTx.author_name}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Дата и время</div>
+                <div className="text-white text-sm font-bold">{formatDateTime(detailTx.created_at)}</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
