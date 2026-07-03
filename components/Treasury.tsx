@@ -22,12 +22,12 @@ const DEPOSIT_AMOUNTS = [50, 100, 300, 500, 1000, 5000, 10000];
 const WITHDRAW_AMOUNTS = [50, 100, 300, 500, 1000, 5000];
 
 function getBankImage(balance: number): string {
-  if (balance >= 10000) return '/bank 10000+.webp';
-  if (balance >= 5000) return '/bank 5000+.webp';
-  if (balance >= 1000) return '/bank 1000+.webp';
-  if (balance >= 300) return '/bank 300+.webp';
-  if (balance >= 50) return '/bank 50+.webp';
-  return '/bank 0.webp';
+  if (balance >= 10000) return '/bank-10000.webp';
+  if (balance >= 5000) return '/bank-5000.webp';
+  if (balance >= 1000) return '/bank-1000.webp';
+  if (balance >= 300) return '/bank-300.webp';
+  if (balance >= 50) return '/bank-50.webp';
+  return '/bank-0.webp';
 }
 
 function formatSpr(n: number): string {
@@ -128,11 +128,11 @@ export default function Treasury({ currentUser }: Props) {
       </div>
 
       {/* Банка */}
-      <div className="flex justify-center py-6">
+      <div className="flex justify-center py-4">
         <img
           src={getBankImage(balance ?? 0)}
           alt="Казна"
-          className="w-48 h-48 object-contain drop-shadow-[0_0_40px_rgba(192,255,0,0.15)]"
+          className="w-56 h-56 sm:w-64 sm:h-64 object-contain drop-shadow-[0_0_50px_rgba(192,255,0,0.2)]"
         />
       </div>
 
