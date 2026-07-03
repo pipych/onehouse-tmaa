@@ -175,9 +175,10 @@ export default function Treasury({ currentUser }: Props) {
       {/* Банка */}
       <div className="flex justify-center py-4">
         <img
+          key={getBankImage(balance ?? 0)}
           src={getBankImage(balance ?? 0)}
           alt="Казна"
-          className="w-56 h-56 sm:w-64 sm:h-64 object-contain drop-shadow-[0_0_50px_rgba(192,255,0,0.2)]"
+          className="w-56 h-56 sm:w-64 sm:h-64 object-contain drop-shadow-[0_0_50px_rgba(192,255,0,0.2)] animate-fade-in"
         />
       </div>
 
