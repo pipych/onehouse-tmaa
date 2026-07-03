@@ -12,6 +12,7 @@ import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
 import { getBalance } from '../lib/treasury';
+import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
@@ -111,6 +112,9 @@ export default function Home() {
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
+  const [guestTgId, setGuestTgId] = useState('');
+  const [guestList, setGuestList] = useState<{ tg_id: number; created_at: string; added_by: string }[]>([]);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
@@ -364,7 +368,26 @@ export default function Home() {
     try {
       const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
       if (dbError || !user) {
-        setError(`Пользователь с TG ID ${tgId} не найден.`);
+        // Проверяем гостевой доступ
+        const guest = await isGuest(tgId);
+        if (guest) {
+          // Создаём виртуального пользователя-гостя
+          setDbUser({
+            id: 'guest_' + tgId,
+            tg_id: tgId,
+            tg_username: tgUser?.username || 'guest',
+            mc_nickname: 'Гость',
+            rp_name: 'Гость',
+            avatar_url: '',
+            roles: ['guest'],
+          });
+          loadRoles();
+          loadPlayers();
+          loadConstitution();
+          loadLatestPosts();
+        } else {
+          setError(`Пользователь с TG ID ${tgId} не найден.`);
+        }
       } else {
         setDbUser(user);
         setNewRpName(user.rp_name);
@@ -463,6 +486,31 @@ export default function Home() {
     await supabase.from('roles').update({ name: role.name, color: role.color, can_edit_constitution: role.canEditConstitution }).eq('id', role.id);
   }
 
+  async function handleAddGuest() {
+    const tgId = parseInt(guestTgId);
+    if (isNaN(tgId) || tgId <= 0) return;
+    setGuestLoading(true);
+    const ok = await addGuest(tgId, dbUser?.rp_name || 'Админ');
+    if (ok) {
+      setGuestTgId('');
+      loadGuests();
+    } else {
+      alert('Ошибка добавления гостя');
+    }
+    setGuestLoading(false);
+  }
+
+  async function handleRemoveGuest(tgId: number) {
+    const ok = await removeGuest(tgId);
+    if (ok) loadGuests();
+    else alert('Ошибка удаления гостя');
+  }
+
+  async function loadGuests() {
+    const list = await getGuests();
+    setGuestList(list);
+  }
+
   async function handleAddRoleToUser(roleName: string) {
     if (!selectedPlayer || selectedPlayer.roles.includes(roleName)) return;
     const updatedRoles = [...selectedPlayer.roles, roleName];
@@ -521,6 +569,11 @@ export default function Home() {
   useEffect(() => {
     getBalance().then(setTreasuryBalance);
   }, []);
+
+  // Загрузка списка гостей при входе в админку
+  useEffect(() => {
+    if (activeTab === 'admin') loadGuests();
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -952,6 +1005,45 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Гостевой доступ */}
+            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><User size={16} /><span>Гостевой доступ</span></div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Telegram ID гостя"
+                  value={guestTgId}
+                  onChange={e => setGuestTgId(e.target.value)}
+                  className="ui-input flex-1"
+                />
+                <button
+                  onClick={handleAddGuest}
+                  disabled={guestLoading || !guestTgId}
+                  className="ui-pill-btn shrink-0 px-4 disabled:opacity-30"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+              {guestList.length > 0 && (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {guestList.map(g => (
+                    <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl border border-white/5 text-xs">
+                      <div>
+                        <span className="text-white font-bold">ID: {g.tg_id}</span>
+                        <span className="text-gray-500 ml-2">{new Date(g.created_at).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveGuest(g.tg_id)}
+                        className="text-gray-500 hover:text-red-400 transition-colors p-1"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
