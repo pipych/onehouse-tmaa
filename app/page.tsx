@@ -772,7 +772,7 @@ export default function Home() {
             <div className="flex gap-3 pb-4">
               <button
                 onClick={() => { setActiveSvodTab('laws'); setActiveDocument('none'); setIsEditing(false); }}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                   activeSvodTab === 'laws'
                     ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
                     : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
@@ -783,7 +783,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveSvodTab('archive')}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
                   activeSvodTab === 'archive'
                     ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
                     : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
