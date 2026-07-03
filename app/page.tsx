@@ -949,83 +949,78 @@ export default function Home() {
             <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
           </button>
         )}
-        <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-6 px-1 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative">
-          
-          <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-            <HomeIcon size={23} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
-          </button>
 
-          <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-            <Newspaper size={23} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Медиа</span>
-          </button>
+        {/* Pill + кружок Игроки в ряд */}
+        <div className="flex items-center gap-4">
+          <nav className="w-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 py-6 px-1 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative">
+            <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
+              <HomeIcon size={23} />
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
+            </button>
+            <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
+              <Newspaper size={23} />
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Медиа</span>
+            </button>
+            <button onClick={() => handleTabChange('svod')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
+              <BookMarked size={23} />
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Свод</span>
+            </button>
+            <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
+              <Landmark size={23} />
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
+            </button>
+          </nav>
 
-          <button onClick={() => handleTabChange('svod')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-            <BookMarked size={23} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Свод</span>
+          {/* Кружок Игроки — справа от пиля */}
+          <button
+            onClick={() => handleTabChange('players')}
+            className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full flex items-center justify-center transition-all shadow-2xl hover:scale-105 ${
+              activeTab === 'players' || selectedPlayer
+                ? 'border-[#c0ff00]/40 text-[#c0ff00]'
+                : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
+            }`}
+          >
+            <Users size={28} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
           </button>
-
-          <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-            <Landmark size={23} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
-          </button>
-        </nav>
-
-        {/* Отдельный кружок Игроки */}
-        <button
-          onClick={() => handleTabChange('players')}
-          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full flex items-center justify-center transition-all shadow-2xl hover:scale-105 ${
-            activeTab === 'players' || selectedPlayer
-              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-              : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
-          }`}
-        >
-          <Users size={28} />
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
-        </button>
+        </div>
       </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
-      <nav className={`md:hidden fixed bottom-6 left-4 right-4 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full z-50 shadow-2xl transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <div className="flex w-full items-center justify-around px-2">
-          
-          <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <HomeIcon size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
-          </button>
+      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <nav className="flex-1 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl">
+          <div className="flex w-full items-center justify-around px-2">
+            <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+              <HomeIcon size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
+            </button>
+            <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+              <Newspaper size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Медиа</span>
+            </button>
+            <button onClick={() => handleTabChange('svod')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+              <BookMarked size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
+            </button>
+            <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+              <Landmark size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
+            </button>
+          </div>
+        </nav>
 
-          <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <Newspaper size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Медиа</span>
-          </button>
-
-          <button onClick={() => handleTabChange('svod')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <BookMarked size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
-          </button>
-
-          <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <Landmark size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
-          </button>
-
-        </div>
-      </nav>
-
-      {/* Мобильный кружок Игроки */}
-      <button
-        onClick={() => handleTabChange('players')}
-        className={`md:hidden fixed bottom-24 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 active:scale-90 z-50 border backdrop-blur-xl ${
-          showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'
-        } ${
-          activeTab === 'players' || selectedPlayer
-            ? 'bg-[#c0ff00]/20 border-[#c0ff00]/40 text-[#c0ff00]'
-            : 'bg-[#14171c]/90 border-white/10 text-gray-400'
-        }`}
-      >
-        <Users size={24} />
-      </button>
+        {/* Кружок Игроки справа */}
+        <button
+          onClick={() => handleTabChange('players')}
+          className={`shrink-0 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-90 border backdrop-blur-xl ${
+            activeTab === 'players' || selectedPlayer
+              ? 'bg-[#c0ff00]/20 border-[#c0ff00]/40 text-[#c0ff00]'
+              : 'bg-[#14171c]/90 border-white/10 text-gray-400'
+          }`}
+        >
+          <Users size={24} />
+        </button>
+      </div>
 
       {/* Мобильная FAB — создание статьи */}
       {activeTab === 'media' && dbUser && (
