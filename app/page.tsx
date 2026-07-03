@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
+import { getBalance } from '../lib/treasury';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
@@ -29,6 +30,15 @@ const AnvilIcon = ({ size = 18, className = "" }) => (
     <path d="M5 20a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z" />
   </svg>
 );
+
+function getBankSuffix(balance: number): string {
+  if (balance >= 10000) return '10000';
+  if (balance >= 5000) return '5000';
+  if (balance >= 1000) return '1000';
+  if (balance >= 300) return '300';
+  if (balance >= 50) return '50';
+  return '0';
+}
 
 interface Player {
   id: string;
@@ -61,6 +71,7 @@ export default function Home() {
   
   const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod'>('profile');
   const [activeSvodTab, setActiveSvodTab] = useState<'laws' | 'archive'>('laws');
+  const [treasuryBalance, setTreasuryBalance] = useState<number>(0);
   const [players, setPlayers] = useState<Player[]>([]); 
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -506,6 +517,11 @@ export default function Home() {
     }
   }, [isEditing, activeDocument]);
 
+  // Загрузка баланса казны для виджета
+  useEffect(() => {
+    getBalance().then(setTreasuryBalance);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
@@ -658,16 +674,16 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 2. АРХИВ СЕЗОНОВ */}
+              {/* 2. ВИДЖЕТ КАЗНЫ */}
               <div 
-                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
+                onClick={() => handleTabChange('treasury')}
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Library size={20} /></div>
+                <div className="absolute inset-0 z-0 opacity-20 group-hover:opacity-30 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:120px] md:bg-[length:200px]" style={{ backgroundImage: `url('/bank-${getBankSuffix(treasuryBalance)}.webp')` }} />
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Landmark size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Казна</h3>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">{treasuryBalance.toLocaleString('ru-RU')} SPR</p>
                 </div>
               </div>
 
@@ -743,17 +759,16 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 5. КАРТА МИРА: СМЕЩЕНА НИЖЕ В СЕТКУ В СВОБОДНЫЕ СЛОТЫ */}
+              {/* 5. АРХИВ СЕЗОНОВ */}
               <div 
-                onClick={() => handleTabChange('map')} 
-                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-white/20 transition-all duration-300 shadow-xl"
+                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
+                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
-                <div className="absolute top-3 right-3 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-20">Soon</div>
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-15 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px] grayscale" style={{ backgroundImage: "url('/mapicon.svg')" }} />
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-gray-400 shrink-0"><MapIcon size={20} /></div>
+                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Library size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-gray-300 font-black tracking-wide">Карта мира</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">3D Рендер</p>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
                 </div>
               </div>
 
