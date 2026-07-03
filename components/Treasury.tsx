@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Landmark, Plus, Minus, ArrowUpRight, ArrowDownLeft, Clock, X, Coins, MoreHorizontal, Trash2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { getBalance, getTransactions, addTransaction, deleteTransaction, TreasuryTransaction } from '../lib/treasury';
 
 interface Player {
@@ -73,6 +74,22 @@ export default function Treasury({ currentUser }: Props) {
 
   useEffect(() => {
     fetchData();
+
+    // Real-time подписка: любые изменения в treasury_transactions → обновляем
+    const channel = supabase
+      .channel('treasury-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'treasury_transactions',
+      }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
   }, [fetchData]);
 
   const refreshAfterTx = () => {
@@ -244,11 +261,11 @@ export default function Treasury({ currentUser }: Props) {
         )}
       </div>
 
-      {/* Модалка пополнения/списания — выше */}
+      {/* Модалка пополнения/списания */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center pt-24 sm:pt-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative bg-[#1a1d24] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up max-h-[85vh] overflow-y-auto">
+          <div className="relative bg-[#1a1d24] border border-white/10 rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-black text-white">
                 {modal === 'deposit' ? 'Пополнить казну' : 'Списать из казны'}
@@ -325,9 +342,9 @@ export default function Treasury({ currentUser }: Props) {
 
       {/* Детали транзакции */}
       {detailTx && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center pt-24 sm:pt-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeDetail} />
-          <div className="relative bg-[#1a1d24] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up">
+          <div className="relative bg-[#1a1d24] border border-white/10 rounded-3xl w-full sm:max-w-sm p-6 animate-slide-up">
             {/* Шапка с тремя точками */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
