@@ -797,7 +797,7 @@ export default function Home() {
             {/* Контент под-вкладки */}
             {activeSvodTab === 'laws' ? (
               <>
-                {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="absolute top-4 right-4 w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all z-10"><Edit2 size={14} /></button>}
+                {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="fixed bottom-28 right-4 md:top-24 md:right-8 w-14 h-14 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 active:scale-90 transition-all z-50 shadow-2xl"><Edit2 size={22} /></button>}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
                   <div className="flex flex-col gap-5 md:col-span-1 w-full">
                     <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
