@@ -121,7 +121,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
       <div className="flex items-center justify-between w-full select-none">
         <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
-        {currentUser && (
+        {currentUser && !currentUser?.roles?.includes('guest') && (
           <button onClick={() => router.push('/media/editor')} className="hidden md:flex w-12 h-12 bg-[#c0ff00] text-black rounded-full items-center justify-center shadow-lg transition-transform active:scale-90">
             <Plus size={26} />
           </button>

@@ -378,7 +378,7 @@ export default function Home() {
             tg_username: tgUser?.username || 'guest',
             mc_nickname: 'Гость',
             rp_name: 'Гость',
-            avatar_url: '',
+            avatar_url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="%23c0ff00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" fill="%23c0ff0015"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>'),
             roles: ['guest'],
           });
           loadRoles();
@@ -1133,7 +1133,7 @@ export default function Home() {
       </div>
 
       {/* Мобильная FAB — создание статьи */}
-      {activeTab === 'media' && dbUser && (
+      {activeTab === 'media' && dbUser && !dbUser?.roles?.includes('guest') && (
         <button 
           onClick={() => router.push('/media/editor')} 
           className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
