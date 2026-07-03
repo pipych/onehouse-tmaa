@@ -647,14 +647,14 @@ export default function Home() {
             <div className="grid grid-cols-4 gap-4 w-full">
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
-                onClick={() => handleTabChange('svod')}
+                onClick={() => { setActiveSvodTab('laws'); setActiveDocument('constitution'); handleTabChange('svod'); }}
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><BookMarked size={20} /></div>
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><BookOpen size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Свод</h3>
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Законы и Архив</p>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
                 </div>
               </div>
 
