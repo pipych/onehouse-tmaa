@@ -16,7 +16,7 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
-  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark
+  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -59,7 +59,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null); 
   
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod'>('profile');
+  const [activeSvodTab, setActiveSvodTab] = useState<'laws' | 'archive'>('laws');
   const [players, setPlayers] = useState<Player[]>([]); 
   
   const [constitutionText, setConstitutionText] = useState('');
@@ -114,9 +115,9 @@ export default function Home() {
     return found ? found.canEditConstitution : false;
   }) || false;
 
-  const showToolbar = isEditing && activeTab === 'constitution' && activeDocument !== 'none' && !selectedPlayer;
+  const showToolbar = isEditing && (activeTab === 'constitution' || activeTab === 'svod') && activeDocument !== 'none' && !selectedPlayer;
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury') {
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod') {
     setSelectedPlayer(null); 
     setIsEditingProfile(false); 
     setShowRoleSelector(false); 
@@ -646,20 +647,20 @@ export default function Home() {
             <div className="grid grid-cols-4 gap-4 w-full">
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
               <div 
-                onClick={() => handleTabChange('constitution')}
+                onClick={() => handleTabChange('svod')}
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><BookOpen size={20} /></div>
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><BookMarked size={20} /></div>
                 <div className="space-y-0.5 relative z-10">
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Свод</h3>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Законы и Архив</p>
                 </div>
               </div>
 
-              {/* 2. НОВЫЙ КВАДРАТНЫЙ ВИДЖЕТ АРХИВА СЕЗОНОВ НА МЕСТЕ КАРТЫ */}
+              {/* 2. АРХИВ СЕЗОНОВ */}
               <div 
-                onClick={() => handleTabChange('archive')}
+                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
               >
                 <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
@@ -760,63 +761,98 @@ export default function Home() {
           </div>
         )}
 
+        {activeTab === 'svod' && (
+          <div className="space-y-4 animate-fade-in w-full">
+            {/* Заголовок */}
+            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
+              <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />Свод данных</h2>
+            </div>
+
+            {/* Под-вкладки */}
+            <div className="flex gap-3 pb-4">
+              <button
+                onClick={() => { setActiveSvodTab('laws'); setActiveDocument('none'); setIsEditing(false); }}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  activeSvodTab === 'laws'
+                    ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
+                    : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
+                }`}
+              >
+                <BookOpen size={16} className="inline mr-2" />
+                Законы
+              </button>
+              <button
+                onClick={() => setActiveSvodTab('archive')}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  activeSvodTab === 'archive'
+                    ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
+                    : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
+                }`}
+              >
+                <Library size={16} className="inline mr-2" />
+                Архив
+              </button>
+            </div>
+
+            {/* Контент под-вкладки */}
+            {activeSvodTab === 'laws' ? (
+              <>
+                {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="absolute top-4 right-4 w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all z-10"><Edit2 size={14} /></button>}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
+                  <div className="flex flex-col gap-5 md:col-span-1 w-full">
+                    <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
+                      <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
+                      <h3 className="font-black text-lg relative z-10">Конституция</h3>
+                    </div>
+                    <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
+                      <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/zapovedi.gif')" }} />
+                      <h3 className="font-black text-lg relative z-10">Заповеди дома</h3>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2 w-full">
+                    {activeDocument === 'none' ? (
+                      <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]"><BookOpen size={36} className="text-gray-700 mb-3" /><span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span></div>
+                    ) : (
+                      <div className="space-y-4 w-full">
+                        {!isEditing && (
+                          <div className="flex items-center gap-2 bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-2.5 sticky top-24 z-20 backdrop-blur-md shadow-lg mb-4">
+                            <Search size={16} className="text-gray-500 shrink-0" />
+                            <input 
+                              type="text" 
+                              placeholder="Поиск по документу…" 
+                              value={searchQuery} 
+                              onChange={e => setSearchQuery(e.target.value)}
+                              className="flex-1 bg-transparent text-sm text-white outline-none placeholder-gray-500 min-w-0"
+                            />
+                            {totalMatches > 0 && (
+                              <span className="text-xs font-mono font-bold text-[#c0ff00] shrink-0 tabular-nums">{activeMatchIndex + 1}/{totalMatches}</span>
+                            )}
+                            {totalMatches > 0 && (
+                              <>
+                                <button onClick={() => navigateSearch('prev')} className="p-1 text-gray-400 hover:text-white transition-colors active:scale-75"><ChevronUp size={16} /></button>
+                                <button onClick={() => navigateSearch('next')} className="p-1 text-gray-400 hover:text-white transition-colors active:scale-75"><ChevronDown size={16} /></button>
+                              </>
+                            )}
+                            {searchQuery && (
+                              <button onClick={() => setSearchQuery('')} className="p-1 text-gray-500 hover:text-white transition-colors active:scale-75"><X size={14} /></button>
+                            )}
+                          </div>
+                        )}
+                        {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: highlightedHtml }} />}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Archive currentUser={dbUser} />
+            )}
+          </div>
+        )}
+
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'treasury' && <Treasury currentUser={dbUser} />}
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
-
-        {activeTab === 'constitution' && (
-          <div className="space-y-4 animate-fade-in w-full relative flex-grow flex flex-col">
-            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
-              <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookOpen size={20} />Свод законов и правил</h2>
-              {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all"><Edit2 size={14} /></button>}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
-              <div className="flex flex-col gap-5 md:col-span-1 w-full">
-                <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
-                  <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-                  <h3 className="font-black text-lg relative z-10">Конституция</h3>
-                </div>
-                <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
-                  <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/zapovedi.gif')" }} />
-                  <h3 className="font-black text-lg relative z-10">Заповеди дома</h3>
-                </div>
-              </div>
-              <div className="md:col-span-2 w-full">
-                {activeDocument === 'none' ? (
-                  <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]"><BookOpen size={36} className="text-gray-700 mb-3" /><span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span></div>
-                ) : (
-                  <div className="space-y-4 w-full">
-                    {!isEditing && (
-                      <div className="flex items-center gap-2 bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-2.5 sticky top-24 z-20 backdrop-blur-md shadow-lg mb-4">
-                        <Search size={16} className="text-gray-500 shrink-0" />
-                        <input 
-                          type="text" 
-                          placeholder="Поиск по документу…" 
-                          value={searchQuery} 
-                          onChange={e => setSearchQuery(e.target.value)}
-                          className="flex-1 bg-transparent text-sm text-white outline-none placeholder-gray-500 min-w-0"
-                        />
-                        {totalMatches > 0 && (
-                          <span className="text-xs font-mono font-bold text-[#c0ff00] shrink-0 tabular-nums">{activeMatchIndex + 1}/{totalMatches}</span>
-                        )}
-                        {totalMatches > 0 && (
-                          <>
-                            <button onClick={() => navigateSearch('prev')} className="p-1 text-gray-400 hover:text-white transition-colors active:scale-75"><ChevronUp size={16} /></button>
-                            <button onClick={() => navigateSearch('next')} className="p-1 text-gray-400 hover:text-white transition-colors active:scale-75"><ChevronDown size={16} /></button>
-                          </>
-                        )}
-                        {searchQuery && (
-                          <button onClick={() => setSearchQuery('')} className="p-1 text-gray-500 hover:text-white transition-colors active:scale-75"><X size={14} /></button>
-                        )}
-                      </div>
-                    )}
-                    {isEditing ? <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 rounded-[28px] p-5 text-base text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none pb-20" /> : <div ref={viewRef} className="bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: highlightedHtml }} />}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeTab === 'players' && (
           <div className="space-y-6 animate-fade-in w-full">
@@ -925,14 +961,9 @@ export default function Home() {
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Медиа</span>
           </button>
 
-          <button onClick={() => handleTabChange('constitution')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-            <BookOpen size={23} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Законы</span>
-          </button>
-
-          <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-            <Library size={23} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
+          <button onClick={() => handleTabChange('svod')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
+            <BookMarked size={23} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Свод</span>
           </button>
 
           <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
@@ -961,14 +992,9 @@ export default function Home() {
             <span className="text-[10px] font-bold mt-1 tracking-wide">Медиа</span>
           </button>
 
-          <button onClick={() => handleTabChange('constitution')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'constitution' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <BookOpen size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Законы</span>
-          </button>
-
-          <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-            <Library size={22} />
-            <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
+          <button onClick={() => handleTabChange('svod')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+            <BookMarked size={22} />
+            <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
           </button>
 
           <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
