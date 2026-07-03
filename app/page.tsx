@@ -974,17 +974,17 @@ export default function Home() {
           </button>
         </nav>
 
-        {/* Кружок Игроки — под пилем, как Монобанк */}
+        {/* Кружок Игроки — под пилем, идеальный круг */}
         <button
           onClick={() => handleTabChange('players')}
-          className={`group relative w-[72px] bg-[#14171c]/70 backdrop-blur-xl border py-4 rounded-[36px] shadow-2xl flex flex-col items-center justify-center gap-1 transition-all hover:scale-105 ${
+          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 transition-all hover:scale-105 ${
             activeTab === 'players' || selectedPlayer
               ? 'border-[#c0ff00]/40 text-[#c0ff00]'
               : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
           }`}
         >
-          <Users size={23} />
-          <span className="text-[10px] font-bold tracking-wide">Игроки</span>
+          <Users size={22} />
+          <span className="text-[9px] font-bold tracking-wide leading-none">Игроки</span>
         </button>
       </aside>
 
@@ -1011,13 +1011,13 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* Кружок Игроки справа — как Монобанк */}
+        {/* Кружок Игроки справа — идеальный круг как в Монобанк */}
         <button
           onClick={() => handleTabChange('players')}
-          className={`shrink-0 bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 px-4 py-3 shadow-2xl transition-all active:scale-90 ${
+          className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
             activeTab === 'players' || selectedPlayer
               ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-              : 'border-white/10 text-gray-400'
+              : 'border-white/10 text-gray-500'
           }`}
         >
           <Users size={22} />
