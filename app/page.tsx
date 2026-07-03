@@ -625,7 +625,17 @@ export default function Home() {
       <main className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
           <div className="space-y-6 w-full">
-            <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none">
+            <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none relative">
+              {/* Админ-кнопка */}
+              {isAdmin && (
+                <button
+                  onClick={() => handleTabChange('admin')}
+                  className="absolute top-2 right-0 w-10 h-10 rounded-full bg-[#14171c]/95 border border-white/10 flex items-center justify-center text-gray-400 hover:text-[#c0ff00] hover:border-[#c0ff00]/30 active:scale-90 transition-all z-10"
+                  title="Админ-панель"
+                >
+                  <ShieldAlert size={20} />
+                </button>
+              )}
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
               <h3 className="text-base md:text-xl font-black text-white tracking-wide leading-tight">
                 Добро пожаловать в One App<br />
@@ -927,7 +937,6 @@ export default function Home() {
 
           <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
             <Landmark size={23} />
-            <span className="text-[8px] font-black text-gray-600 mt-0.5 uppercase tracking-wider">soon</span>
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
           </button>
 
@@ -935,13 +944,6 @@ export default function Home() {
             <Users size={23} />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
           </button>
-
-          {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-              <ShieldAlert size={23} />
-              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Админ</span>
-            </button>
-          )}
         </nav>
       </aside>
 
@@ -972,20 +974,12 @@ export default function Home() {
           <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
             <Landmark size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
-            <span className="text-[7px] font-black text-gray-600 uppercase">soon</span>
           </button>
 
           <button onClick={() => handleTabChange('players')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'players' || selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
             <Users size={22} />
             <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
           </button>
-
-          {isAdmin && (
-            <button onClick={() => handleTabChange('admin')} className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'admin' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-              <ShieldAlert size={22} />
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Админ</span>
-            </button>
-          )}
 
         </div>
       </nav>
