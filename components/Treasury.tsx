@@ -65,6 +65,12 @@ export default function Treasury({ currentUser }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Анимация банки: кроссфейд при смене
+  const BANK_IMAGES = ['/bank-0.webp', '/bank-50.webp', '/bank-300.webp', '/bank-1000.webp', '/bank-5000.webp', '/bank-10000.webp'];
+  const [currentBankImg, setCurrentBankImg] = useState('/bank-0.webp');
+  const [nextBankImg, setNextBankImg] = useState<string | null>(null);
+  const [bankVisible, setBankVisible] = useState<'current' | 'next'>('current');
+
   const fetchData = useCallback(async () => {
     const [bal, txs] = await Promise.all([getBalance(), getTransactions()]);
     setBalance(bal);
@@ -91,6 +97,41 @@ export default function Treasury({ currentUser }: Props) {
       channel.unsubscribe();
     };
   }, [fetchData]);
+
+  // Кроссфейд банки при смене баланса
+  useEffect(() => {
+    if (balance === null) return;
+    const newImg = getBankImage(balance);
+    if (newImg === currentBankImg) return;
+
+    // Предзагружаем новое изображение
+    const preload = new Image();
+    preload.src = newImg;
+    preload.onload = () => {
+      setNextBankImg(newImg);
+      // Даём браузеру кадр на рендер next-изображения, затем переключаем
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setBankVisible('next');
+        });
+      });
+    };
+    preload.onerror = () => {
+      setCurrentBankImg(newImg);
+    };
+  }, [balance, currentBankImg]);
+
+  // Когда next-изображение стало видимым, делаем его текущим
+  useEffect(() => {
+    if (bankVisible === 'next' && nextBankImg) {
+      const timeout = setTimeout(() => {
+        setCurrentBankImg(nextBankImg);
+        setNextBankImg(null);
+        setBankVisible('current');
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [bankVisible, nextBankImg]);
 
   const refreshAfterTx = () => {
     fetchData();
@@ -172,14 +213,26 @@ export default function Treasury({ currentUser }: Props) {
         </h2>
       </div>
 
-      {/* Банка */}
+      {/* Банка — кроссфейд двух слоёв */}
       <div className="flex justify-center py-4">
-        <img
-          key={getBankImage(balance ?? 0)}
-          src={getBankImage(balance ?? 0)}
-          alt="Казна"
-          className="w-56 h-56 sm:w-64 sm:h-64 object-contain drop-shadow-[0_0_50px_rgba(192,255,0,0.2)] animate-fade-in"
-        />
+        <div className="relative w-56 h-56 sm:w-64 sm:h-64">
+          {/* Текущее */}
+          <img
+            src={currentBankImg}
+            alt="Казна"
+            className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_50px_rgba(192,255,0,0.2)] transition-opacity duration-500"
+            style={{ opacity: bankVisible === 'current' ? 1 : 0 }}
+          />
+          {/* Следующее (кроссфейд) */}
+          {nextBankImg && (
+            <img
+              src={nextBankImg}
+              alt="Казна"
+              className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_50px_rgba(192,255,0,0.2)] transition-opacity duration-500"
+              style={{ opacity: bankVisible === 'next' ? 1 : 0 }}
+            />
+          )}
+        </div>
       </div>
 
       {/* Баланс */}
