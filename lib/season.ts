@@ -24,7 +24,7 @@ export async function getSeasonState(): Promise<SeasonState> {
 
   if (error || !data) {
     // Fallback: defaults
-    return { season_number: 1, season_start_date: '2026-05-17', is_active: true };
+    return { season_number: 2, season_start_date: '2026-05-17', is_active: true };
   }
 
   return {

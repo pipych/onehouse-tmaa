@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS past_seasons (
   ended_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Начальное состояние: сезон 1, старт 17 мая 2026, активен
+-- Начальное состояние: сезон 2, старт 17 мая 2026, активен
 INSERT INTO season_state (id, season_number, season_start_date, is_active)
-VALUES (1, 1, '2026-05-17', true)
+VALUES (1, 2, '2026-05-17', true)
 ON CONFLICT (id) DO NOTHING;

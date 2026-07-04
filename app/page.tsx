@@ -163,13 +163,17 @@ export default function Home() {
   async function handleEndSeason() {
     if (!confirm('Завершить текущий сезон? Вся информация будет скрыта.')) return;
     setSeasonLoading(true);
-    const ok = await endSeason();
-    if (ok) {
-      setSeasonEnded(true);
-      const last = await getLastEndedSeason();
-      if (last) setLastSeason(last);
-    } else {
-      alert('Ошибка завершения сезона');
+    try {
+      const ok = await endSeason();
+      if (ok) {
+        setSeasonEnded(true);
+        const last = await getLastEndedSeason();
+        if (last) setLastSeason(last);
+      } else {
+        alert('Ошибка завершения сезона. Проверь, выполнен ли SQL из supabase/season_migration.sql в Supabase.');
+      }
+    } catch (e: any) {
+      alert('Ошибка завершения сезона: ' + (e.message || 'неизвестно'));
     }
     setSeasonLoading(false);
   }
@@ -775,7 +779,7 @@ export default function Home() {
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain opacity-80" />
               <div className="space-y-2">
                 <h2 className="text-2xl md:text-3xl font-black text-white tracking-wide">
-                  OneHouse <span className="text-[#c0ff00]">#{lastSeason?.season_number || 1}</span> завершён
+                  OneHouse <span className="text-[#c0ff00]">#{lastSeason?.season_number || 2}</span> завершён
                 </h2>
                 <p className="text-base text-gray-400 font-medium">
                   Он продлился <span className="text-white font-bold">{lastSeason?.days_count || '—'}</span> дней
@@ -1175,7 +1179,7 @@ export default function Home() {
               <div className="flex items-center justify-between p-4 bg-black/20 rounded-[20px] border border-white/5">
                 <div className="text-sm">
                   <span className="text-gray-400">Сезон </span>
-                  <span className="text-white font-bold">#{seasonEnded && lastSeason ? lastSeason.season_number : 1}</span>
+                  <span className="text-white font-bold">#{seasonEnded && lastSeason ? lastSeason.season_number : 2}</span>
                   {seasonEnded ? (
                     <span className="text-red-400 font-bold ml-2">• Завершён</span>
                   ) : (
