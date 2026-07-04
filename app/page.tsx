@@ -13,12 +13,13 @@ import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
 import { getBalance } from '../lib/treasury';
 import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
+import { getSeasonState, endSeason, undoEndSeason, getLastEndedSeason, SeasonState, PastSeason } from '../lib/season';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
-  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked
+  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -57,6 +58,16 @@ interface CustomRole {
   name: string;
   color: string;
   canEditConstitution: boolean;
+}
+
+function SeasonPlaceholder() {
+  return (
+    <div className="flex flex-col items-center justify-center text-center gap-4 py-20 w-full animate-fade-in flex-grow">
+      <Calendar size={48} className="text-gray-700" />
+      <p className="text-lg font-bold text-gray-600">Новый сезон ещё не начался</p>
+      <p className="text-xs text-gray-700 uppercase tracking-[0.2em]">Скоро...</p>
+    </div>
+  );
 }
 
 // =========================================================================
@@ -119,6 +130,9 @@ export default function Home() {
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [seasonEnded, setSeasonEnded] = useState(false);
+  const [lastSeason, setLastSeason] = useState<PastSeason | null>(null);
+  const [seasonLoading, setSeasonLoading] = useState(false);
 
   // Сезон стартовал 17 мая 2026
   const SEASON_START = useMemo(() => new Date('2026-05-17T00:00:00+03:00'), []);
@@ -132,6 +146,45 @@ export default function Home() {
     const timer = setTimeout(() => setShowWelcome(false), 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Загрузка состояния сезона
+  useEffect(() => {
+    async function loadSeason() {
+      const state = await getSeasonState();
+      if (!state.is_active) {
+        setSeasonEnded(true);
+        const last = await getLastEndedSeason();
+        if (last) setLastSeason(last);
+      }
+    }
+    loadSeason();
+  }, []);
+
+  async function handleEndSeason() {
+    if (!confirm('Завершить текущий сезон? Вся информация будет скрыта.')) return;
+    setSeasonLoading(true);
+    const ok = await endSeason();
+    if (ok) {
+      setSeasonEnded(true);
+      const last = await getLastEndedSeason();
+      if (last) setLastSeason(last);
+    } else {
+      alert('Ошибка завершения сезона');
+    }
+    setSeasonLoading(false);
+  }
+
+  async function handleUndoEndSeason() {
+    if (!confirm('Отменить завершение сезона? Данные будут восстановлены.')) return;
+    setSeasonLoading(true);
+    const ok = await undoEndSeason();
+    if (ok) {
+      setSeasonEnded(false);
+    } else {
+      alert('Ошибка отмены завершения');
+    }
+    setSeasonLoading(false);
+  }
 
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -708,6 +761,29 @@ export default function Home() {
       {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК */}
       <main className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
         {activeTab === 'profile' && (
+          <>
+          {seasonEnded ? (
+            /* СЕЗОН ЗАВЕРШЁН — ГЛАВНАЯ */
+            <div className="flex flex-col items-center justify-center text-center gap-6 pt-4 pb-12 w-full select-none animate-fade-in flex-grow">
+              <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain opacity-80" />
+              <div className="space-y-2">
+                <h2 className="text-2xl md:text-3xl font-black text-white tracking-wide">
+                  OneHouse <span className="text-[#c0ff00]">#{lastSeason?.season_number || 1}</span> завершён
+                </h2>
+                <p className="text-base text-gray-400 font-medium">
+                  Он продлился <span className="text-white font-bold">{lastSeason?.days_count || '—'}</span> дней
+                </p>
+              </div>
+              <button
+                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
+                className="ui-pill-btn px-6 py-2.5 gap-2"
+              >
+                <Library size={16} />
+                <span className="text-sm font-bold">Архив сезонов</span>
+              </button>
+              <p className="text-[10px] text-gray-700 font-medium uppercase tracking-[0.2em] mt-8">Скоро...</p>
+            </div>
+          ) : (
           <div className="space-y-6 w-full">
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none relative">
               {/* Админ-кнопка */}
@@ -853,9 +929,15 @@ export default function Home() {
 
             </div>
           </div>
+          )}
+          </>
         )}
 
         {activeTab === 'svod' && (
+          <>
+          {seasonEnded ? (
+            <SeasonPlaceholder />
+          ) : (
           <div className="space-y-4 animate-fade-in w-full">
             {/* Заголовок */}
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
@@ -942,13 +1024,19 @@ export default function Home() {
               <Archive currentUser={dbUser} />
             )}
           </div>
+          )}
+          </>
         )}
 
-        {activeTab === 'archive' && <Archive currentUser={dbUser} />}
-        {activeTab === 'treasury' && <Treasury currentUser={dbUser} />}
-        {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>}
+        {activeTab === 'archive' && (seasonEnded ? <SeasonPlaceholder /> : <Archive currentUser={dbUser} />)}
+        {activeTab === 'treasury' && (seasonEnded ? <SeasonPlaceholder /> : <Treasury currentUser={dbUser} />)}
+        {activeTab === 'media' && (seasonEnded ? <SeasonPlaceholder /> : <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>)}
 
         {activeTab === 'players' && (
+          <>
+          {seasonEnded ? (
+            <SeasonPlaceholder />
+          ) : (
           <div className="space-y-6 animate-fade-in w-full">
             <div className="flex items-center justify-between w-full px-1">
               <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><Users size={20} className="text-[#c0ff00]" />Жители сервера</h2>
@@ -997,6 +1085,8 @@ export default function Home() {
               </div>
             </div>
           </div>
+          )}
+          </>
         )}
 
         {activeTab === 'admin' && isAdmin && (
@@ -1070,6 +1160,41 @@ export default function Home() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Управление сезоном */}
+            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl md:col-span-2">
+              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезоном</span></div>
+              <div className="flex items-center justify-between p-4 bg-black/20 rounded-[20px] border border-white/5">
+                <div className="text-sm">
+                  <span className="text-gray-400">Сезон </span>
+                  <span className="text-white font-bold">#{seasonEnded && lastSeason ? lastSeason.season_number : 1}</span>
+                  {seasonEnded ? (
+                    <span className="text-red-400 font-bold ml-2">• Завершён</span>
+                  ) : (
+                    <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {!seasonEnded ? (
+                    <button
+                      onClick={handleEndSeason}
+                      disabled={seasonLoading}
+                      className="ui-pill-btn !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30 px-4"
+                    >
+                      <Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleUndoEndSeason}
+                      disabled={seasonLoading}
+                      className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
+                    >
+                      <RotateCcw size={14} /><span className="text-[11px] font-bold">Отменить завершение</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
