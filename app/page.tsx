@@ -1076,7 +1076,7 @@ export default function Home() {
       </main>
 
       {/* ПК САЙДБАР */}
-      <aside className={`hidden md:flex flex-col items-center gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
+      <aside className={`hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
         {dbUser && (
           <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
             <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
@@ -1110,14 +1110,14 @@ export default function Home() {
         {/* Кружок Игроки — под пилем, идеальный круг */}
         <button
           onClick={() => handleTabChange('players')}
-          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 transition-all hover:scale-105 ${
+          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 ${
             activeTab === 'players' || selectedPlayer
               ? 'border-[#c0ff00]/40 text-[#c0ff00]'
               : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
           }`}
         >
-          <Users size={22} />
-          <span className="text-[9px] font-bold tracking-wide leading-none">Игроки</span>
+          <Users size={23} />
+          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
         </button>
       </aside>
 
