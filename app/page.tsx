@@ -118,6 +118,20 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  // Сезон стартовал 17 мая 2026
+  const SEASON_START = useMemo(() => new Date('2026-05-17T00:00:00+03:00'), []);
+  const seasonDays = useMemo(() => {
+    const now = new Date();
+    const diff = now.getTime() - SEASON_START.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }, [SEASON_START]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowWelcome(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -707,10 +721,21 @@ export default function Home() {
                 </button>
               )}
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
-              <h3 className="text-base md:text-xl font-black text-white tracking-wide leading-tight">
-                Добро пожаловать в One App<br />
-                <span className="text-[#c0ff00] text-xl md:text-3xl font-black block mt-1.5">{dbUser?.rp_name || 'Житель'}</span>
-              </h3>
+              {/* Приветствие / Счётчик сезона */}
+              <div className="relative h-[72px] md:h-[88px] flex items-center justify-center overflow-hidden">
+                {/* Добро пожаловать */}
+                <h3 className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-out ${showWelcome ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                  <span className="text-base md:text-xl font-black text-white tracking-wide leading-tight animate-welcome-glow">
+                    Добро пожаловать в One App<br />
+                  </span>
+                  <span className="text-[#c0ff00] text-xl md:text-3xl font-black block mt-1.5">{dbUser?.rp_name || 'Житель'}</span>
+                </h3>
+                {/* Счётчик сезона */}
+                <h3 className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-out ${showWelcome ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+                  <span className="text-[#c0ff00] text-4xl md:text-5xl font-black tabular-nums tracking-tight">{seasonDays}</span>
+                  <span className="text-sm md:text-base font-bold text-gray-400 tracking-wide mt-1">дней с начала сезона</span>
+                </h3>
+              </div>
             </div>
 
             <div className="grid grid-cols-4 gap-4 w-full">
