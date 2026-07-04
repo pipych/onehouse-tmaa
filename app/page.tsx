@@ -787,11 +787,21 @@ export default function Home() {
               </div>
               <button
                 onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
-                className="ui-pill-btn px-6 py-2.5 gap-2"
+                className="bg-[#14171c]/90 border border-white/10 rounded-full px-6 py-2.5 flex items-center gap-2 hover:border-[#c0ff00]/30 hover:text-[#c0ff00] transition-all active:scale-95 shadow-lg"
               >
                 <Library size={16} />
                 <span className="text-sm font-bold">Архив сезонов</span>
               </button>
+              {/* Админ-доступ */}
+              {isAdmin && (
+                <button
+                  onClick={() => handleTabChange('admin')}
+                  className="mt-2 bg-[#14171c]/70 border border-white/5 rounded-full px-4 py-2 flex items-center gap-1.5 text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/20 transition-all active:scale-95"
+                >
+                  <ShieldAlert size={14} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Админ</span>
+                </button>
+              )}
               <p className="text-[10px] text-gray-700 font-medium uppercase tracking-[0.2em] mt-8">Скоро...</p>
             </div>
           ) : (
@@ -947,7 +957,41 @@ export default function Home() {
         {activeTab === 'svod' && (
           <>
           {seasonEnded ? (
-            <SeasonPlaceholder />
+            /* СВОД ПРИ ЗАВЕРШЁННОМ СЕЗОНЕ: законы скрыты, архив работает */
+            <div className="space-y-4 animate-fade-in w-full">
+              <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
+                <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />Свод данных</h2>
+              </div>
+              <div className="flex gap-3 pb-4">
+                <button
+                  onClick={() => setActiveSvodTab('laws')}
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+                    activeSvodTab === 'laws'
+                      ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
+                      : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
+                  }`}
+                >
+                  <BookOpen size={16} className="inline mr-2" />
+                  Законы
+                </button>
+                <button
+                  onClick={() => setActiveSvodTab('archive')}
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+                    activeSvodTab === 'archive'
+                      ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
+                      : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
+                  }`}
+                >
+                  <Library size={16} className="inline mr-2" />
+                  Архив
+                </button>
+              </div>
+              {activeSvodTab === 'laws' ? (
+                <SeasonPlaceholder />
+              ) : (
+                <Archive currentUser={dbUser} />
+              )}
+            </div>
           ) : (
           <div className="space-y-4 animate-fade-in w-full">
             {/* Заголовок */}
@@ -1039,7 +1083,7 @@ export default function Home() {
           </>
         )}
 
-        {activeTab === 'archive' && (seasonEnded ? <SeasonPlaceholder /> : <Archive currentUser={dbUser} />)}
+        {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'treasury' && (seasonEnded ? <SeasonPlaceholder /> : <Treasury currentUser={dbUser} />)}
         {activeTab === 'media' && (seasonEnded ? <SeasonPlaceholder /> : <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>)}
 
