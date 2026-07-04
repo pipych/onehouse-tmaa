@@ -22,8 +22,8 @@ module.exports = {
           '100%': { opacity: '1' },
         },
         welcomeGlow: {
-          '0%': { textShadow: '0 0 8px rgba(192, 255, 0, 0.1)' },
-          '100%': { textShadow: '0 0 24px rgba(192, 255, 0, 0.4), 0 0 48px rgba(192, 255, 0, 0.15)' },
+          '0%': { 'text-shadow': '0 0 8px rgba(192, 255, 0, 0.1)' },
+          '100%': { 'text-shadow': '0 0 24px rgba(192, 255, 0, 0.4), 0 0 48px rgba(192, 255, 0, 0.15)' },
         },
       },
     },

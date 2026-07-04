@@ -722,19 +722,20 @@ export default function Home() {
               )}
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
               {/* Приветствие / Счётчик сезона */}
-              <div className="relative h-[72px] md:h-[88px] flex items-center justify-center overflow-hidden">
-                {/* Добро пожаловать */}
-                <h3 className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-out ${showWelcome ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
-                  <span className="text-base md:text-xl font-black text-white tracking-wide leading-tight animate-welcome-glow">
-                    Добро пожаловать в One App<br />
-                  </span>
-                  <span className="text-[#c0ff00] text-xl md:text-3xl font-black block mt-1.5">{dbUser?.rp_name || 'Житель'}</span>
-                </h3>
-                {/* Счётчик сезона */}
-                <h3 className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-out ${showWelcome ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-                  <span className="text-[#c0ff00] text-4xl md:text-5xl font-black tabular-nums tracking-tight">{seasonDays}</span>
-                  <span className="text-sm md:text-base font-bold text-gray-400 tracking-wide mt-1">дней с начала сезона</span>
-                </h3>
+              <div className="min-h-[72px] md:min-h-[88px] flex items-center justify-center">
+                {showWelcome ? (
+                  <h3 className="flex flex-col items-center gap-1.5 animate-fade-in">
+                    <span className="text-base md:text-xl font-black text-white tracking-wide leading-tight animate-welcome-glow">
+                      Добро пожаловать в One App
+                    </span>
+                    <span className="text-[#c0ff00] text-xl md:text-3xl font-black">{dbUser?.rp_name || 'Житель'}</span>
+                  </h3>
+                ) : (
+                  <h3 className="flex flex-col items-center gap-1 animate-fade-in">
+                    <span className="text-[#c0ff00] text-4xl md:text-5xl font-black tabular-nums tracking-tight">{seasonDays}</span>
+                    <span className="text-sm md:text-base font-bold text-gray-400 tracking-wide">дней с начала сезона</span>
+                  </h3>
+                )}
               </div>
             </div>
 
