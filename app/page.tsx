@@ -612,6 +612,13 @@ export default function Home() {
       if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#090b0e');
       setTgUser(tg.initDataUnsafe.user);
       checkUserInDb(tg.initDataUnsafe.user.id);
+
+      // Deep link: обработка start_param
+      const startParam = tg.initDataUnsafe?.start_param;
+      if (startParam && startParam.startsWith('article_')) {
+        const articleId = startParam.replace('article_', '');
+        if (articleId) router.push(`/media/${articleId}`);
+      }
     } else {
       setError('Пожалуйста, откройте приложение внутри Telegram.');
       setLoading(false);
