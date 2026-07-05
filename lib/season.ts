@@ -4,6 +4,7 @@ export interface SeasonState {
   season_number: number;
   season_start_date: string;
   is_active: boolean;
+  exaroton_server_id?: string;
 }
 
 export interface PastSeason {
@@ -30,6 +31,7 @@ export async function getSeasonState(): Promise<SeasonState> {
     season_number: data.season_number,
     season_start_date: data.season_start_date,
     is_active: data.is_active,
+    exaroton_server_id: data.exaroton_server_id || undefined,
   };
 }
 
@@ -148,7 +150,7 @@ export async function deletePastSeason(pastSeasonId: number): Promise<boolean> {
 }
 
 /** Начать новый сезон (завершает текущий если активен) */
-export async function startNewSeason(): Promise<boolean> {
+export async function startNewSeason(exarotonServerId?: string): Promise<boolean> {
   const state = await getSeasonState();
 
   // Если сезон активен — завершаем
@@ -168,14 +170,20 @@ export async function startNewSeason(): Promise<boolean> {
   const newNumber = (lastPast?.season_number ?? state.season_number) + 1;
 
   // Активируем новый сезон
+  const updatePayload: Record<string, any> = {
+    is_active: true,
+    season_number: newNumber,
+    season_start_date: new Date().toISOString().split('T')[0],
+    updated_at: new Date().toISOString(),
+  };
+
+  if (exarotonServerId !== undefined) {
+    updatePayload.exaroton_server_id = exarotonServerId || null;
+  }
+
   const { error } = await supabase
     .from('season_state')
-    .update({
-      is_active: true,
-      season_number: newNumber,
-      season_start_date: new Date().toISOString().split('T')[0],
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq('id', 1);
 
   if (error) {

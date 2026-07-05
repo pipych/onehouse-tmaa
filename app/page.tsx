@@ -135,14 +135,20 @@ export default function Home() {
   const [pastSeasons, setPastSeasons] = useState<PastSeason[]>([]);
   const [seasonLoading, setSeasonLoading] = useState(false);
   const [currentSeasonNum, setCurrentSeasonNum] = useState(2);
+  const [seasonStartDate, setSeasonStartDate] = useState('2026-05-17');
+  const [exarotonServerId, setExarotonServerId] = useState<string>('');
+  const [newSeasonServerId, setNewSeasonServerId] = useState('');
   const currentSeasonName = `Сезон ${currentSeasonNum}`;
 
-  // Сезон стартовал 17 мая 2026
-  const SEASON_START = useMemo(() => new Date('2026-05-17T00:00:00+03:00'), []);
+  // Динамический старт сезона из БД
+  const SEASON_START = useMemo(() => {
+    const d = new Date(seasonStartDate + 'T00:00:00+03:00');
+    return isNaN(d.getTime()) ? new Date('2026-05-17T00:00:00+03:00') : d;
+  }, [seasonStartDate]);
   const seasonDays = useMemo(() => {
     const now = new Date();
     const diff = now.getTime() - SEASON_START.getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
   }, [SEASON_START]);
 
   useEffect(() => {
@@ -155,6 +161,8 @@ export default function Home() {
     async function loadSeason() {
       const state = await getSeasonState();
       setCurrentSeasonNum(state.season_number);
+      setSeasonStartDate(state.season_start_date);
+      setExarotonServerId(state.exaroton_server_id || '');
       if (!state.is_active) {
         setSeasonEnded(true);
         const last = await getLastEndedSeason();
@@ -201,18 +209,22 @@ export default function Home() {
   async function refreshSeasons() {
     const state = await getSeasonState();
     setCurrentSeasonNum(state.season_number);
+    setSeasonStartDate(state.season_start_date);
+    setExarotonServerId(state.exaroton_server_id || '');
     const all = await getAllPastSeasons();
     setPastSeasons(all);
   }
 
   async function handleStartNewSeason() {
-    const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : 2) + 1;
-    if (!confirm(`Начать новый сезон #${nextNum}? Текущий сезон завершится и уйдёт в архив.`)) return;
+    const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : currentSeasonNum) + 1;
+    const serverMsg = seasonEnded ? '' : '\nТекущий сезон будет завершён и уйдёт в архив.';
+    if (!confirm(`Начать новый сезон #${nextNum}?${serverMsg}`)) return;
     setSeasonLoading(true);
-    const ok = await startNewSeason();
+    const ok = await startNewSeason(newSeasonServerId || undefined);
     if (ok) {
       setSeasonEnded(false);
       setLastSeason(null);
+      setNewSeasonServerId('');
       refreshSeasons();
     } else {
       alert('Ошибка создания нового сезона');
@@ -343,7 +355,8 @@ export default function Home() {
   async function fetchServerStatus() {
     setIsServerLoading(true);
     try {
-      const res = await fetch('/api/exaroton');
+      const url = exarotonServerId ? `/api/exaroton?serverId=${exarotonServerId}` : '/api/exaroton';
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setServerInfo(data.data.server || data.data);
@@ -468,7 +481,8 @@ export default function Home() {
   async function handleServerAction(action: 'start' | 'stop') {
     setServerActionLoading(true);
     try {
-      const res = await fetch('/api/exaroton', {
+      const url = exarotonServerId ? `/api/exaroton?serverId=${exarotonServerId}` : '/api/exaroton';
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
@@ -709,7 +723,7 @@ export default function Home() {
       const intervalId = setInterval(() => fetchServerStatus(), 360000); 
       return () => clearInterval(intervalId);
     }
-  }, [activeTab]);
+  }, [activeTab, exarotonServerId]);
 
   useEffect(() => {
     if (isEditing && editorRef.current) {
@@ -719,8 +733,8 @@ export default function Home() {
 
   // Загрузка баланса казны для виджета
   useEffect(() => {
-    getBalance().then(setTreasuryBalance);
-  }, []);
+    getBalance(currentSeasonName).then(b => setTreasuryBalance(isNaN(b) ? 0 : b));
+  }, [currentSeasonName]);
 
   // Загрузка списка гостей при входе в админку
   useEffect(() => {
@@ -1303,6 +1317,23 @@ export default function Home() {
                 >
                   <Plus size={16} />
                 </button>
+              </div>
+
+              {/* Поле server ID для нового сезона */}
+              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  <Server size={12} className="text-[#c0ff00]" />
+                  <span>Exaroton Server ID для нового сезона</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. abc123def456"
+                    value={newSeasonServerId}
+                    onChange={e => setNewSeasonServerId(e.target.value)}
+                    className="ui-input flex-1 text-xs"
+                  />
+                </div>
               </div>
 
               {/* Текущий сезон */}
