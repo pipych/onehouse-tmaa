@@ -213,6 +213,7 @@ export default function Home() {
     setExarotonServerId(state.exaroton_server_id || '');
     const all = await getAllPastSeasons();
     setPastSeasons(all);
+    loadConstitution();
   }
 
   async function handleStartNewSeason() {
@@ -568,8 +569,12 @@ export default function Home() {
     if (data && data.length > 0) {
       const constDoc = data.find((d: any) => d.id === 1);
       const cmdDoc = data.find((d: any) => d.id === 2);
-      if (constDoc) setConstitutionText(constDoc.content || '');
-      if (cmdDoc) setCommandmentsText(cmdDoc.content || '');
+      setConstitutionText(constDoc?.content || '');
+      setCommandmentsText(cmdDoc?.content || '');
+    } else {
+      // Новый сезон — пустые документы
+      setConstitutionText('');
+      setCommandmentsText('');
     }
   }
 
