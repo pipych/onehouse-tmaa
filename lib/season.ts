@@ -119,6 +119,31 @@ export async function undoEndSeason(): Promise<boolean> {
   return true;
 }
 
+export async function startNewSeason(): Promise<boolean> {
+  const state = await getSeasonState();
+  if (state.is_active) return false;
+
+  const last = await getLastEndedSeason();
+  const newNumber = (last?.season_number ?? state.season_number) + 1;
+
+  const { error } = await supabase
+    .from('season_state')
+    .update({
+      is_active: true,
+      season_number: newNumber,
+      season_start_date: new Date().toISOString().split('T')[0],
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 1);
+
+  if (error) {
+    console.error('startNewSeason error:', error);
+    return false;
+  }
+
+  return true;
+}
+
 export async function getLastEndedSeason(): Promise<PastSeason | null> {
   const { data, error } = await supabase
     .from('past_seasons')

@@ -13,7 +13,7 @@ import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
 import { getBalance } from '../lib/treasury';
 import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
-import { getSeasonState, endSeason, undoEndSeason, getLastEndedSeason, SeasonState, PastSeason } from '../lib/season';
+import { getSeasonState, endSeason, undoEndSeason, startNewSeason, getLastEndedSeason, SeasonState, PastSeason } from '../lib/season';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
@@ -186,6 +186,19 @@ export default function Home() {
       setSeasonEnded(false);
     } else {
       alert('Ошибка отмены завершения');
+    }
+    setSeasonLoading(false);
+  }
+
+  async function handleStartNewSeason() {
+    if (!confirm(`Начать новый сезон #${(lastSeason?.season_number ?? 2) + 1}? Текущий сезон останется в архиве.`)) return;
+    setSeasonLoading(true);
+    const ok = await startNewSeason();
+    if (ok) {
+      setSeasonEnded(false);
+      setLastSeason(null);
+    } else {
+      alert('Ошибка создания нового сезона');
     }
     setSeasonLoading(false);
   }
@@ -1219,7 +1232,19 @@ export default function Home() {
 
             {/* Управление сезоном */}
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl md:col-span-2">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезоном</span></div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезоном</span></div>
+                {seasonEnded && (
+                  <button
+                    onClick={handleStartNewSeason}
+                    disabled={seasonLoading}
+                    className="w-7 h-7 rounded-full bg-[#c0ff00]/20 border border-[#c0ff00]/30 text-[#c0ff00] flex items-center justify-center hover:bg-[#c0ff00]/30 disabled:opacity-30 transition-all"
+                    title="Новый сезон"
+                  >
+                    <Plus size={16} />
+                  </button>
+                )}
+              </div>
               <div className="flex items-center justify-between p-4 bg-black/20 rounded-[20px] border border-white/5">
                 <div className="text-sm">
                   <span className="text-gray-400">Сезон </span>
@@ -1240,13 +1265,22 @@ export default function Home() {
                       <Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span>
                     </button>
                   ) : (
-                    <button
-                      onClick={handleUndoEndSeason}
-                      disabled={seasonLoading}
-                      className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
-                    >
-                      <RotateCcw size={14} /><span className="text-[11px] font-bold">Отменить завершение</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={handleUndoEndSeason}
+                        disabled={seasonLoading}
+                        className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
+                      >
+                        <RotateCcw size={14} /><span className="text-[11px] font-bold">Отменить завершение</span>
+                      </button>
+                      <button
+                        onClick={handleStartNewSeason}
+                        disabled={seasonLoading}
+                        className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
+                      >
+                        <Plus size={14} /><span className="text-[11px] font-bold">Новый сезон</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
