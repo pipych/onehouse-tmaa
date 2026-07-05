@@ -23,7 +23,6 @@ export async function getSeasonState(): Promise<SeasonState> {
     .single();
 
   if (error || !data) {
-    // Fallback: defaults
     return { season_number: 2, season_start_date: '2026-05-17', is_active: true };
   }
 
@@ -34,8 +33,19 @@ export async function getSeasonState(): Promise<SeasonState> {
   };
 }
 
+/** Все завершённые сезоны (от новых к старым) */
+export async function getAllPastSeasons(): Promise<PastSeason[]> {
+  const { data, error } = await supabase
+    .from('past_seasons')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (error || !data) return [];
+  return data;
+}
+
+/** Завершить текущий сезон */
 export async function endSeason(): Promise<boolean> {
-  // Получаем текущее состояние
   const state = await getSeasonState();
   if (!state.is_active) return false;
 
@@ -43,7 +53,6 @@ export async function endSeason(): Promise<boolean> {
   const endMs = Date.now();
   const daysCount = Math.floor((endMs - startMs) / (1000 * 60 * 60 * 24));
 
-  // Сохраняем в past_seasons
   const { error: insertError } = await supabase
     .from('past_seasons')
     .insert({
@@ -58,7 +67,6 @@ export async function endSeason(): Promise<boolean> {
     return false;
   }
 
-  // Помечаем как неактивный
   const { error: updateError } = await supabase
     .from('season_state')
     .update({ is_active: false, updated_at: new Date().toISOString() })
@@ -72,60 +80,94 @@ export async function endSeason(): Promise<boolean> {
   return true;
 }
 
-export async function undoEndSeason(): Promise<boolean> {
+/** Восстановить завершённый сезон как активный */
+export async function restorePastSeason(pastSeasonId: number): Promise<boolean> {
   const state = await getSeasonState();
-  if (state.is_active) return false; // Уже активен
 
-  // Находим последний завершённый сезон
-  const { data: lastSeason, error: fetchError } = await supabase
+  // Если есть активный сезон — завершаем его сначала
+  if (state.is_active) {
+    const ended = await endSeason();
+    if (!ended) return false;
+  }
+
+  // Находим сезон для восстановления
+  const { data: past, error: fetchError } = await supabase
     .from('past_seasons')
     .select('*')
-    .order('id', { ascending: false })
-    .limit(1)
+    .eq('id', pastSeasonId)
     .single();
 
-  if (fetchError || !lastSeason) {
-    console.error('undoEndSeason fetch error:', fetchError);
+  if (fetchError || !past) {
+    console.error('restorePastSeason fetch error:', fetchError);
     return false;
   }
 
-  // Удаляем из past_seasons
+  // Удаляем из архива
   const { error: deleteError } = await supabase
     .from('past_seasons')
     .delete()
-    .eq('id', lastSeason.id);
+    .eq('id', past.id);
 
   if (deleteError) {
-    console.error('undoEndSeason delete error:', deleteError);
+    console.error('restorePastSeason delete error:', deleteError);
     return false;
   }
 
-  // Восстанавливаем активность
+  // Делаем активным
   const { error: updateError } = await supabase
     .from('season_state')
     .update({
       is_active: true,
-      season_number: lastSeason.season_number,
-      season_start_date: lastSeason.start_date,
+      season_number: past.season_number,
+      season_start_date: past.start_date,
       updated_at: new Date().toISOString(),
     })
     .eq('id', 1);
 
   if (updateError) {
-    console.error('undoEndSeason update error:', updateError);
+    console.error('restorePastSeason update error:', updateError);
     return false;
   }
 
   return true;
 }
 
+/** Удалить сезон из архива навсегда */
+export async function deletePastSeason(pastSeasonId: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('past_seasons')
+    .delete()
+    .eq('id', pastSeasonId);
+
+  if (error) {
+    console.error('deletePastSeason error:', error);
+    return false;
+  }
+
+  return true;
+}
+
+/** Начать новый сезон (завершает текущий если активен) */
 export async function startNewSeason(): Promise<boolean> {
   const state = await getSeasonState();
-  if (state.is_active) return false;
 
-  const last = await getLastEndedSeason();
-  const newNumber = (last?.season_number ?? state.season_number) + 1;
+  // Если сезон активен — завершаем
+  if (state.is_active) {
+    const ended = await endSeason();
+    if (!ended) return false;
+  }
 
+  // Определяем номер нового сезона
+  const { data: lastPast } = await supabase
+    .from('past_seasons')
+    .select('season_number')
+    .order('season_number', { ascending: false })
+    .limit(1)
+    .single();
+
+  const newNumber = (lastPast?.season_number ?? state.season_number) + 1;
+
+  // Активируем новый сезон
   const { error } = await supabase
     .from('season_state')
     .update({
@@ -138,6 +180,51 @@ export async function startNewSeason(): Promise<boolean> {
 
   if (error) {
     console.error('startNewSeason error:', error);
+    return false;
+  }
+
+  return true;
+}
+
+/** Отменить завершение (быстрое восстановление последнего) */
+export async function undoEndSeason(): Promise<boolean> {
+  const state = await getSeasonState();
+  if (state.is_active) return false;
+
+  const { data: lastSeason, error: fetchError } = await supabase
+    .from('past_seasons')
+    .select('*')
+    .order('id', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (fetchError || !lastSeason) {
+    console.error('undoEndSeason fetch error:', fetchError);
+    return false;
+  }
+
+  const { error: deleteError } = await supabase
+    .from('past_seasons')
+    .delete()
+    .eq('id', lastSeason.id);
+
+  if (deleteError) {
+    console.error('undoEndSeason delete error:', deleteError);
+    return false;
+  }
+
+  const { error: updateError } = await supabase
+    .from('season_state')
+    .update({
+      is_active: true,
+      season_number: lastSeason.season_number,
+      season_start_date: lastSeason.start_date,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 1);
+
+  if (updateError) {
+    console.error('undoEndSeason update error:', updateError);
     return false;
   }
 

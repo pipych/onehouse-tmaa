@@ -13,7 +13,7 @@ import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
 import { getBalance } from '../lib/treasury';
 import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
-import { getSeasonState, endSeason, undoEndSeason, startNewSeason, getLastEndedSeason, SeasonState, PastSeason } from '../lib/season';
+import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSeason, deletePastSeason, getAllPastSeasons, getLastEndedSeason, SeasonState, PastSeason } from '../lib/season';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
@@ -132,6 +132,7 @@ export default function Home() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [seasonEnded, setSeasonEnded] = useState(false);
   const [lastSeason, setLastSeason] = useState<PastSeason | null>(null);
+  const [pastSeasons, setPastSeasons] = useState<PastSeason[]>([]);
   const [seasonLoading, setSeasonLoading] = useState(false);
 
   // Сезон стартовал 17 мая 2026
@@ -156,6 +157,8 @@ export default function Home() {
         const last = await getLastEndedSeason();
         if (last) setLastSeason(last);
       }
+      const all = await getAllPastSeasons();
+      setPastSeasons(all);
     }
     loadSeason();
   }, []);
@@ -184,21 +187,55 @@ export default function Home() {
     const ok = await undoEndSeason();
     if (ok) {
       setSeasonEnded(false);
+      refreshSeasons();
     } else {
       alert('Ошибка отмены завершения');
     }
     setSeasonLoading(false);
   }
 
+  async function refreshSeasons() {
+    const all = await getAllPastSeasons();
+    setPastSeasons(all);
+  }
+
   async function handleStartNewSeason() {
-    if (!confirm(`Начать новый сезон #${(lastSeason?.season_number ?? 2) + 1}? Текущий сезон останется в архиве.`)) return;
+    const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : 2) + 1;
+    if (!confirm(`Начать новый сезон #${nextNum}? Текущий сезон завершится и уйдёт в архив.`)) return;
     setSeasonLoading(true);
     const ok = await startNewSeason();
     if (ok) {
       setSeasonEnded(false);
       setLastSeason(null);
+      refreshSeasons();
     } else {
       alert('Ошибка создания нового сезона');
+    }
+    setSeasonLoading(false);
+  }
+
+  async function handleRestoreSeason(seasonId: number, seasonNum: number) {
+    if (!confirm(`Восстановить сезон #${seasonNum} как активный? Текущий активный сезон (если есть) будет завершён.`)) return;
+    setSeasonLoading(true);
+    const ok = await restorePastSeason(seasonId);
+    if (ok) {
+      setSeasonEnded(false);
+      setLastSeason(null);
+      refreshSeasons();
+    } else {
+      alert('Ошибка восстановления сезона');
+    }
+    setSeasonLoading(false);
+  }
+
+  async function handleDeleteSeason(seasonId: number, seasonNum: number) {
+    if (!confirm(`Удалить сезон #${seasonNum} навсегда? Это действие необратимо.`)) return;
+    setSeasonLoading(true);
+    const ok = await deletePastSeason(seasonId);
+    if (ok) {
+      refreshSeasons();
+    } else {
+      alert('Ошибка удаления сезона');
     }
     setSeasonLoading(false);
   }
@@ -1230,60 +1267,91 @@ export default function Home() {
               )}
             </div>
 
-            {/* Управление сезоном */}
+            {/* Управление сезонами */}
             <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl md:col-span-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезоном</span></div>
-                {seasonEnded && (
-                  <button
-                    onClick={handleStartNewSeason}
-                    disabled={seasonLoading}
-                    className="w-7 h-7 rounded-full bg-[#c0ff00]/20 border border-[#c0ff00]/30 text-[#c0ff00] flex items-center justify-center hover:bg-[#c0ff00]/30 disabled:opacity-30 transition-all"
-                    title="Новый сезон"
-                  >
-                    <Plus size={16} />
-                  </button>
-                )}
+                <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезонами</span></div>
+                <button
+                  onClick={handleStartNewSeason}
+                  disabled={seasonLoading}
+                  className="w-7 h-7 rounded-full bg-[#c0ff00]/20 border border-[#c0ff00]/30 text-[#c0ff00] flex items-center justify-center hover:bg-[#c0ff00]/30 disabled:opacity-30 transition-all"
+                  title="Новый сезон"
+                >
+                  <Plus size={16} />
+                </button>
               </div>
-              <div className="flex items-center justify-between p-4 bg-black/20 rounded-[20px] border border-white/5">
-                <div className="text-sm">
-                  <span className="text-gray-400">Сезон </span>
-                  <span className="text-white font-bold">#{seasonEnded && lastSeason ? lastSeason.season_number : 2}</span>
-                  {seasonEnded ? (
-                    <span className="text-red-400 font-bold ml-2">• Завершён</span>
-                  ) : (
-                    <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {!seasonEnded ? (
-                    <button
-                      onClick={handleEndSeason}
-                      disabled={seasonLoading}
-                      className="ui-pill-btn !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30 px-4"
-                    >
-                      <Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span>
-                    </button>
-                  ) : (
-                    <>
+
+              {/* Текущий сезон */}
+              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <span className="text-gray-400">Текущий сезон </span>
+                    <span className="text-white font-bold">#{seasonEnded && lastSeason ? lastSeason.season_number : 2}</span>
+                    {seasonEnded ? (
+                      <span className="text-red-400 font-bold ml-2">• Завершён</span>
+                    ) : (
+                      <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {!seasonEnded ? (
+                      <button
+                        onClick={handleEndSeason}
+                        disabled={seasonLoading}
+                        className="ui-pill-btn !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30 px-4"
+                      >
+                        <Flag size={14} /><span className="text-[11px] font-bold">Завершить</span>
+                      </button>
+                    ) : (
                       <button
                         onClick={handleUndoEndSeason}
                         disabled={seasonLoading}
                         className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
                       >
-                        <RotateCcw size={14} /><span className="text-[11px] font-bold">Отменить завершение</span>
+                        <RotateCcw size={14} /><span className="text-[11px] font-bold">Восстановить</span>
                       </button>
-                      <button
-                        onClick={handleStartNewSeason}
-                        disabled={seasonLoading}
-                        className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
-                      >
-                        <Plus size={14} /><span className="text-[11px] font-bold">Новый сезон</span>
-                      </button>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Список завершённых сезонов */}
+              {pastSeasons.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-1">Завершённые сезоны</div>
+                  {pastSeasons.map(s => (
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
+                      <div className="text-sm">
+                        <span className="text-white font-bold">Сезон #{s.season_number}</span>
+                        <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
+                        <span className="text-gray-600 ml-2 text-[11px]">{new Date(s.end_date).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleRestoreSeason(s.id, s.season_number)}
+                          disabled={seasonLoading}
+                          className="ui-pill-btn !bg-[#c0ff00]/10 !border-[#c0ff00]/20 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 px-3 py-1.5"
+                          title="Восстановить как активный"
+                        >
+                          <RotateCcw size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSeason(s.id, s.season_number)}
+                          disabled={seasonLoading}
+                          className="ui-pill-btn !bg-red-500/10 !border-red-500/20 !text-red-400 hover:!bg-red-500/20 disabled:opacity-30 px-3 py-1.5"
+                          title="Удалить навсегда"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {pastSeasons.length === 0 && !seasonEnded && (
+                <div className="text-center text-xs text-gray-600 py-2">Нет завершённых сезонов</div>
+              )}
             </div>
           </div>
         )}
