@@ -13,7 +13,7 @@ import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
 import { getBalance } from '../lib/treasury';
 import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
-import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSeason, deletePastSeason, getAllPastSeasons, getLastEndedSeason, SeasonState, PastSeason } from '../lib/season';
+import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSeason, deletePastSeason, getAllPastSeasons, getLastEndedSeason, seasonName, SeasonState, PastSeason } from '../lib/season';
 
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
@@ -213,7 +213,7 @@ export default function Home() {
     setExarotonServerId(state.exaroton_server_id || '');
     const all = await getAllPastSeasons();
     setPastSeasons(all);
-    loadConstitution();
+    loadConstitution(seasonName(state.season_number));
   }
 
   async function handleStartNewSeason() {
@@ -564,15 +564,15 @@ export default function Home() {
     if (data) setPlayers(data);
   }
 
-  async function loadConstitution() {
-    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]).eq('season', currentSeasonName);
+  async function loadConstitution(seasonOverride?: string) {
+    const season = seasonOverride || currentSeasonName;
+    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]).eq('season', season);
     if (data && data.length > 0) {
       const constDoc = data.find((d: any) => d.id === 1);
       const cmdDoc = data.find((d: any) => d.id === 2);
       setConstitutionText(constDoc?.content || '');
       setCommandmentsText(cmdDoc?.content || '');
     } else {
-      // Новый сезон — пустые документы
       setConstitutionText('');
       setCommandmentsText('');
     }
