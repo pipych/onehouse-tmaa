@@ -31,9 +31,10 @@ interface MediaBlogProps {
   onProfileClick: (player: Player) => void;
   isCreatingPost: boolean;
   setIsCreatingPost: (val: boolean) => void;
+  seasonName?: string;
 }
 
-export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost }: MediaBlogProps) {
+export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost, seasonName }: MediaBlogProps) {
   const POSTS_PER_PAGE = 4;
   const router = useRouter();
   
@@ -63,11 +64,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     const from = (page - 1) * POSTS_PER_PAGE;
     const to = page * POSTS_PER_PAGE - 1;
     try {
-      const { data, count, error } = await supabase
+      let query = supabase
         .from('posts')
         .select('*, author:users(*)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
+
+      if (seasonName) query = query.eq('season', seasonName);
+
+      const { data, count, error } = await query;
 
       if (data && !error) {
         setPosts(prev => append ? [...prev, ...data] : data);

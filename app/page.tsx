@@ -134,6 +134,8 @@ export default function Home() {
   const [lastSeason, setLastSeason] = useState<PastSeason | null>(null);
   const [pastSeasons, setPastSeasons] = useState<PastSeason[]>([]);
   const [seasonLoading, setSeasonLoading] = useState(false);
+  const [currentSeasonNum, setCurrentSeasonNum] = useState(2);
+  const currentSeasonName = `Сезон ${currentSeasonNum}`;
 
   // Сезон стартовал 17 мая 2026
   const SEASON_START = useMemo(() => new Date('2026-05-17T00:00:00+03:00'), []);
@@ -152,6 +154,7 @@ export default function Home() {
   useEffect(() => {
     async function loadSeason() {
       const state = await getSeasonState();
+      setCurrentSeasonNum(state.season_number);
       if (!state.is_active) {
         setSeasonEnded(true);
         const last = await getLastEndedSeason();
@@ -172,6 +175,7 @@ export default function Home() {
         setSeasonEnded(true);
         const last = await getLastEndedSeason();
         if (last) setLastSeason(last);
+        refreshSeasons();
       } else {
         alert('Ошибка завершения сезона. Проверь, выполнен ли SQL из supabase/season_migration.sql в Supabase.');
       }
@@ -195,6 +199,8 @@ export default function Home() {
   }
 
   async function refreshSeasons() {
+    const state = await getSeasonState();
+    setCurrentSeasonNum(state.season_number);
     const all = await getAllPastSeasons();
     setPastSeasons(all);
   }
@@ -355,6 +361,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('posts')
         .select('id, title, author:users(rp_name)')
+        .eq('season', currentSeasonName)
         .order('created_at', { ascending: false })
         .range(0, 1);
       if (data && !error) setLatestPosts(data);
@@ -543,8 +550,8 @@ export default function Home() {
   }
 
   async function loadConstitution() {
-    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]);
-    if (data) {
+    const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]).eq('season', currentSeasonName);
+    if (data && data.length > 0) {
       const constDoc = data.find((d: any) => d.id === 1);
       const cmdDoc = data.find((d: any) => d.id === 2);
       if (constDoc) setConstitutionText(constDoc.content || '');
@@ -556,13 +563,30 @@ export default function Home() {
     if (!editorRef.current || activeDocument === 'none') return;
     const updatedContent = editorRef.current.innerHTML;
     const docId = activeDocument === 'constitution' ? 1 : 2;
-    const { error } = await supabase.from('constitution').upsert({ id: docId, content: updatedContent });
-    if (!error) {
-      if (activeDocument === 'constitution') setConstitutionText(updatedContent);
-      else setCommandmentsText(updatedContent);
-      setIsEditing(false);
+
+    // Проверяем, есть ли уже документ для этого сезона
+    const { data: existing } = await supabase.from('constitution').select('id').eq('id', docId).eq('season', currentSeasonName).maybeSingle();
+    
+    if (existing) {
+      // Обновляем существующий
+      const { error } = await supabase.from('constitution').update({ content: updatedContent }).eq('id', docId).eq('season', currentSeasonName);
+      if (!error) {
+        if (activeDocument === 'constitution') setConstitutionText(updatedContent);
+        else setCommandmentsText(updatedContent);
+        setIsEditing(false);
+      } else {
+        alert(`Ошибка: ${error.message}`);
+      }
     } else {
-      alert(`Ошибка: ${error.message}`);
+      // Вставляем новый для этого сезона
+      const { error } = await supabase.from('constitution').insert({ id: docId, content: updatedContent, season: currentSeasonName, title: docId === 1 ? 'Конституция' : 'Заповеди' });
+      if (!error) {
+        if (activeDocument === 'constitution') setConstitutionText(updatedContent);
+        else setCommandmentsText(updatedContent);
+        setIsEditing(false);
+      } else {
+        alert(`Ошибка: ${error.message}`);
+      }
     }
   }
 
@@ -1135,7 +1159,7 @@ export default function Home() {
 
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'treasury' && (seasonEnded ? <SeasonPlaceholder /> : <Treasury currentUser={dbUser} />)}
-        {activeTab === 'media' && (seasonEnded ? <SeasonPlaceholder /> : <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} /></div>)}
+        {activeTab === 'media' && (seasonEnded ? <SeasonPlaceholder /> : <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} seasonName={currentSeasonName} /></div>)}
 
         {activeTab === 'players' && (
           <>

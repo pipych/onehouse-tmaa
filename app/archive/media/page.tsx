@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
+import { getAllPastSeasons, getSeasonState, seasonName } from '../../../lib/season';
 import { ArrowLeft, FolderArchive, ChevronDown, Newspaper, Clock, User, RefreshCw } from 'lucide-react';
 
 interface ArchivedPost {
@@ -22,8 +23,22 @@ export default function ArchiveMediaPage() {
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [archivedPosts, setArchivedPosts] = useState<ArchivedPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [seasons, setSeasons] = useState<string[]>(['Сезон 2']);
 
-  const seasons = ['Сезон 1', 'Сезон 2'];
+  // Загружаем список сезонов
+  useEffect(() => {
+    async function loadSeasons() {
+      const state = await getSeasonState();
+      const past = await getAllPastSeasons();
+      const nums = new Set<number>();
+      nums.add(state.season_number);
+      past.forEach(s => nums.add(s.season_number));
+      const list = Array.from(nums).sort((a, b) => b - a).map(n => seasonName(n));
+      setSeasons(list);
+      if (list.length > 0) setSelectedSeason(list[0]);
+    }
+    loadSeasons();
+  }, []);
 
   function stripHtml(html: string) {
     if (typeof document === 'undefined') return html;
@@ -33,18 +48,13 @@ export default function ArchiveMediaPage() {
   }
 
   useEffect(() => {
-    if (selectedSeason === 'Сезон 1') {
-      setArchivedPosts([]);
-      return;
-    }
-
     async function loadRealMedia() {
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from('posts')
           .select('*, author:users(rp_name)')
-          .eq('season', selectedSeason) // Автоматическая фильтрация из бд
+          .eq('season', selectedSeason)
           .order('created_at', { ascending: false });
         
         if (data && !error) {

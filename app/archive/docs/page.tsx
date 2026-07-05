@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
+import { getAllPastSeasons, getSeasonState, seasonName } from '../../../lib/season';
 import { 
   ArrowLeft, FolderArchive, ChevronDown, FileText, Plus, Save, 
   RefreshCw, Trash2, Edit2, X, Bold, Italic, Strikethrough, 
@@ -29,7 +30,22 @@ export default function ArchiveDocsPage() {
   });
 
   const editorRef = useRef<HTMLDivElement>(null);
-  const seasons = ['Сезон 1', 'Сезон 2'];
+  const [seasons, setSeasons] = useState<string[]>(['Сезон 2']);
+
+  // Загружаем список сезонов
+  useEffect(() => {
+    async function loadSeasons() {
+      const state = await getSeasonState();
+      const past = await getAllPastSeasons();
+      const nums = new Set<number>();
+      nums.add(state.season_number);
+      past.forEach(s => nums.add(s.season_number));
+      const list = Array.from(nums).sort((a, b) => b - a).map(n => seasonName(n));
+      setSeasons(list);
+      if (list.length > 0 && !list.includes(selectedSeason)) setSelectedSeason(list[0]);
+    }
+    loadSeasons();
+  }, []);
 
   const isEditor = currentUser?.roles?.some((r: string) => 
     ['admin', 'редактор', 'editor'].includes(r.toLowerCase())

@@ -231,6 +231,17 @@ export async function undoEndSeason(): Promise<boolean> {
   return true;
 }
 
+/** Формат имени сезона для контента */
+export function seasonName(num: number): string {
+  return `Сезон ${num}`;
+}
+
+/** Текущий сезон как строка для фильтрации контента */
+export async function getCurrentSeasonName(): Promise<string> {
+  const state = await getSeasonState();
+  return seasonName(state.season_number);
+}
+
 export async function getLastEndedSeason(): Promise<PastSeason | null> {
   const { data, error } = await supabase
     .from('past_seasons')
