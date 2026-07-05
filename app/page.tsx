@@ -1415,9 +1415,9 @@ export default function Home() {
       </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
-      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <nav className="flex-1 bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl">
-          <div className={`flex w-full items-center px-2 ${seasonEnded ? 'justify-center gap-12' : 'justify-around'}`}>
+      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'} ${seasonEnded ? 'justify-center' : ''}`}>
+        <nav className={`bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl transition-all duration-300 ${seasonEnded ? 'px-10' : 'flex-1'}`}>
+          <div className={`flex items-center px-2 ${seasonEnded ? 'gap-10' : 'w-full justify-around'}`}>
             <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'profile' && !selectedPlayer ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
               <HomeIcon size={22} />
               <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
