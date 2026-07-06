@@ -36,11 +36,23 @@ export default function ArchiveCharactersPage() {
           .order('rp_name', { ascending: true });
 
         if (data && !error) {
-          const filtered = data.filter(char => 
+          const filtered = data.filter((char: any) => 
             char.rp_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             char.mc_nickname.toLowerCase().includes(searchQuery.toLowerCase())
           );
           setCharacters(filtered);
+        } else if (error) {
+          // Если колонки season нет — показываем всех
+          const { data: all } = await supabase
+            .from('users')
+            .select('*')
+            .order('rp_name', { ascending: true });
+          if (all) {
+            setCharacters(all.filter((char: any) => 
+              char.rp_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              char.mc_nickname.toLowerCase().includes(searchQuery.toLowerCase())
+            ));
+          }
         }
       } catch (e) {}
       setLoading(false);
