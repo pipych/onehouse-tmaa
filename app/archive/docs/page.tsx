@@ -154,7 +154,13 @@ export default function ArchiveDocsPage() {
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user?.id) {
-      supabase.from('users').select('*').eq('tg_id', tg.initDataUnsafe.user.id).single().then(({ data }) => setCurrentUser(data));
+      (async () => {
+        const { data: player } = await supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single();
+        if (player) {
+          const { data: character } = await supabase.from('characters').select('*').eq('player_id', player.id).order('created_at', { ascending: false }).limit(1).single();
+          if (character) setCurrentUser(character);
+        }
+      })();
     }
     loadDocuments();
   }, [selectedSeason]);

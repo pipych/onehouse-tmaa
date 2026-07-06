@@ -53,7 +53,7 @@ export default function ArchiveMediaPage() {
       try {
         const { data, error } = await supabase
           .from('posts')
-          .select('*, author:users(rp_name)')
+          .select('*, author:characters(rp_name)')
           .eq('season', selectedSeason)
           .order('created_at', { ascending: false });
         

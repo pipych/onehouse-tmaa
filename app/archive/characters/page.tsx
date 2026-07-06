@@ -30,8 +30,8 @@ export default function ArchiveCharactersPage() {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('users')
-          .select('*')
+          .from('characters')
+          .select('*, player:players(tg_id, tg_username)')
           .eq('season', selectedSeason)
           .order('rp_name', { ascending: true });
 

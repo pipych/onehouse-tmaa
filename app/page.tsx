@@ -44,6 +44,7 @@ function getBankSuffix(balance: number): string {
 
 interface Player {
   id: string;
+  player_id: string;
   tg_id: number;
   tg_username: string;
   mc_nickname: string;
@@ -51,6 +52,8 @@ interface Player {
   avatar_url: string;
   roles: string[];
   party?: string;
+  season?: string;
+  status?: string;
 }
 
 interface CustomRole {
@@ -374,7 +377,7 @@ export default function Home() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('id, title, author:users(rp_name)')
+        .select('id, title, author:characters(rp_name)')
         .eq('season', currentSeasonName)
         .order('created_at', { ascending: false })
         .range(0, 1);
@@ -509,14 +512,16 @@ export default function Home() {
 
   async function checkUserInDb(tgId: number) {
     try {
-      const { data: user, error: dbError } = await supabase.from('users').select('*').eq('tg_id', tgId).single();
-      if (dbError || !user) {
+      // 1. Находим игрока по tg_id
+      const { data: player, error: playerError } = await supabase.from('players').select('*').eq('tg_id', tgId).single();
+      
+      if (playerError || !player) {
         // Проверяем гостевой доступ
         const guest = await isGuest(tgId);
         if (guest) {
-          // Создаём виртуального пользователя-гостя
           setDbUser({
             id: 'guest_' + tgId,
+            player_id: '',
             tg_id: tgId,
             tg_username: tgUser?.username || 'guest',
             mc_nickname: 'Гость',
@@ -531,15 +536,48 @@ export default function Home() {
         } else {
           setError(`Пользователь с TG ID ${tgId} не найден.`);
         }
-      } else {
-        setDbUser(user);
-        setNewRpName(user.rp_name);
-        setNewAvatarUrl(user.avatar_url);
-        loadRoles();
-        loadPlayers();
-        loadConstitution();
-        loadLatestPosts();
+        return;
       }
+
+      // 2. Находим активного персонажа через RPC
+      const { data: charId, error: rpcError } = await supabase.rpc('get_active_character', { p_player_id: player.id });
+      
+      if (rpcError || !charId) {
+        // Игрок есть, но нет активного персонажа — перенаправляем на создание
+        setError(`У тебя нет активного персонажа в текущем сезоне. Обратись к администратору.`);
+        return;
+      }
+
+      // 3. Загружаем персонажа
+      const { data: character, error: charError } = await supabase.from('characters').select('*').eq('id', charId).single();
+      
+      if (charError || !character) {
+        setError(`Персонаж не найден.`);
+        return;
+      }
+
+      // 4. Собираем объединённые данные
+      const combined: Player = {
+        id: character.id,
+        player_id: player.id,
+        tg_id: player.tg_id,
+        tg_username: player.tg_username,
+        mc_nickname: character.mc_nickname,
+        rp_name: character.rp_name,
+        avatar_url: character.avatar_url,
+        roles: character.roles || [],
+        party: character.party,
+        season: character.season,
+        status: character.status,
+      };
+      
+      setDbUser(combined);
+      setNewRpName(character.rp_name);
+      setNewAvatarUrl(character.avatar_url);
+      loadRoles();
+      loadPlayers();
+      loadConstitution();
+      loadLatestPosts();
     } catch (e: any) {
       setError(`Ошибка БД: ${e.message}`);
     } finally {
@@ -560,8 +598,26 @@ export default function Home() {
   }
 
   async function loadPlayers() {
-    const { data } = await supabase.from('users').select('*').order('rp_name', { ascending: true });
-    if (data) setPlayers(data);
+    const { data } = await supabase
+      .from('characters')
+      .select('*, player:players(tg_id, tg_username, avatar_url)')
+      .order('rp_name', { ascending: true });
+    if (data) {
+      const mapped: Player[] = data.map((c: any) => ({
+        id: c.id,
+        player_id: c.player_id,
+        tg_id: c.player?.tg_id,
+        tg_username: c.player?.tg_username,
+        mc_nickname: c.mc_nickname,
+        rp_name: c.rp_name,
+        avatar_url: c.avatar_url || c.player?.avatar_url,
+        roles: c.roles || [],
+        party: c.party,
+        season: c.season,
+        status: c.status,
+      }));
+      setPlayers(mapped);
+    }
   }
 
   async function loadConstitution(seasonOverride?: string) {
@@ -611,7 +667,7 @@ export default function Home() {
 
   async function saveProfileData() {
     if (!selectedPlayer || !newRpName.trim()) return;
-    const { error = null } = await supabase.from('users').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
+    const { error = null } = await supabase.from('characters').update({ rp_name: newRpName, avatar_url: newAvatarUrl }).eq('id', selectedPlayer.id); 
     if (!error) {
       const updatedUser = { ...selectedPlayer, rp_name: newRpName, avatar_url: newAvatarUrl };
       setSelectedPlayer(updatedUser);
@@ -626,10 +682,32 @@ export default function Home() {
   async function handleAddPlayer() {
     const tgIdNum = parseInt(addTgId);
     if (isNaN(tgIdNum) || !addRpName.trim() || !addMcNickname.trim()) return;
-    const { error } = await supabase.from('users').insert([{
-      tg_id: tgIdNum, tg_username: addTgUsername || 'unknown', mc_nickname: addMcNickname, rp_name: addRpName, avatar_url: addAvatarUrl || 'https://via.placeholder.com/150', roles: addRoles, party: addParty || 'Нет партии'
-    }]);
-    if (error) alert(`Ошибка: ${error.message}`);
+    
+    // 1. Создаём или находим игрока
+    const { data: existingPlayer } = await supabase.from('players').select('id').eq('tg_id', tgIdNum).single();
+    let playerId = existingPlayer?.id;
+    
+    if (!playerId) {
+      const { data: newPlayer, error: playerError } = await supabase.from('players').insert({
+        tg_id: tgIdNum,
+        tg_username: addTgUsername || 'unknown',
+        avatar_url: addAvatarUrl || 'https://via.placeholder.com/150',
+      }).select().single();
+      if (playerError) { alert(`Ошибка создания игрока: ${playerError.message}`); return; }
+      playerId = newPlayer.id;
+    }
+
+    // 2. Создаём персонажа
+    const { error } = await supabase.from('characters').insert({
+      player_id: playerId,
+      mc_nickname: addMcNickname,
+      rp_name: addRpName,
+      avatar_url: addAvatarUrl || 'https://via.placeholder.com/150',
+      roles: addRoles,
+      party: addParty || 'Нет партии',
+      season: currentSeasonName,
+    });
+    if (error) alert(`Ошибка создания персонажа: ${error.message}`);
     else { setAddTgId(''); setAddTgUsername(''); setAddMcNickname(''); setAddRpName(''); setAddAvatarUrl(''); setAddParty(''); loadPlayers(); }
   }
 
@@ -679,7 +757,7 @@ export default function Home() {
     if (!selectedPlayer || selectedPlayer.roles.includes(roleName)) return;
     const updatedRoles = [...selectedPlayer.roles, roleName];
     const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    const { error } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    const { error } = await supabase.from('characters').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
     if (!error) {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
@@ -691,7 +769,7 @@ export default function Home() {
     if (!selectedPlayer) return;
     const updatedRoles = selectedPlayer.roles.filter(r => r !== roleName);
     const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    const { error = null } = await supabase.from('users').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    const { error = null } = await supabase.from('characters').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
     if (!error) {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);

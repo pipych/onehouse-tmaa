@@ -7,6 +7,7 @@ import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical } from 'luci
 
 interface Player {
   id: string;
+  player_id: string;
   tg_id: number;
   tg_username: string;
   mc_nickname: string;
@@ -66,7 +67,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     try {
       let query = supabase
         .from('posts')
-        .select('*, author:users(*)', { count: 'exact' })
+        .select('*, author:characters(*)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 

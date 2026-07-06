@@ -9,6 +9,7 @@ import {
 
 interface Player {
   id: string;
+  player_id: string;
   tg_id: number;
   tg_username: string;
   mc_nickname: string;
@@ -76,7 +77,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     try {
       const { data: commentData } = await supabase
         .from('comments')
-        .select('*, author:users(*)')
+        .select('*, author:characters(*)')
         .eq('post_id', post.id)
         .order('created_at', { ascending: true });
 
