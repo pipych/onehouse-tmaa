@@ -559,14 +559,24 @@ export default function Home() {
       }
 
       if (!charId) {
-        // Игрок есть, но нет персонажа в текущем сезоне — автосоздаём
+        // Игрок есть, но нет персонажа в текущем сезоне — копируем данные из прошлого сезона
+        const { data: lastChars } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('player_id', player.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        const lastChar = lastChars && lastChars.length > 0 ? lastChars[0] : null;
+
         const { data: newChar, error: createError } = await supabase
           .from('characters')
           .insert({
             player_id: player.id,
-            mc_nickname: player.mc_nickname || '',
-            rp_name: player.rp_name || tgUser?.username || 'Игрок',
-            avatar_url: player.avatar_url || '',
+            mc_nickname: lastChar?.mc_nickname || '',
+            rp_name: lastChar?.rp_name || tgUser?.username || 'Игрок',
+            avatar_url: lastChar?.avatar_url || player.avatar_url || '',
+            party: lastChar?.party || 'Нет партии',
             roles: player.roles || ['citizen'],
             season: currentSeasonName,
             status: 'alive',
@@ -588,7 +598,7 @@ export default function Home() {
           mc_nickname: newChar.mc_nickname,
           rp_name: newChar.rp_name,
           avatar_url: newChar.avatar_url,
-          roles: newChar.roles || [],
+          roles: player.roles || [],
           party: newChar.party,
           season: newChar.season,
           status: newChar.status,
