@@ -1037,9 +1037,9 @@ export default function Home() {
                         <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
                       </div>
                       <div className="flex gap-0.5 flex-shrink-0">
-                        {pc.roles?.slice(0, 2).map((r: string, i: number) => (
-                          <span key={i} className="text-[7px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
-                        ))}
+                        {pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') && (
+                          <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">мёртв</span>
+                        )}
                       </div>
                     </div>
                   ))}
