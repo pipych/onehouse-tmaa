@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -6,6 +6,7 @@ import {
   ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, 
   CornerDownRight, ChevronUp, ChevronDown 
 } from 'lucide-react';
+import Avatar from './Avatar';
 
 interface Player {
   id: string;
@@ -160,7 +161,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     return (
       <div key={comment.id} className={`flex gap-3 items-start ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
-        <img src={comment.author_player?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
+        <img src={comment.author_player?.avatar_url || ''} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
         <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs font-black text-white">{comment.author_player?.mc_nickname || 'Неизвестный'}</span>
@@ -203,7 +204,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
+              <img src={post.author?.avatar_url || ''} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
               <div>
                 <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                 {post.author?.mc_nickname && <div className="text-xs text-gray-500 font-mono">{post.author.mc_nickname}</div>}

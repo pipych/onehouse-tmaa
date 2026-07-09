@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 // =========================================================================
 // 1. НАСТРОЙКИ NEXT.JS И СИСТЕМНЫЕ ИМПОРТЫ
@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 import Archive from '../components/Archive';
 import Treasury from '../components/Treasury';
+import Avatar from '../components/Avatar';
 import { getBalance } from '../lib/treasury';
 import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
 import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSeason, deletePastSeason, getAllPastSeasons, getLastEndedSeason, seasonName, SeasonState, PastSeason } from '../lib/season';
@@ -966,7 +967,7 @@ export default function Home() {
           )}
 
           <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
-            <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || 'https://via.placeholder.com/150')} alt="avatar" className="w-full h-full object-cover" />
+            <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || '')} alt="avatar" className="w-full h-full object-cover" />
           </div>
 
           <div className="space-y-2 w-full">
@@ -1394,7 +1395,7 @@ export default function Home() {
                   <div className="space-y-2 w-full md:max-w-sm">
                     <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой персонаж</div>
                     <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
-                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
                         <span className="text-base font-black truncate tracking-wide text-[#c0ff00]">{dbUser.rp_name}</span>
                         <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
@@ -1419,7 +1420,7 @@ export default function Home() {
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {alive.map((player) => (
                           <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedPlayer(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#14171c]/90 border-white/5 hover:border-white/20">
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-black truncate tracking-wide text-white">{player.rp_name}</div>
                               <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
@@ -1447,7 +1448,7 @@ export default function Home() {
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {dead.map((player) => (
                           <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedPlayer(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#050608] border-[#111316] grayscale">
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-gray-700 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-gray-700 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-black truncate tracking-wide text-gray-500 line-through">{player.rp_name}</div>
                               <div className="text-xs text-gray-600 truncate font-mono">{player.mc_nickname}</div>
@@ -1798,7 +1799,7 @@ export default function Home() {
       <aside className={`hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
         {dbUser && (
           <button onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
-            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="me" /></div>
+            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || ''} className="w-full h-full object-cover" alt="me" /></div>
           </button>
         )}
 

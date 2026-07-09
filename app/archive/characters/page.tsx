@@ -1,9 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { getSeasonState, getAllPastSeasons, seasonName } from '../../../lib/season';
+import Avatar from '../../../components/Avatar';
 import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X } from 'lucide-react';
 
 export default function ArchiveCharactersPage() {
@@ -115,7 +116,7 @@ export default function ArchiveCharactersPage() {
                 onClick={() => { loadPlayerChars(char.player_id); setSelectedPlayer(char); }}
                 className={`p-4 rounded-[24px] border flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={char.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={char.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
                 <div className="flex-1 min-w-0">
                   <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{char.rp_name}</div>
                   <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{char.mc_nickname}</div>
@@ -136,7 +137,7 @@ export default function ArchiveCharactersPage() {
             <button onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white transition-all"><X size={14} /></button>
 
             <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg ${isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
-              <img src={selectedPlayer.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" />
+              <img src={selectedPlayer.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" />
             </div>
 
             <div className="space-y-1">

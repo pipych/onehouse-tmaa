@@ -1,8 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
+import Avatar from './Avatar';
 import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical } from 'lucide-react';
 
 interface Player {
@@ -155,7 +156,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div className="p-5 flex flex-col flex-grow space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                  <img src={post.author?.avatar_url || ''} className="w-8 h-8 rounded-full object-cover border border-white/10" />
                   <div>
                     <span className="text-xs font-bold text-white">{post.author?.rp_name}</span>
                     {post.author?.mc_nickname && <span className="text-[10px] text-gray-500 ml-1.5 font-mono">{post.author.mc_nickname}</span>}
