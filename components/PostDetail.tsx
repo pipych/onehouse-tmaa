@@ -9,11 +9,14 @@ import {
 
 interface Player {
   id: string;
-  player_id: string;
-  tg_id: number;
-  tg_username: string;
   mc_nickname: string;
+  avatar_url: string;
+}
+
+interface Character {
+  id: string;
   rp_name: string;
+  mc_nickname: string;
   avatar_url: string;
   roles: string[];
 }
@@ -26,25 +29,27 @@ interface Post {
   cover_url: string;
   youtube_url: string;
   created_at: string;
-  author?: Player;
+  author?: Character;
+  author_player?: Player;
 }
 
 interface BlogComment {
   id: string;
   post_id: string;
   author_id: string;
+  player_id: string;
   parent_id: string | null;
   content: string;
   created_at: string;
-  author?: Player;
+  author_player?: Player;
   parent_author_name?: string; 
 }
 
 interface PostDetailProps {
   post: Post;
-  currentUser: Player | null;
+  currentUser: any | null;
   onClose: () => void;
-  onProfileClick: (player: Player) => void;
+  onProfileClick: (player: any) => void;
   onStartEdit: (post: Post) => void;
   onDeletePost: (postId: string) => void;
 }
@@ -75,16 +80,17 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
 
   async function loadActivity() {
     try {
+      // Комментарии с привязкой к players (автор = игрок)
       const { data: commentData } = await supabase
         .from('comments')
-        .select('*, author:characters(*)')
+        .select('*, author_player:players(id, mc_nickname, avatar_url)')
         .eq('post_id', post.id)
         .order('created_at', { ascending: true });
 
       if (commentData) {
         const formatted = commentData.map((c: any) => ({
           ...c,
-          parent_author_name: c.parent_id ? commentData.find((p: any) => p.id === c.parent_id)?.author?.rp_name || 'Удалено' : ''
+          parent_author_name: c.parent_id ? commentData.find((p: any) => p.id === c.parent_id)?.author_player?.mc_nickname || 'Удалено' : ''
         }));
         setComments(formatted);
       }
@@ -92,7 +98,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
       const { data: likes } = await supabase.from('post_likes').select('user_id').eq('post_id', post.id);
       if (likes) {
         setLikesCount(likes.length);
-        setIsLiked(currentUser ? likes.some(l => l.user_id === currentUser.id) : false);
+        setIsLiked(currentUser ? likes.some((l: any) => l.user_id === currentUser.id) : false);
       }
     } catch (e) {}
   }
@@ -110,12 +116,22 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     }
   }
 
+  // Коммент: author_id = player.id (Minecraft профиль), player_id = player.id
   async function handleSendComment(parentId: string | null = null) {
     const text = parentId ? newReplyText : newCommentText;
     if (!text.trim() || !currentUser) return;
 
+    // currentUser.id — это character.id (из page.tsx). Нам нужен player.id
+    // Получаем player_id из characters таблицы
+    const { data: char } = await supabase.from('characters').select('player_id').eq('id', currentUser.id).single();
+    const playerId = char?.player_id || currentUser.player_id || currentUser.id;
+
     const { error } = await supabase.from('comments').insert([{
-      post_id: post.id, author_id: currentUser.id, parent_id: parentId, content: text.trim()
+      post_id: post.id,
+      author_id: playerId,
+      player_id: playerId,
+      parent_id: parentId,
+      content: text.trim()
     }]);
 
     if (!error) {
@@ -136,7 +152,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     loadActivity();
   }, [post.id, currentUser]);
 
-  const topLevelComments = comments.filter(c => !c.parent_id);
+  const topLevelComments = comments.filter((c: BlogComment) => !c.parent_id);
 
   function renderComment(comment: BlogComment, isReply = false) {
     const isLong = comment.content.length > 75;
@@ -144,10 +160,10 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     return (
       <div key={comment.id} className={`flex gap-3 items-start ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
-        <img src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
+        <img src={comment.author_player?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
         <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-xs font-black text-white">{comment.author?.rp_name}</span>
+            <span className="text-xs font-black text-white">{comment.author_player?.mc_nickname || 'Неизвестный'}</span>
             <span className="text-[10px] text-gray-500 font-mono">{new Date(comment.created_at).toLocaleDateString('ru-RU')}</span>
           </div>
           <div className="text-sm text-gray-300 break-words leading-relaxed pr-6">
@@ -174,30 +190,27 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   }
 
   return (
-    // ФИКС: Жесткое принудительное включение вертикального скролла на мобильных
     <div 
       className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" 
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
-      {/* ФИКС: Изменено с flex на block, чтобы Safari корректно высчитывал высоту прокрутки */}
       <div className="w-full max-w-3xl mx-auto block p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
         
-        {/* Кнопка Назад */}
         <div className="w-full select-none flex mb-11">
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white"><ArrowLeft size={20} /></button>
         </div>
 
-        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
               <div>
                 <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
+                {post.author?.mc_nickname && <div className="text-xs text-gray-500 font-mono">{post.author.mc_nickname}</div>}
                 <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
               </div>
             </div>
-            {canManage()} && (
+            {canManage() && (
               <div className="relative">
                 <button onClick={() => setActiveMenu(!activeMenu)} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
                 {activeMenu && (
@@ -207,7 +220,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
                   </div>
                 )}
               </div>
-            )
+            )}
           </div>
 
           {post.youtube_url && (
@@ -235,7 +248,6 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
           </div>
         </div>
 
-        {/* Обсуждение */}
         <div className="bg-[#14171c]/60 backdrop-blur-xl border border-white/5 rounded-[32px] p-5 md:p-6 shadow-xl mt-14">
           <h3 className="text-lg font-black text-white mb-5 flex items-center gap-2"><MessageCircle size={20} className="text-[#c0ff00]" /> <span>Обсуждение ({comments.length})</span></h3>
           <div className="flex gap-3 items-center mb-9">
@@ -244,8 +256,8 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
           </div>
 
           <div className="divide-y divide-white/5">
-            {topLevelComments.map(mainComment => {
-              const replies = comments.filter(r => r.parent_id === mainComment.id);
+            {topLevelComments.map((mainComment: BlogComment) => {
+              const replies = comments.filter((r: BlogComment) => r.parent_id === mainComment.id);
               return (
                 <div key={mainComment.id} className="pb-4">
                   {renderComment(mainComment, false)}
@@ -256,7 +268,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
                       </button>
                     </div>
                   )}
-                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map(reply => renderComment(reply, true))}</div>}
+                  {replies.length > 0 && expandedThreads[mainComment.id] && <div className="pl-8 animate-fade-in">{replies.map((reply: BlogComment) => renderComment(reply, true))}</div>}
                 </div>
               );
             })}

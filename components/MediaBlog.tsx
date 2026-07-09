@@ -25,6 +25,7 @@ interface Post {
   youtube_url: string;
   created_at: string;
   author?: Player;
+  author_player?: { mc_nickname: string };
 }
 
 interface MediaBlogProps {
@@ -67,7 +68,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     try {
       let query = supabase
         .from('posts')
-        .select('*, author:characters(*)', { count: 'exact' })
+        .select('*, author:characters(*, player:players(mc_nickname))', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -79,7 +80,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         setPosts(prev => append ? [...prev, ...data] : data);
         if (count !== null) setTotalCount(count);
         
-        const ids = data.map(p => p.id);
+        const ids = data.map((p: any) => p.id);
         const { data: cData } = await supabase.from('comments').select('post_id').in('post_id', ids);
         const { data: lData } = await supabase.from('post_likes').select('post_id, user_id');
         
@@ -87,15 +88,15 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
         const lMap: Record<string, { count: number; liked: boolean }> = {};
         
         ids.forEach(id => {
-          cMap[id] = cData?.filter(c => c.post_id === id).length || 0;
-          const postL = lData?.filter(l => l.post_id === id) || [];
+          cMap[id] = cData?.filter((c: any) => c.post_id === id).length || 0;
+          const postL = lData?.filter((l: any) => l.post_id === id) || [];
           lMap[id] = {
             count: postL.length,
-            liked: currentUser ? postL.some(l => l.user_id === currentUser.id) : false
+            liked: currentUser ? postL.some((l: any) => l.user_id === currentUser.id) : false
           };
         });
-        setPostCommentCounts(p => ({ ...p, ...cMap }));
-        setPostLikes(p => ({ ...p, ...lMap }));
+        setPostCommentCounts((p: Record<string, number>) => ({ ...p, ...cMap }));
+        setPostLikes((p: Record<string, { count: number; liked: boolean }>) => ({ ...p, ...lMap }));
       }
     } catch (e) {}
   }
@@ -106,10 +107,10 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     const active = postLikes[postId]?.liked;
     if (active) {
       await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
-      setPostLikes(p => ({ ...p, [postId]: { count: Math.max(0, p[postId].count - 1), liked: false } }));
+      setPostLikes((p: Record<string, { count: number; liked: boolean }>) => ({ ...p, [postId]: { count: Math.max(0, p[postId].count - 1), liked: false } }));
     } else {
       await supabase.from('post_likes').insert([{ post_id: postId, user_id: currentUser.id }]);
-      setPostLikes(p => ({ ...p, [postId]: { count: p[postId].count + 1, liked: true } }));
+      setPostLikes((p: Record<string, { count: number; liked: boolean }>) => ({ ...p, [postId]: { count: p[postId].count + 1, liked: true } }));
     }
   }
 
@@ -121,89 +122,83 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
 
   useEffect(() => {
     fetchPosts(1, false);
-  }, [currentUser]);
+  }, [seasonName]);
+
+  useEffect(() => {
+    const handleClick = () => setActiveMenuPostId(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   return (
-    <div className="space-y-6 animate-fade-in w-full max-w-3xl mx-auto px-2">
-      <div className="flex items-center justify-between w-full select-none">
-        <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-3"><Newspaper size={24} className="text-[#c0ff00]" /> .медиа</h2>
-        {currentUser && !currentUser?.roles?.includes('guest') && (
-          <button onClick={() => router.push('/media/editor')} className="hidden md:flex w-12 h-12 bg-[#c0ff00] text-black rounded-full items-center justify-center shadow-lg transition-transform active:scale-90">
-            <Plus size={26} />
-          </button>
+    <div className="w-full space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-black text-white flex items-center gap-2"><Newspaper size={20} className="text-[#c0ff00]" /> Медиа</h2>
+        {currentUser && !currentUser.roles?.includes('guest') && (
+          <button onClick={() => router.push('/media/editor')} className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#c0ff00] text-black rounded-full text-sm font-bold active:scale-95 transition-transform"><Plus size={16} /><span>Статья</span></button>
         )}
       </div>
 
-      <div className="flex flex-col gap-8 pb-8">
-        {posts.length === 0 ? (
-          <div className="text-center py-16 text-gray-400 bg-[#14171c]/50 rounded-[32px] border border-white/5">Лента пуста</div>
-        ) : (
-          posts.map(post => {
-            const embedUrl = getYoutubeEmbedUrl(post.youtube_url);
-            const hasVideo = post.youtube_url && post.youtube_url.trim().length > 0 && embedUrl;
-            const hasCover = post.cover_url && post.cover_url.trim().length > 0;
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {posts.map((post: any) => (
+          <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[28px] overflow-hidden cursor-pointer hover:border-white/10 transition-all shadow-xl flex flex-col group">
+            {post.youtube_url ? (
+              <div className="w-full aspect-video bg-black/30 relative">
+                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="w-full h-full border-none pointer-events-none" />
+              </div>
+            ) : post.cover_url ? (
+              <div className="w-full aspect-video relative overflow-hidden">
+                <img src={post.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+              </div>
+            ) : null}
 
-            return (
-              <div key={post.id} onClick={() => router.push(`/media/${post.id}`)} className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl transition-all hover:border-white/10 group cursor-pointer flex flex-col pt-2 relative">
-                <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <img 
-                      src={post.author?.avatar_url || 'https://via.placeholder.com/150'} 
-                      style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} 
-                      className="bg-black/50 border border-white/10" 
-                      alt="avatar" 
-                      onClick={(e) => { e.stopPropagation(); if (post.author) onProfileClick(post.author); }}
-                    />
-                    <div className="min-w-0">
-                      <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5"><Clock size={12} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
-                    </div>
+            <div className="p-5 flex flex-col flex-grow space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                  <div>
+                    <span className="text-xs font-bold text-white">{post.author?.rp_name}</span>
+                    {post.author?.mc_nickname && <span className="text-[10px] text-gray-500 ml-1.5 font-mono">{post.author.mc_nickname}</span>}
                   </div>
+                </div>
+                <div className="relative" onClick={e => e.stopPropagation()}>
                   {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
-                    <div className="relative">
-                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id); }} className="p-2 text-gray-400 hover:text-white"><MoreVertical size={20} /></button>
-                      {activeMenuPostId === post.id && (
-                        <div className="absolute right-0 mt-2 w-40 bg-[#1a1e24] border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="w-full text-left px-3 py-2 text-sm font-bold text-gray-200 hover:text-[#c0ff00]">Редактировать</button>
-                          <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-3 py-2 text-sm font-bold text-red-400">Удалить</button>
-                        </div>
-                      )}
+                    <button onClick={() => setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id)} className="p-1 text-gray-500 hover:text-white"><MoreVertical size={16} /></button>
+                  )}
+                  {activeMenuPostId === post.id && (
+                    <div className="absolute right-0 mt-1 bg-[#1a1e24] border border-white/10 rounded-xl p-1 z-50 shadow-xl flex flex-col gap-0.5 min-w-[120px]">
+                      <button onClick={() => router.push(`/media/editor?edit=${post.id}`)} className="text-left px-3 py-1.5 hover:bg-white/5 rounded-lg text-xs font-bold text-gray-200">Редактировать</button>
+                      <button onClick={() => handleDeletePost(post.id)} className="text-left px-3 py-1.5 hover:bg-red-500/10 rounded-lg text-xs font-bold text-red-400">Удалить</button>
                     </div>
                   )}
                 </div>
+              </div>
 
-                {hasVideo ? (
-                  <div className="px-5 md:px-6 w-full mb-2">
-                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
-                      <iframe src={embedUrl} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
-                    </div>
-                  </div>
-                ) : hasCover ? (
-                  <div className="px-5 md:px-6 w-full mb-2">
-                    <div className="w-full relative h-0 rounded-2xl overflow-hidden bg-black/50" style={{ paddingBottom: '56.25%' }}>
-                      <img src={post.cover_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-                    </div>
-                  </div>
-                ) : null}
+              <h3 className="text-lg font-black text-white leading-tight group-hover:text-[#c0ff00] transition-colors">{post.title}</h3>
+              <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed">{stripHtml(post.content)}</p>
 
-                <div className="p-5 md:p-6 pt-4 flex flex-col gap-4 flex-grow">
-                  <h3 className="text-lg md:text-2xl font-black text-white truncate leading-tight">{post.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed truncate">{stripHtml(post.content)}</p>
-                  <div className="flex items-center justify-start gap-3 select-none" onClick={e => e.stopPropagation()}>
-                    <button onClick={(e) => handlePostLike(e, post.id)} style={postLikes[post.id]?.liked ? { borderColor: '#7f1d1d', backgroundColor: 'rgba(127,29,29,0.1)' } : undefined} className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'text-red-400' : 'bg-white/5 border-white/5 text-gray-400'}`}><Heart size={15} fill={postLikes[post.id]?.liked ? "currentColor" : "none"} /> <span>{postLikes[post.id]?.count || 0}</span></button>
-                    <button onClick={(e) => { e.stopPropagation(); router.push(`/media/${post.id}#comments`); }} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-full text-gray-400 text-xs font-bold font-mono"><MessageCircle size={15} /> <span>{postCommentCounts[post.id] || 0}</span></button>
-                  </div>
+              <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
+                <span className="text-[10px] text-gray-500 flex items-center gap-1"><Clock size={10} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}</span>
+                <div className="flex items-center gap-3">
+                  <button onClick={(e) => handlePostLike(e, post.id)} className={`flex items-center gap-1 text-[10px] font-bold ${postLikes[post.id]?.liked ? 'text-red-400' : 'text-gray-500'}`}><Heart size={12} fill={postLikes[post.id]?.liked ? 'currentColor' : 'none'} /> {postLikes[post.id]?.count || 0}</button>
+                  <span className="flex items-center gap-1 text-[10px] text-gray-500"><MessageCircle size={12} /> {postCommentCounts[post.id] || 0}</span>
                 </div>
               </div>
-            );
-          })
-        )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {currentPage < totalPages && (
-        <div className="flex justify-center mt-2 mb-4">
-          <button onClick={() => { const n = currentPage + 1; setCurrentPage(n); fetchPosts(n, true); }} className="flex items-center gap-2 px-6 py-3 bg-[#14171c]/90 border border-white/10 rounded-full text-xs font-bold text-gray-400">Показать еще</button>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-4">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button key={page} onClick={() => { setCurrentPage(page); fetchPosts(page, false); }} className={`w-10 h-10 rounded-full text-xs font-bold transition-all ${page === currentPage ? 'bg-[#c0ff00] text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{page}</button>
+          ))}
         </div>
+      )}
+
+      {posts.length === 0 && (
+        <div className="text-center py-12 text-xs text-gray-500 font-mono bg-[#14171c]/40 border border-white/5 rounded-2xl">СТАТЕЙ ПОКА НЕТ</div>
       )}
     </div>
   );

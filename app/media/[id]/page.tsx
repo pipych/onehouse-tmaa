@@ -32,10 +32,10 @@ export default function StandalonePostDetail() {
 
   async function loadActivity() {
     if (!postId) return;
-    const { data: p } = await supabase.from('posts').select('*, author:characters(*)').eq('id', postId).single();
+    const { data: p } = await supabase.from('posts').select('*, author:characters(*, player:players(mc_nickname))').eq('id', postId).single();
     if (p) setPost(p);
     
-    const { data: c } = await supabase.from('comments').select('*, author:characters(*)').eq('post_id', postId).order('created_at', { ascending: true });
+    const { data: c } = await supabase.from('comments').select('*, author_player:players(id, mc_nickname, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
     if (c) setComments(c);
   }
 
@@ -44,9 +44,13 @@ export default function StandalonePostDetail() {
     if (!content || !currentUser || isSubmitting) return;
     
     setIsSubmitting(true);
+    const { data: char } = await supabase.from('characters').select('player_id').eq('id', currentUser.id).single();
+    const playerId = char?.player_id || currentUser.player_id || currentUser.id;
+
     const { error } = await supabase.from('comments').insert([{
       post_id: postId,
-      author_id: currentUser.id,
+      author_id: playerId,
+      player_id: playerId,
       content: content,
       parent_id: parentId
     }]);
@@ -55,7 +59,6 @@ export default function StandalonePostDetail() {
       if (parentId) {
         setReplyContent('');
         setReplyingToId(null);
-        // Автоматически раскрываем ветку, куда отправили ответ
         setExpandedThreads(prev => ({ ...prev, [parentId]: true }));
       } else {
         setNewComment('');
@@ -68,7 +71,6 @@ export default function StandalonePostDetail() {
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user?.id) {
-      // Загружаем активного персонажа через RPC
       supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(async ({data: player}) => {
         if (player) {
           const { data: charId } = await supabase.rpc('get_active_character', { p_player_id: player.id });
@@ -82,7 +84,6 @@ export default function StandalonePostDetail() {
     loadActivity();
   }, [postId]);
 
-  // Скролл к комментариям при переходе с #comments
   useEffect(() => {
     if (typeof window === 'undefined' || !comments.length) return;
     if (window.location.hash === '#comments') {
@@ -107,9 +108,8 @@ export default function StandalonePostDetail() {
     : null;
   const hasCover = post.cover_url && post.cover_url.trim().length > 0;
 
-  // Фильтруем на корневые комменты и ответы
-  const rootComments = comments.filter(c => !c.parent_id);
-  const getCommentReplies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
+  const rootComments = comments.filter((c: any) => !c.parent_id);
+  const getCommentReplies = (parentId: string) => comments.filter((c: any) => c.parent_id === parentId);
 
   return (
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32">
@@ -121,7 +121,6 @@ export default function StandalonePostDetail() {
           </button>
         </div>
 
-        {/* Карточка поста */}
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[40px] overflow-hidden shadow-2xl flex flex-col mb-6">
           {embedUrl ? (
             <div className="w-full aspect-video bg-black/50 relative group">
@@ -139,6 +138,7 @@ export default function StandalonePostDetail() {
               <img src={post.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-10 h-10 rounded-full border border-[#c0ff00]/20 object-cover" />
               <div className="flex-1">
                 <div className="text-sm font-bold text-white">{post.author?.rp_name}</div>
+                {post.author?.mc_nickname && <div className="text-[10px] text-gray-500 font-mono">{post.author.mc_nickname}</div>}
                 <div className="text-[10px] text-gray-500 font-bold uppercase">{new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
               </div>
               {canManage && (
@@ -159,11 +159,9 @@ export default function StandalonePostDetail() {
           </div>
         </div>
 
-        {/* Блок древовидных комментариев */}
         <div id="comments" className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] p-6 shadow-2xl space-y-6 scroll-mt-32">
           <h3 className="text-sm font-black uppercase text-gray-400 tracking-wider">Комментарии ({comments.length})</h3>
           
-          {/* Главная форма отправки */}
           {currentUser && (
             <div className="flex gap-3 items-center bg-black/25 border border-white/5 p-3 rounded-2xl">
               <img src={currentUser.avatar_url || 'https://via.placeholder.com/150'} className="w-8 h-8 rounded-full object-cover shrink-0" />
@@ -187,25 +185,22 @@ export default function StandalonePostDetail() {
             </div>
           )}
 
-          {/* Дерево комментариев */}
           <div className="space-y-6">
-            {rootComments.map(comment => {
+            {rootComments.map((comment: any) => {
               const replies = getCommentReplies(comment.id);
               const isExpanded = expandedThreads[comment.id];
 
               return (
                 <div key={comment.id} className="space-y-4 border-b border-white/5 pb-4 last:border-none last:pb-0">
-                  {/* Корневой комментарий */}
                   <div className="flex gap-3 items-start">
-                    <img src={comment.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                    <img src={comment.author_player?.avatar_url || 'https://via.placeholder.com/150'} className="w-9 h-9 rounded-full object-cover shrink-0" />
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#c0ff00]">{comment.author?.rp_name || 'Неизвестный'}</span>
+                        <span className="text-xs font-bold text-[#c0ff00]">{comment.author_player?.mc_nickname || 'Неизвестный'}</span>
                         <span className="text-[10px] text-gray-600 flex items-center gap-1"><Clock size={10} /> {new Date(comment.created_at).toLocaleDateString('ru-RU')}</span>
                       </div>
                       <p className="text-sm text-gray-300 leading-relaxed break-words">{comment.content}</p>
                       
-                      {/* Кнопки взаимодействия */}
                       <div className="flex items-center gap-4 pt-1">
                         {currentUser && (
                           <button 
@@ -228,13 +223,12 @@ export default function StandalonePostDetail() {
                     </div>
                   </div>
 
-                  {/* Форма ответа внутри треда */}
                   {replyingToId === comment.id && currentUser && (
                     <div className="flex gap-3 items-center bg-black/40 border border-white/5 p-3 rounded-2xl ml-6 animate-fade-in">
                       <CornerDownRight size={14} className="text-gray-600 shrink-0" />
                       <input 
                         type="text" 
-                        placeholder={`Ответ жителю ${comment.author?.rp_name || ''}...`} 
+                        placeholder={`Ответ жителю ${comment.author_player?.mc_nickname || ''}...`} 
                         value={replyContent}
                         onChange={e => setReplyContent(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') handleSendComment(comment.id); }}
@@ -250,16 +244,15 @@ export default function StandalonePostDetail() {
                     </div>
                   )}
 
-                  {/* Вложенные ответы (Реплаи) */}
                   {isExpanded && replies.length > 0 && (
                     <div className="ml-6 pl-4 border-l border-white/5 space-y-4 pt-2 animate-fade-in">
-                      {replies.map(reply => (
+                      {replies.map((reply: any) => (
                         <div key={reply.id} className="flex gap-3 items-start">
                           <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />
-                          <img src={reply.author?.avatar_url || 'https://via.placeholder.com/150'} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                          <img src={reply.author_player?.avatar_url || 'https://via.placeholder.com/150'} className="w-7 h-7 rounded-full object-cover shrink-0" />
                           <div className="flex-1 space-y-0.5">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-gray-400">{reply.author?.rp_name || 'Неизвестный'}</span>
+                              <span className="text-xs font-bold text-gray-400">{reply.author_player?.mc_nickname || 'Неизвестный'}</span>
                               <span className="text-[9px] text-gray-600">{new Date(reply.created_at).toLocaleDateString('ru-RU')}</span>
                             </div>
                             <p className="text-sm text-gray-300 leading-relaxed break-words">{reply.content}</p>
@@ -280,7 +273,6 @@ export default function StandalonePostDetail() {
 
       </div>
 
-      {/* Полноэкранный просмотр вложения */}
       {fullscreenAttachment && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in" onClick={() => setFullscreenAttachment(null)}>
           <button onClick={() => setFullscreenAttachment(null)} className="absolute top-20 right-4 md:top-6 md:right-6 w-12 h-12 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full flex items-center justify-center text-white z-10 transition-all"><X size={22} /></button>

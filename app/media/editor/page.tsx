@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { getCurrentSeasonName } from '../../../lib/season';
-import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check, ChevronDown } from 'lucide-react';
 
 const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
 
@@ -18,6 +18,9 @@ function EditorContent() {
   const editingPostId = searchParams.get('edit');
 
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
+  const [myCharacters, setMyCharacters] = useState<any[]>([]);
+  const [selectedCharId, setSelectedCharId] = useState<string>('');
+  const [showCharPicker, setShowCharPicker] = useState(false);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostCoverUrl, setNewPostCoverUrl] = useState('');
   const [newPostYoutubeUrl, setNewPostYoutubeUrl] = useState('');
@@ -88,13 +91,10 @@ function EditorContent() {
       setIsUploadingPostCover(true);
       const file = event.target.files?.[0];
       if (!file) return;
-
       const webpBlob = await convertToWebP(file);
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
-
       const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, { contentType: 'image/webp' });
       if (error) return alert(error.message);
-      
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
       if (data) setNewPostCoverUrl(data.publicUrl);
     } catch (e: any) { alert(e.message); } finally { setIsUploadingPostCover(false); }
@@ -102,14 +102,14 @@ function EditorContent() {
 
   async function handlePublish() {
     const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || isEditorEmpty || !currentUser) return;
+    if (!newPostTitle.trim() || isEditorEmpty || !currentUser || !selectedCharId) return;
 
     setPublishStatus('publishing');
-
     const finalDate = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
     const season = await getCurrentSeasonName();
     const payload = {
-      author_id: currentUser.id, title: newPostTitle, content: postContent,
+      author_id: selectedCharId,
+      title: newPostTitle, content: postContent,
       cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null, created_at: finalDate, season
     };
 
@@ -123,40 +123,42 @@ function EditorContent() {
       if (!editingPostId && BOT_WEBHOOK_URL) {
         try {
           await fetch(BOT_WEBHOOK_URL, {
-            method: 'POST',
-            mode: 'no-cors',
+            method: 'POST', mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'new_post',
-              id: savedPost.id,
-              title: savedPost.title,
-              cover_url: savedPost.cover_url
-            })
+            body: JSON.stringify({ type: 'new_post', id: savedPost.id, title: savedPost.title, cover_url: savedPost.cover_url })
           });
         } catch (e) {}
       }
-      
       setPublishStatus('success');
-      setTimeout(() => {
-        router.push('/');
-      }, 1200);
-
+      setTimeout(() => { router.push('/'); }, 1200);
     } else {
       if (error) alert(error.message);
       setPublishStatus('idle');
     }
   }
 
+  // Загружаем игрока и его персонажей
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user?.id) {
-      supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(({ data }) => {
-        if (data) setCurrentUser(data);
+      supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(async ({ data: player }) => {
+        if (player) {
+          setCurrentUser(player);
+          // Грузим всех персонажей игрока
+          const { data: chars } = await supabase.from('characters').select('id, rp_name, avatar_url, season, status').eq('player_id', player.id).order('created_at', { ascending: false });
+          if (chars && chars.length > 0) {
+            setMyCharacters(chars);
+            // По умолчанию выбираем первого живого, или первого в списке
+            const alive = chars.find((c: any) => c.status !== 'dead');
+            setSelectedCharId(alive ? alive.id : chars[0].id);
+          }
+        }
       });
     }
   }, []);
 
+  // Загрузка данных при редактировании
   useEffect(() => {
     if (editingPostId) {
       supabase.from('posts').select('*').eq('id', editingPostId).single().then(({ data }) => {
@@ -164,6 +166,7 @@ function EditorContent() {
           setNewPostTitle(data.title);
           setNewPostCoverUrl(data.cover_url || '');
           setNewPostYoutubeUrl(data.youtube_url || '');
+          if (data.author_id) setSelectedCharId(data.author_id);
           const d = new Date(data.created_at);
           d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
           setNewPostPublishedAtInput(d.toISOString().slice(0, 16));
@@ -187,8 +190,9 @@ function EditorContent() {
     return () => document.removeEventListener('selectionchange', handleSelection);
   }, []);
 
-  const isButtonDisabled = isUploadingPostCover || !newPostTitle.trim() || isEditorEmpty || publishStatus !== 'idle';
-  
+  const isButtonDisabled = isUploadingPostCover || !newPostTitle.trim() || isEditorEmpty || publishStatus !== 'idle' || !selectedCharId;
+  const selectedChar = myCharacters.find(c => c.id === selectedCharId);
+
   let buttonClass = "w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-500 ease-out ";
   let buttonIcon = <Send size={20} />;
 
@@ -216,7 +220,41 @@ function EditorContent() {
           </button>
         </div>
 
-        {/* ВЕРНУЛИ: Панель вложений (Дата, Фото, YouTube) */}
+        {/* Выбор персонажа */}
+        <div className="w-full mb-8">
+          <div className="relative inline-block">
+            <button onClick={() => setShowCharPicker(!showCharPicker)} className="flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]">
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-[#c0ff00]/30 bg-black/20 flex-shrink-0">
+                {selectedChar?.avatar_url ? <img src={selectedChar.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[8px]">?</div>}
+              </div>
+              <span>{selectedChar?.rp_name || 'Выбери персонажа'}</span>
+              <ChevronDown size={14} />
+            </button>
+
+            {showCharPicker && myCharacters.length > 0 && (
+              <div className="absolute left-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[220px] flex flex-col gap-0.5 animate-fade-in backdrop-blur-xl">
+                {myCharacters.map((char: any) => (
+                  <button
+                    key={char.id}
+                    onClick={() => { setSelectedCharId(char.id); setShowCharPicker(false); }}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${selectedCharId === char.id ? 'bg-[#c0ff00]/10' : 'hover:bg-white/5'}`}
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-black/20 flex-shrink-0">
+                      {char.avatar_url ? <img src={char.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-600">?</div>}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-white truncate">{char.rp_name}</div>
+                      <div className="text-[10px] text-gray-500">{char.season} · {char.status === 'dead' ? 'Мёртв' : 'Жив'}</div>
+                    </div>
+                    {selectedCharId === char.id && <Check size={14} className="text-[#c0ff00] ml-auto flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Панель вложений */}
         <div className="w-full mb-8">
           <div className="flex flex-wrap gap-3">
             <div onClick={() => publishStatus === 'idle' && dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
@@ -234,7 +272,6 @@ function EditorContent() {
           </div>
         </div>
 
-        {/* ИСПРАВЛЕНО: Гораздо меньший размер шрифта для заголовка (text-xl md:text-3xl) */}
         <input type="text" placeholder="Заголовок статьи..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} disabled={publishStatus !== 'idle'} className="w-full bg-transparent text-xl md:text-3xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-6 disabled:opacity-50" />
         
         <div className="space-y-4 mb-6">
@@ -256,7 +293,6 @@ function EditorContent() {
           data-placeholder="Текст вашей статьи..." 
         />
 
-        {/* ВЕРНУЛИ: Плавающая панель стилей текста при выделении */}
         {isTextSelected && publishStatus === 'idle' && (
           <div className="fixed bottom-24 left-0 right-0 z-[99999] flex items-center justify-center px-4 pointer-events-none animate-fade-in">
             <div className="p-2 bg-[#14171c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-1.5 pointer-events-auto w-full max-w-sm overflow-x-auto no-scrollbar justify-around">
@@ -273,7 +309,6 @@ function EditorContent() {
           </div>
         )}
 
-        {/* ВЕРНУЛИ: Модальное окно ввода ссылки YouTube */}
         {isYoutubeModalOpen && (
           <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4">
             <div className="bg-[#14171c] border border-white/10 p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-6">
