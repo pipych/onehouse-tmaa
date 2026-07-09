@@ -141,6 +141,8 @@ export default function Home() {
   const [seasonStartDate, setSeasonStartDate] = useState('2026-05-17');
   const [exarotonServerId, setExarotonServerId] = useState<string>('');
   const [newSeasonServerId, setNewSeasonServerId] = useState('');
+  const [adminSubTab, setAdminSubTab] = useState<'players' | 'characters' | 'roles' | 'guests' | 'seasons'>('players');
+  const [allPlayers, setAllPlayers] = useState<any[]>([]);
   const currentSeasonName = `Сезон ${currentSeasonNum}`;
 
   // Динамический старт сезона из БД
@@ -286,6 +288,7 @@ export default function Home() {
     setIsEditing(false);
     setSearchQuery('');
     if (tab === 'profile') loadLatestPosts();
+    if (tab === 'admin') { loadGuests(); loadAllPlayers(); loadPlayers(); }
   }
 
   function getServerStatusText(statusCode: number) {
@@ -659,6 +662,14 @@ export default function Home() {
     } else {
       setPlayers([]);
     }
+  }
+
+  async function loadAllPlayers() {
+    const { data } = await supabase
+      .from('players')
+      .select('*')
+      .order('mc_nickname', { ascending: true });
+    if (data) setAllPlayers(data);
   }
 
   async function loadConstitution(seasonOverride?: string) {
@@ -1361,181 +1372,225 @@ export default function Home() {
         )}
 
         {activeTab === 'admin' && isAdmin && (
-          <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 animate-fade-in w-full items-start">
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Добавить жителя</span></div>
-              <div className="space-y-3">
-                <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="Minecraft Никнейм" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="RP Имя" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
-                <input type="text" placeholder="Политическая партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
-              </div>
-              <button onClick={handleAddPlayer} className="ui-pill-btn w-full justify-center py-3"><Check size={16} /><span>Создать аккаунт</span></button>
+          <div className="space-y-6 animate-fade-in w-full">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black text-white flex items-center gap-2"><ShieldAlert size={20} className="text-[#c0ff00]" /> Админ-панель</h2>
             </div>
 
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Управление ролями</span></div>
-              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
-                <input type="text" placeholder="Название новой роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input"/>
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center space-x-2 text-xs text-gray-400"><Palette size={14} /><input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-6 h-6 rounded bg-transparent border-none cursor-pointer" /></div>
-                  <label className="flex items-center space-x-2 text-xs text-gray-400 cursor-pointer"><input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="rounded border-white/10 bg-transparent text-[#c0ff00] focus:ring-0"/><span>Ред. законов</span></label>
-                </div>
-                <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-2"><UserPlus size={14} /><span>Создать роль</span></button>
-              </div>
-              <div className="space-y-2">
-                {customRoles.map((role) => (
-                  <div key={role.id} className="flex items-center justify-between p-3 bg-black/10 rounded-[18px] border border-white/5">
-                    <span className="text-xs font-bold" style={{ color: role.color }}>• {role.name.toUpperCase()}</span>
-                    <input type="color" value={role.color} onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} onBlur={() => saveRoleToDb(role)} className="w-5 h-5 bg-transparent border-none cursor-pointer" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Гостевой доступ */}
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><User size={16} /><span>Гостевой доступ</span></div>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Telegram ID гостя"
-                  value={guestTgId}
-                  onChange={e => setGuestTgId(e.target.value)}
-                  className="ui-input flex-1"
-                />
-                <button
-                  onClick={handleAddGuest}
-                  disabled={guestLoading || !guestTgId}
-                  className="ui-pill-btn shrink-0 px-4 disabled:opacity-30"
-                >
-                  <Plus size={16} />
+            {/* Саб-табы */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {(['players', 'characters', 'roles', 'guests', 'seasons'] as const).map(tab => (
+                <button key={tab} onClick={() => setAdminSubTab(tab)} className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${adminSubTab === tab ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30' : 'bg-white/5 text-gray-400 border border-white/5'}`}>
+                  {tab === 'players' && 'Профили'}
+                  {tab === 'characters' && 'Персонажи'}
+                  {tab === 'roles' && 'Роли'}
+                  {tab === 'guests' && 'Гости'}
+                  {tab === 'seasons' && 'Сезоны'}
                 </button>
-              </div>
-              {guestList.length > 0 && (
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {guestList.map(g => (
-                    <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl border border-white/5 text-xs">
-                      <div>
-                        <span className="text-white font-bold">ID: {g.tg_id}</span>
-                        <span className="text-gray-500 ml-2">{new Date(g.created_at).toLocaleDateString('ru-RU')}</span>
+              ))}
+            </div>
+
+            {/* --- Профили игроков --- */}
+            {adminSubTab === 'players' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Создать Minecraft-профиль</span></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" placeholder="Minecraft ник *" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
+                    <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="URL аватара" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
+                  </div>
+                  <button onClick={async () => {
+                    const mcNick = addMcNickname.trim();
+                    if (!mcNick) return;
+                    const tgIdNum = addTgId ? parseInt(addTgId) : null;
+                    const { data: existing } = await supabase.from('players').select('id').eq('mc_nickname', mcNick).limit(1);
+                    if (existing && existing.length > 0) { alert('Игрок с таким ником уже существует!'); return; }
+                    if (tgIdNum) {
+                      const { data: tgExists } = await supabase.from('players').select('id').eq('tg_id', tgIdNum).limit(1);
+                      if (tgExists && tgExists.length > 0) { alert('Этот Telegram ID уже привязан!'); return; }
+                    }
+                    const { error } = await supabase.from('players').insert({ mc_nickname: mcNick, tg_id: tgIdNum, tg_username: addTgUsername || '', avatar_url: addAvatarUrl || '' });
+                    if (error) { alert(`Ошибка: ${error.message}`); return; }
+                    setAddMcNickname(''); setAddTgId(''); setAddTgUsername(''); setAddAvatarUrl('');
+                    loadAllPlayers();
+                  }} className="ui-pill-btn w-full justify-center py-3"><Check size={16} /><span>Создать профиль</span></button>
+                </div>
+
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Users size={16} /><span>Все профили ({allPlayers.length})</span></div>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                    {allPlayers.map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-white truncate">{p.mc_nickname}</div>
+                          <div className="text-[10px] text-gray-500">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'} {p.tg_username ? `@${p.tg_username}` : ''}</div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => handleRemoveGuest(g.tg_id)}
-                        className="text-gray-500 hover:text-red-400 transition-colors p-1"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Управление сезонами */}
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl md:col-span-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезонами</span></div>
-                <button
-                  onClick={handleStartNewSeason}
-                  disabled={seasonLoading}
-                  className="w-7 h-7 rounded-full bg-[#c0ff00]/20 border border-[#c0ff00]/30 text-[#c0ff00] flex items-center justify-center hover:bg-[#c0ff00]/30 disabled:opacity-30 transition-all"
-                  title="Новый сезон"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              {/* Поле server ID для нового сезона */}
-              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                  <Server size={12} className="text-[#c0ff00]" />
-                  <span>Exaroton Server ID для нового сезона</span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="e.g. abc123def456"
-                    value={newSeasonServerId}
-                    onChange={e => setNewSeasonServerId(e.target.value)}
-                    className="ui-input flex-1 text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Текущий сезон */}
-              <div className="p-4 bg-black/20 rounded-[20px] border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <span className="text-gray-400">Текущий сезон </span>
-                    <span className="text-white font-bold">#{seasonEnded && lastSeason ? lastSeason.season_number : 2}</span>
-                    {seasonEnded ? (
-                      <span className="text-red-400 font-bold ml-2">• Завершён</span>
-                    ) : (
-                      <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>
-                    )}
+                    ))}
+                    {allPlayers.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет профилей</p>}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Персонажи --- */}
+            {adminSubTab === 'characters' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Создать персонажа для сезона</span></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" placeholder="Minecraft ник игрока *" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="RP-имя персонажа *" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="Партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
+                    <input type="text" placeholder="URL аватара" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Роли персонажа</div>
+                    <div className="flex flex-wrap gap-2">
+                      {customRoles.map(cr => (
+                        <button key={cr.name} onClick={() => { setAddRoles(prev => prev.includes(cr.name) ? prev.filter(r => r !== cr.name) : [...prev, cr.name]); }} className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${addRoles.includes(cr.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: cr.color, backgroundColor: addRoles.includes(cr.name) ? `${cr.color}20` : 'transparent' }}>{cr.name.toUpperCase()}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={async () => {
+                    if (!addMcNickname.trim() || !addRpName.trim()) return;
+                    const { data: playerData } = await supabase.from('players').select('id').eq('mc_nickname', addMcNickname.trim()).limit(1);
+                    const player = playerData && playerData.length > 0 ? playerData[0] : null;
+                    if (!player) { alert('Игрок не найден. Сначала создай профиль.'); return; }
+                    const { error } = await supabase.from('characters').insert({ player_id: player.id, mc_nickname: addMcNickname.trim(), rp_name: addRpName.trim(), party: addParty || 'Нет партии', roles: addRoles, avatar_url: addAvatarUrl || '', season: currentSeasonName, status: 'alive' });
+                    if (error) { alert(`Ошибка: ${error.message}`); return; }
+                    setAddMcNickname(''); setAddRpName(''); setAddParty('Нет партии'); setAddRoles(['citizen']); setAddAvatarUrl('');
+                    loadPlayers();
+                  }} className="ui-pill-btn w-full justify-center py-3"><Plus size={16} /><span>Создать персонажа</span></button>
+                </div>
+
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Users size={16} /><span>Персонажи сезона ({players.length})</span></div>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                    {players.map((c: Player) => (
+                      <div key={c.id} className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-white truncate">{c.rp_name}</div>
+                          <div className="text-[10px] text-gray-500">{c.mc_nickname} · {c.party}</div>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {c.roles?.slice(0, 3).map((r, i) => (
+                            <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {players.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет персонажей</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Роли --- */}
+            {adminSubTab === 'roles' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Создать роль</span></div>
+                  <div className="flex gap-2 items-end">
+                    <input type="text" placeholder="Название роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input flex-1"/>
+                    <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-gray-400">
+                    <input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="accent-[#c0ff00]"/>
+                    Может редактировать конституцию
+                  </label>
+                  <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-3"><UserPlus size={14} /><span>Создать роль</span></button>
+                </div>
+
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><ShieldCheck size={16} /><span>Все роли</span></div>
+                  <div className="space-y-2">
+                    {customRoles.map((role) => (
+                      <div key={role.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
+                        <input type="color" value={role.color} onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} onBlur={() => saveRoleToDb(role)} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
+                        <input type="text" value={role.name} onChange={e => handleRoleChange(role.id!, 'name', e.target.value)} onBlur={() => saveRoleToDb(role)} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: role.color }}/>
+                        <label className="flex items-center gap-1 text-[10px] text-gray-500 flex-shrink-0">
+                          <input type="checkbox" checked={role.canEditConstitution} onChange={e => { handleRoleChange(role.id!, 'canEditConstitution', e.target.checked); saveRoleToDb({...role, canEditConstitution: e.target.checked}); }} className="accent-[#c0ff00]"/>
+                          Конст.
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Гости --- */}
+            {adminSubTab === 'guests' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><User size={16} /><span>Добавить гостя</span></div>
                   <div className="flex gap-2">
-                    {!seasonEnded ? (
-                      <button
-                        onClick={handleEndSeason}
-                        disabled={seasonLoading}
-                        className="ui-pill-btn !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30 px-4"
-                      >
-                        <Flag size={14} /><span className="text-[11px] font-bold">Завершить</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleUndoEndSeason}
-                        disabled={seasonLoading}
-                        className="ui-pill-btn !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30 px-4"
-                      >
-                        <RotateCcw size={14} /><span className="text-[11px] font-bold">Восстановить</span>
-                      </button>
-                    )}
+                    <input type="number" placeholder="Telegram ID" value={guestTgId} onChange={e => setGuestTgId(e.target.value)} className="ui-input flex-1"/>
+                    <button onClick={handleAddGuest} disabled={guestLoading || !guestTgId} className="ui-pill-btn shrink-0 px-4 disabled:opacity-30"><Plus size={16} /></button>
                   </div>
+                  {guestList.length > 0 && (
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {guestList.map(g => (
+                        <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl border border-white/5 text-xs">
+                          <div>
+                            <span className="text-white font-bold">ID: {g.tg_id}</span>
+                            <span className="text-gray-500 ml-2">{new Date(g.created_at).toLocaleDateString('ru-RU')}</span>
+                          </div>
+                          <button onClick={() => handleRemoveGuest(g.tg_id)} className="text-gray-500 hover:text-red-400 transition-colors p-1"><X size={14} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              {/* Список завершённых сезонов */}
-              {pastSeasons.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 px-1">Завершённые сезоны</div>
-                  {pastSeasons.map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
-                      <div className="text-sm">
-                        <span className="text-white font-bold">Сезон #{s.season_number}</span>
-                        <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
-                        <span className="text-gray-600 ml-2 text-[11px]">{new Date(s.end_date).toLocaleDateString('ru-RU')}</span>
+            {/* --- Сезоны --- */}
+            {adminSubTab === 'seasons' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезонами</span></div>
+                  <div className="text-sm text-gray-400">Текущий: <span className="text-[#c0ff00] font-bold">{currentSeasonName}</span> {seasonEnded ? <span className="text-red-400 font-bold ml-2">• Завершён</span> : <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>}</div>
+                  {!seasonEnded && (
+                    <button onClick={handleEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30"><Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span></button>
+                  )}
+                  {seasonEnded && (
+                    <>
+                      <button onClick={handleUndoEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30"><RotateCcw size={14} /><span className="text-[11px] font-bold">Восстановить сезон</span></button>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500"><Server size={12} className="text-[#c0ff00]" /><span>Exaroton Server ID</span></div>
+                        <input type="text" placeholder="e.g. abc123def456" value={newSeasonServerId} onChange={e => setNewSeasonServerId(e.target.value)} className="ui-input text-xs"/>
+                        <button onClick={handleStartNewSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold disabled:opacity-30"><Play size={14} /><span>Начать новый сезон</span></button>
                       </div>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => handleRestoreSeason(s.id, s.season_number)}
-                          disabled={seasonLoading}
-                          className="ui-pill-btn !bg-[#c0ff00]/10 !border-[#c0ff00]/20 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 px-3 py-1.5"
-                          title="Восстановить как активный"
-                        >
-                          <RotateCcw size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSeason(s.id, s.season_number)}
-                          disabled={seasonLoading}
-                          className="ui-pill-btn !bg-red-500/10 !border-red-500/20 !text-red-400 hover:!bg-red-500/20 disabled:opacity-30 px-3 py-1.5"
-                          title="Удалить навсегда"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    </>
+                  )}
                 </div>
-              )}
 
-              {pastSeasons.length === 0 && !seasonEnded && (
-                <div className="text-center text-xs text-gray-600 py-2">Нет завершённых сезонов</div>
-              )}
-            </div>
+                {pastSeasons.length > 0 && (
+                  <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                    <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Library size={16} /><span>Архив сезонов</span></div>
+                    <div className="space-y-2">
+                      {pastSeasons.map(s => (
+                        <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
+                          <div className="text-sm">
+                            <span className="text-white font-bold">Сезон #{s.season_number}</span>
+                            <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
+                            <span className="text-gray-600 ml-2 text-[11px]">{new Date(s.end_date).toLocaleDateString('ru-RU')}</span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => handleRestoreSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-[#c0ff00]/10 !border-[#c0ff00]/20 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 px-3 py-1.5"><RotateCcw size={12} /></button>
+                            <button onClick={() => handleDeleteSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-red-500/10 !border-red-500/20 !text-red-400 hover:!bg-red-500/20 disabled:opacity-30 px-3 py-1.5"><X size={12} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>
