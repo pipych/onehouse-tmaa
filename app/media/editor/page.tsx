@@ -151,7 +151,7 @@ function EditorContent() {
     if (typeof window === 'undefined') return;
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user?.id) {
-      supabase.from('users').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(({ data }) => {
+      supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(({ data }) => {
         if (data) setCurrentUser(data);
       });
     }

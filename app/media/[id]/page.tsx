@@ -32,10 +32,10 @@ export default function StandalonePostDetail() {
 
   async function loadActivity() {
     if (!postId) return;
-    const { data: p } = await supabase.from('posts').select('*, author:users(*)').eq('id', postId).single();
+    const { data: p } = await supabase.from('posts').select('*, author:characters(*)').eq('id', postId).single();
     if (p) setPost(p);
     
-    const { data: c } = await supabase.from('comments').select('*, author:users(*)').eq('post_id', postId).order('created_at', { ascending: true });
+    const { data: c } = await supabase.from('comments').select('*, author:characters(*)').eq('post_id', postId).order('created_at', { ascending: true });
     if (c) setComments(c);
   }
 
@@ -68,7 +68,16 @@ export default function StandalonePostDetail() {
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     if (tg?.initDataUnsafe?.user?.id) {
-      supabase.from('users').select('*').eq('tg_id', tg.initDataUnsafe.user.id).single().then(({data}) => setCurrentUser(data));
+      // Загружаем активного персонажа через RPC
+      supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(async ({data: player}) => {
+        if (player) {
+          const { data: charId } = await supabase.rpc('get_active_character', { p_player_id: player.id });
+          if (charId) {
+            const { data: char } = await supabase.from('characters').select('*').eq('id', charId).single();
+            if (char) setCurrentUser(char);
+          }
+        }
+      });
     }
     loadActivity();
   }, [postId]);
