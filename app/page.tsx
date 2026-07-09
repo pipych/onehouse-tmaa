@@ -19,7 +19,8 @@ import {
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
   Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
-  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar
+  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar,
+  Swords, Skull
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }) => (
@@ -142,12 +143,14 @@ export default function Home() {
   const [exarotonServerId, setExarotonServerId] = useState<string>('');
   const [newSeasonServerId, setNewSeasonServerId] = useState('');
   const [adminSubTab, setAdminSubTab] = useState<'players' | 'characters' | 'roles' | 'guests' | 'seasons'>('players');
+  const [playersSubTab, setPlayersSubTab] = useState<'characters' | 'players'>('characters');
   const [allPlayers, setAllPlayers] = useState<any[]>([]);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '' });
   const [editingCharId, setEditingCharId] = useState<string | null>(null);
   const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'Нет партии', avatar_url: '', roles: ['citizen'] as string[] });
   const [isUploadingAdminAvatar, setIsUploadingAdminAvatar] = useState(false);
+  const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
   const currentSeasonName = `Сезон ${currentSeasonNum}`;
 
   // Динамический старт сезона из БД
@@ -294,6 +297,7 @@ export default function Home() {
     setSearchQuery('');
     if (tab === 'profile') loadLatestPosts();
     if (tab === 'admin') { loadGuests(); loadAllPlayers(); loadPlayers(); }
+    if (tab === 'players') { loadAllPlayers(); }
   }
 
   function getServerStatusText(statusCode: number) {
@@ -685,6 +689,15 @@ export default function Home() {
     if (data) setAllPlayers(data);
   }
 
+  async function loadPlayerCharacters(playerId: string) {
+    const { data } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false });
+    if (data) setPlayerCharacters(data);
+  }
+
   async function loadConstitution(seasonOverride?: string) {
     const season = seasonOverride || currentSeasonName;
     const { data } = await supabase.from('constitution').select('*').in('id', [1, 2]).eq('season', season);
@@ -1006,6 +1019,34 @@ export default function Home() {
               )}
             </div>
           </div>
+
+          {/* Персонажи игрока */}
+          {playerCharacters.length > 0 && (
+            <>
+              <div className="w-full h-[1px] bg-white/5 my-2" />
+              <div className="text-left space-y-2 w-full">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {playerCharacters.map((pc: any) => (
+                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
+                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
+                        {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
+                      </div>
+                      <div className="flex gap-0.5 flex-shrink-0">
+                        {pc.roles?.slice(0, 2).map((r: string, i: number) => (
+                          <span key={i} className="text-[7px] font-bold px-1 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1333,52 +1374,117 @@ export default function Home() {
             <SeasonPlaceholder />
           ) : (
           <div className="space-y-6 animate-fade-in w-full">
-            <div className="flex items-center justify-between w-full px-1">
-              <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><Users size={20} className="text-[#c0ff00]" />Жители сервера</h2>
+            <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2 px-1"><Users size={20} className="text-[#c0ff00]" />Игроки</h2>
+
+            {/* Саб-табы */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {(['characters', 'players'] as const).map(tab => (
+                <button key={tab} onClick={() => setPlayersSubTab(tab)} className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${playersSubTab === tab ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30' : 'bg-white/5 text-gray-400 border border-white/5'}`}>
+                  {tab === 'characters' && 'Персонажи'}
+                  {tab === 'players' && 'Игроки'}
+                </button>
+              ))}
             </div>
 
-            {dbUser && (
-              <div className="space-y-2 w-full md:max-w-sm">
-                <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой личный профиль</div>
-                <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
-                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-base font-black truncate tracking-wide text-[#c0ff00]">{dbUser.rp_name}</span>
-                    <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
-                    <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {dbUser.roles?.map((role, i) => (
-                        <span key={i} className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded border" style={{ backgroundColor: `${getRoleColor(role)}10`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}20` }}>{role}</span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3 w-full">
-              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Все игроки</div>
-              <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {sortedPlayers.map((player) => {
-                  const dead = isDead(player.roles);
-                  return (
-                    <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedPlayer(player); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border ${dead ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-white/5 hover:border-white/20'}`}>
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+            {/* --- Персонажи --- */}
+            {playersSubTab === 'characters' && (
+              <>
+                {/* Мой персонаж */}
+                {dbUser && (
+                  <div className="space-y-2 w-full md:max-w-sm">
+                    <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой персонаж</div>
+                    <div onClick={() => { setIsEditingProfile(false); setSelectedPlayer(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
+                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{player.rp_name}</div>
-                        <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
-                        <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
+                        <span className="text-base font-black truncate tracking-wide text-[#c0ff00]">{dbUser.rp_name}</span>
+                        <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
+                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                         <div className="flex flex-wrap gap-1 mt-1.5">
-                          {player.roles?.map((role, i) => (
+                          {dbUser.roles?.map((role, i) => (
                             <span key={i} className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded border" style={{ backgroundColor: `${getRoleColor(role)}10`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}20` }}>{role}</span>
                           ))}
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Живые персонажи */}
+                {(() => {
+                  const alive = sortedPlayers.filter(p => !isDead(p.roles));
+                  if (alive.length === 0) return null;
+                  return (
+                    <div className="space-y-3 w-full">
+                      <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Swords size={14} className="text-[#c0ff00]" />Живые ({alive.length})</div>
+                      <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {alive.map((player) => (
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedPlayer(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#14171c]/90 border-white/5 hover:border-white/20">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-black truncate tracking-wide text-white">{player.rp_name}</div>
+                              <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
+                              <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {player.roles?.map((role, i) => (
+                                  <span key={i} className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded border" style={{ backgroundColor: `${getRoleColor(role)}10`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}20` }}>{role}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   );
-                })}
+                })()}
+
+                {/* Мёртвые персонажи */}
+                {(() => {
+                  const dead = sortedPlayers.filter(p => isDead(p.roles));
+                  if (dead.length === 0) return null;
+                  return (
+                    <div className="space-y-3 w-full">
+                      <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Skull size={14} />Мёртвые ({dead.length})</div>
+                      <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {dead.map((player) => (
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedPlayer(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#050608] border-[#111316] grayscale">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-gray-700 flex-shrink-0"><img src={player.avatar_url || 'https://via.placeholder.com/150'} alt="avatar" className="w-full h-full object-cover" /></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-black truncate tracking-wide text-gray-500 line-through">{player.rp_name}</div>
+                              <div className="text-xs text-gray-600 truncate font-mono">{player.mc_nickname}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+
+            {/* --- Игроки (профили) --- */}
+            {playersSubTab === 'players' && (
+              <div className="space-y-3 w-full">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Minecraft-профили</div>
+                <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {allPlayers.map((p: any) => (
+                    <div key={p.id} onClick={async () => {
+                      await loadPlayerCharacters(p.id);
+                      const char = players.find(c => c.player_id === p.id);
+                      setSelectedPlayer(char || { id: p.id, player_id: p.id, rp_name: p.mc_nickname, mc_nickname: p.mc_nickname, avatar_url: p.avatar_url || '', roles: [], party: 'Нет партии' } as any);
+                    }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#14171c]/90 border-white/5 hover:border-white/20">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0 flex items-center justify-center">
+                        {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-gray-600" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-black truncate tracking-wide text-white">{p.mc_nickname}</div>
+                        <div className="text-xs text-gray-500 truncate">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {allPlayers.length === 0 && <p className="col-span-full text-xs text-gray-500 text-center py-8">Нет профилей</p>}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           )}
           </>
