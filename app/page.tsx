@@ -728,9 +728,12 @@ export default function Home() {
 
     if (!input) return false;
 
-    const profs = Array.isArray(input) ? input : (input.professions || []);
+    // If passed just an array (e.g. roles), treat it as professions array
+    if (Array.isArray(input)) return input.some((x: string) => x.toLowerCase() === 'мёртв');
 
-    return profs.some((p: string) => p.toLowerCase() === 'мёртв');
+    // Full player/character object: check professions and status
+    const profs = input.professions || [];
+    return profs.some((p: string) => p.toLowerCase() === 'мёртв') || input.status === 'dead';
 
   }
 
@@ -3424,7 +3427,7 @@ export default function Home() {
 
                     const { data: existingChars } = await supabase.from('characters').select('professions').eq('player_id', player.id).order('created_at', { ascending: false }).limit(1);
                     const inheritedProfs = existingChars?.[0]?.professions || [];
-                    const finalProfs = addProfessions.length > 0 ? [...new Set([...inheritedProfs, ...addProfessions])] : inheritedProfs;
+                    const finalProfs = addProfessions.length > 0 ? Array.from(new Set([...inheritedProfs, ...addProfessions])) : inheritedProfs;
 
                     const { error } = await supabase.from('characters').insert({ player_id: player.id, mc_nickname: addMcNickname.trim(), rp_name: addRpName.trim(), party: addParty || 'Нет партии', professions: finalProfs, avatar_url: addAvatarUrl || '', season: currentSeasonName, status: 'alive' });
 
@@ -4036,7 +4039,7 @@ export default function Home() {
 
           className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
 
-            activeTab === 'players' || selectedCharacter
+            activeTab === 'players' || selectedCharacter || selectedProfile
 
               ? 'border-[#c0ff00]/40 text-[#c0ff00]'
 
