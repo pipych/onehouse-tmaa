@@ -1325,7 +1325,7 @@ export default function Home() {
 
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
         {activeTab === 'treasury' && (seasonEnded ? <SeasonPlaceholder /> : <Treasury currentUser={dbUser} />)}
-        {activeTab === 'media' && (seasonEnded ? <SeasonPlaceholder /> : <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} seasonName={currentSeasonName} /></div>)}
+        {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedPlayer} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} seasonName={currentSeasonName} /></div>}
 
         {activeTab === 'players' && (
           <>
