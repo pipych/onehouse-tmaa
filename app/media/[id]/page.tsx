@@ -3,8 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
-import Avatar from '../../../components/Avatar';
-import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical, X, Maximize } from 'lucide-react';
+import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical, X, Maximize, User } from 'lucide-react';
+
+function Av({ src, size = 36 }: { src?: string | null; size?: number }) {
+  if (src && src.trim().length > 0) {
+    return <img src={src} style={{ width: size, height: size, objectFit: 'cover' }} className="rounded-full object-cover border border-white/5 shrink-0" />;
+  }
+  return <div style={{ width: size, height: size }} className="rounded-full bg-[#1c2026] border border-white/5 flex items-center justify-center shrink-0"><User size={Math.max(size * 0.35, 10)} className="text-gray-600" /></div>;
+}
 
 export default function StandalonePostDetail() {
   const router = useRouter();
@@ -49,21 +55,14 @@ export default function StandalonePostDetail() {
     const playerId = char?.player_id || currentUser.player_id || currentUser.id;
 
     const { error } = await supabase.from('comments').insert([{
-      post_id: postId,
-      author_id: playerId,
-      player_id: playerId,
-      content: content,
-      parent_id: parentId
+      post_id: postId, author_id: playerId, player_id: playerId, content: content, parent_id: parentId
     }]);
 
     if (!error) {
       if (parentId) {
-        setReplyContent('');
-        setReplyingToId(null);
+        setReplyContent(''); setReplyingToId(null);
         setExpandedThreads(prev => ({ ...prev, [parentId]: true }));
-      } else {
-        setNewComment('');
-      }
+      } else { setNewComment(''); }
       loadActivity();
     }
     setIsSubmitting(false);
@@ -136,7 +135,7 @@ export default function StandalonePostDetail() {
 
           <div className="p-6 md:p-8 space-y-5">
             <div className="flex items-center gap-4">
-              <img src={post.author?.avatar_url || ''} className="w-10 h-10 rounded-full border border-[#c0ff00]/20 object-cover" />
+              <Av src={post.author?.avatar_url} size={40} />
               <div className="flex-1">
                 <div className="text-sm font-bold text-white">{post.author?.rp_name}</div>
                 {post.author?.mc_nickname && <div className="text-[10px] text-gray-500 font-mono">{post.author.mc_nickname}</div>}
@@ -165,7 +164,7 @@ export default function StandalonePostDetail() {
           
           {currentUser && (
             <div className="flex gap-3 items-center bg-black/25 border border-white/5 p-3 rounded-2xl">
-              <img src={currentUser.avatar_url || ''} className="w-8 h-8 rounded-full object-cover shrink-0" />
+              <Av src={currentUser.avatar_url} size={32} />
               <div className="flex-1 flex gap-2">
                 <input 
                   type="text" 
@@ -194,7 +193,7 @@ export default function StandalonePostDetail() {
               return (
                 <div key={comment.id} className="space-y-4 border-b border-white/5 pb-4 last:border-none last:pb-0">
                   <div className="flex gap-3 items-start">
-                    <img src={comment.author_player?.avatar_url || ''} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                    <Av src={comment.author_player?.avatar_url} size={36} />
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#c0ff00]">{comment.author_player?.mc_nickname || 'Неизвестный'}</span>
@@ -207,9 +206,7 @@ export default function StandalonePostDetail() {
                           <button 
                             onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
                             className="text-[11px] font-bold text-gray-500 hover:text-white transition-colors"
-                          >
-                            Ответить
-                          </button>
+                          >Ответить</button>
                         )}
                         {replies.length > 0 && (
                           <button 
@@ -250,7 +247,7 @@ export default function StandalonePostDetail() {
                       {replies.map((reply: any) => (
                         <div key={reply.id} className="flex gap-3 items-start">
                           <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />
-                          <img src={reply.author_player?.avatar_url || ''} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                          <Av src={reply.author_player?.avatar_url} size={28} />
                           <div className="flex-1 space-y-0.5">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-gray-400">{reply.author_player?.mc_nickname || 'Неизвестный'}</span>
