@@ -297,7 +297,7 @@ export default function Home() {
     setIsEditing(false);
     setSearchQuery('');
     if (tab === 'profile') loadLatestPosts();
-    if (tab === 'admin') { loadGuests(); loadAllPlayers(); loadPlayers(); }
+    if (tab === 'admin') { loadGuests(); loadAllPlayers(); loadPlayers(); loadProfessions(); }
     if (tab === 'players') { loadAllPlayers(); }
   }
 
@@ -1498,11 +1498,12 @@ export default function Home() {
 
             {/* Саб-табы */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {(['players', 'characters', 'roles', 'guests', 'seasons'] as const).map(tab => (
+              {(['players', 'characters', 'roles', 'professions', 'guests', 'seasons'] as const).map(tab => (
                 <button key={tab} onClick={() => setAdminSubTab(tab)} className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${adminSubTab === tab ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30' : 'bg-white/5 text-gray-400 border border-white/5'}`}>
                   {tab === 'players' && 'Профили'}
                   {tab === 'characters' && 'Персонажи'}
                   {tab === 'roles' && 'Роли'}
+                  {tab === 'professions' && 'Профессии'}
                   {tab === 'guests' && 'Гости'}
                   {tab === 'seasons' && 'Сезоны'}
                 </button>
@@ -1606,7 +1607,7 @@ export default function Home() {
                     </label>
                   </div>
                   <div className="space-y-2">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Роли персонажа</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Роли игрока (профиль)</div>
                     <div className="flex flex-wrap gap-2">
                       {customRoles.map(cr => (
                         <button key={cr.name} onClick={() => { setAddRoles(prev => prev.includes(cr.name) ? prev.filter(r => r !== cr.name) : [...prev, cr.name]); }} className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${addRoles.includes(cr.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: cr.color, backgroundColor: addRoles.includes(cr.name) ? `${cr.color}20` : 'transparent' }}>{cr.name.toUpperCase()}</button>
@@ -1642,16 +1643,17 @@ export default function Home() {
                               </label>
                             </div>
                             <div className="space-y-1.5">
-                              <div className="text-[9px] text-gray-500 uppercase">Роли</div>
+                              <div className="text-[9px] text-gray-500 uppercase">Профессии</div>
                               <div className="flex flex-wrap gap-1.5">
-                                {customRoles.map(cr => (
-                                  <button key={cr.name} onClick={() => { setEditCharData(prev => ({...prev, roles: prev.roles.includes(cr.name) ? prev.roles.filter(r => r !== cr.name) : [...prev.roles, cr.name]})); }} className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${editCharData.roles.includes(cr.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: cr.color, backgroundColor: editCharData.roles.includes(cr.name) ? `${cr.color}20` : 'transparent' }}>{cr.name.toUpperCase()}</button>
+                                {professions.map(prof => (
+                                  <button key={prof.name} onClick={() => { setEditCharData(prev => ({...prev, professions: prev.professions.includes(prof.name) ? prev.professions.filter(r => r !== prof.name) : [...prev.professions, prof.name]})); }} className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${editCharData.professions.includes(prof.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: prof.color, backgroundColor: editCharData.professions.includes(prof.name) ? `${prof.color}20` : 'transparent' }}>{prof.name.toUpperCase()}</button>
                                 ))}
+                                {professions.length === 0 && <span className="text-[10px] text-gray-500">Нет профессий</span>}
                               </div>
                             </div>
                             <div className="flex gap-2">
                               <button onClick={async () => {
-                                const { error } = await supabase.from('characters').update({ rp_name: editCharData.rp_name, party: editCharData.party, avatar_url: editCharData.avatar_url, roles: editCharData.roles }).eq('id', c.id);
+                                const { error } = await supabase.from('characters').update({ rp_name: editCharData.rp_name, party: editCharData.party, avatar_url: editCharData.avatar_url, professions: editCharData.professions }).eq('id', c.id);
                                 if (error) { alert(`Ошибка: ${error.message}`); return; }
                                 setEditingCharId(null);
                                 loadPlayers();
@@ -1676,7 +1678,7 @@ export default function Home() {
                                   <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
                                 ))}
                               </div>
-                              <button onClick={() => { setEditingCharId(c.id); setEditCharData({ rp_name: c.rp_name, party: c.party || 'Нет партии', avatar_url: c.avatar_url || '', roles: c.roles || ['citizen'] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+                              <button onClick={() => { setEditingCharId(c.id); setEditCharData({ rp_name: c.rp_name, party: c.party || 'Нет партии', avatar_url: c.avatar_url || '', professions: c.professions || [] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
                             </div>
                           </div>
                         )}
@@ -1717,6 +1719,33 @@ export default function Home() {
                         </label>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Профессии --- */}
+            {adminSubTab === 'professions' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Создать профессию</span></div>
+                  <div className="flex gap-2 items-end">
+                    <input type="text" placeholder="Название профессии" value={newProfessionName} onChange={e => setNewProfessionName(e.target.value)} className="ui-input flex-1"/>
+                    <input type="color" value={newProfessionColor} onChange={e => setNewProfessionColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
+                  </div>
+                  <button onClick={handleCreateProfession} className="ui-pill-btn w-full justify-center py-3"><UserPlus size={14} /><span>Создать профессию</span></button>
+                </div>
+
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><ShieldCheck size={16} /><span>Все профессии</span></div>
+                  <div className="space-y-2">
+                    {professions.map((prof) => (
+                      <div key={prof.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
+                        <input type="color" value={prof.color} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, color: e.target.value } : p)); }} onBlur={() => saveProfessionToDb(prof)} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
+                        <input type="text" value={prof.name} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, name: e.target.value } : p)); }} onBlur={() => saveProfessionToDb(prof)} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: prof.color }}/>
+                      </div>
+                    ))}
+                    {professions.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет профессий</p>}
                   </div>
                 </div>
               </div>
@@ -1873,6 +1902,62 @@ export default function Home() {
                 </button>
                 <button onClick={() => handleTabChange('svod')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
                   <BookMarked size={22} />
+                  <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
+                </button>
+                <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
+                  <Landmark size={22} />
+                  <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
+                </button>
+              </>
+            )}
+          </div>
+        </nav>
+
+        {/* Кружок Игроки справа — идеальный круг как в Монобанк */}
+        {!seasonEnded && (
+        <button
+          onClick={() => handleTabChange('players')}
+          className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
+            activeTab === 'players' || selectedPlayer
+              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
+              : 'border-white/10 text-gray-500'
+          }`}
+        >
+          <Users size={22} />
+          <span className="text-[10px] font-bold tracking-wide">Игроки</span>
+        </button>
+        )}
+      </div>
+
+      {/* Мобильная FAB — создание статьи */}
+      {activeTab === 'media' && !seasonEnded && dbUser && !dbUser?.roles?.includes('guest') && (
+        <button 
+          onClick={() => router.push('/media/editor')} 
+          className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
+        >
+          <Plus size={28} />
+        </button>
+      )}
+
+      <style jsx global>{`
+        .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
+        .prose h1, [contenteditable] h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+        .prose h2, [contenteditable] h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
+        .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; }
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
+        .ui-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #fff; outline: none; transition: all 0.2s; box-sizing: border-box; }
+        .ui-input:focus { border-color: rgba(192,255,0,0.4); background: rgba(255,255,255,0.08); }
+        .ui-input::placeholder { color: rgba(255,255,255,0.25); }
+        .ui-pill-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 9999px; font-size: 13px; font-weight: 700; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; }
+        .ui-pill-btn:hover { border-color: rgba(192,255,0,0.3); }
+        .ui-pill-btn:active { transform: scale(0.96); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+    </div>
+  );
+}
+   <BookMarked size={22} />
                   <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
                 </button>
                 <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
