@@ -1,10 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-import Avatar from './Avatar';
-import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical } from 'lucide-react';
+import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical, User } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -26,7 +25,6 @@ interface Post {
   youtube_url: string;
   created_at: string;
   author?: Player;
-  author_player?: { mc_nickname: string };
 }
 
 interface MediaBlogProps {
@@ -35,6 +33,13 @@ interface MediaBlogProps {
   isCreatingPost: boolean;
   setIsCreatingPost: (val: boolean) => void;
   seasonName?: string;
+}
+
+function PlayerAvatar({ src, size = 32 }: { src?: string | null; size?: number }) {
+  if (src && src.trim().length > 0) {
+    return <img src={src} style={{ width: size, height: size, objectFit: 'cover' }} className="rounded-full object-cover border border-white/10 shrink-0" />;
+  }
+  return <div style={{ width: size, height: size }} className="rounded-full bg-[#1c2026] border border-white/10 flex items-center justify-center shrink-0"><User size={Math.max(size * 0.35, 10)} className="text-gray-600" /></div>;
 }
 
 export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost, setIsCreatingPost, seasonName }: MediaBlogProps) {
@@ -121,10 +126,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
     fetchPosts(1, false);
   }
 
-  useEffect(() => {
-    fetchPosts(1, false);
-  }, [seasonName]);
-
+  useEffect(() => { fetchPosts(1, false); }, [seasonName]);
   useEffect(() => {
     const handleClick = () => setActiveMenuPostId(null);
     document.addEventListener('click', handleClick);
@@ -156,7 +158,7 @@ export default function MediaBlog({ currentUser, onProfileClick, isCreatingPost,
             <div className="p-5 flex flex-col flex-grow space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <img src={post.author?.avatar_url || ''} className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                  <PlayerAvatar src={post.author?.avatar_url} size={32} />
                   <div>
                     <span className="text-xs font-bold text-white">{post.author?.rp_name}</span>
                     {post.author?.mc_nickname && <span className="text-[10px] text-gray-500 ml-1.5 font-mono">{post.author.mc_nickname}</span>}

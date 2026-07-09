@@ -1,25 +1,17 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, 
-  CornerDownRight, ChevronUp, ChevronDown 
+  CornerDownRight, ChevronUp, ChevronDown, User 
 } from 'lucide-react';
-import Avatar from './Avatar';
 
-interface Player {
-  id: string;
-  mc_nickname: string;
-  avatar_url: string;
-}
-
-interface Character {
-  id: string;
-  rp_name: string;
-  mc_nickname: string;
-  avatar_url: string;
-  roles: string[];
+function Av({ src, size = 36 }: { src?: string | null; size?: number }) {
+  if (src && src.trim().length > 0) {
+    return <img src={src} style={{ width: size, height: size, objectFit: 'cover' }} className="rounded-full object-cover border border-white/5 shrink-0" />;
+  }
+  return <div style={{ width: size, height: size }} className="rounded-full bg-[#1c2026] border border-white/5 flex items-center justify-center shrink-0"><User size={Math.max(size * 0.35, 10)} className="text-gray-600" /></div>;
 }
 
 interface Post {
@@ -30,8 +22,7 @@ interface Post {
   cover_url: string;
   youtube_url: string;
   created_at: string;
-  author?: Character;
-  author_player?: Player;
+  author?: { rp_name?: string; mc_nickname?: string; avatar_url?: string; roles?: string[] };
 }
 
 interface BlogComment {
@@ -42,7 +33,7 @@ interface BlogComment {
   parent_id: string | null;
   content: string;
   created_at: string;
-  author_player?: Player;
+  author_player?: { mc_nickname?: string; avatar_url?: string };
   parent_author_name?: string; 
 }
 
@@ -64,7 +55,6 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   const [newReplyText, setNewReplyText] = useState('');
   const [activeMenu, setActiveMenu] = useState(false);
   const [copied, setCopied] = useState(false);
-
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
 
@@ -81,7 +71,6 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
 
   async function loadActivity() {
     try {
-      // Комментарии с привязкой к players (автор = игрок)
       const { data: commentData } = await supabase
         .from('comments')
         .select('*, author_player:players(id, mc_nickname, avatar_url)')
@@ -117,24 +106,14 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     }
   }
 
-  // Коммент: author_id = player.id (Minecraft профиль), player_id = player.id
   async function handleSendComment(parentId: string | null = null) {
     const text = parentId ? newReplyText : newCommentText;
     if (!text.trim() || !currentUser) return;
-
-    // currentUser.id — это character.id (из page.tsx). Нам нужен player.id
-    // Получаем player_id из characters таблицы
     const { data: char } = await supabase.from('characters').select('player_id').eq('id', currentUser.id).single();
     const playerId = char?.player_id || currentUser.player_id || currentUser.id;
-
     const { error } = await supabase.from('comments').insert([{
-      post_id: post.id,
-      author_id: playerId,
-      player_id: playerId,
-      parent_id: parentId,
-      content: text.trim()
+      post_id: post.id, author_id: playerId, player_id: playerId, parent_id: parentId, content: text.trim()
     }]);
-
     if (!error) {
       if (parentId) { setNewReplyText(''); setReplyingToId(null); } 
       else { setNewCommentText(''); }
@@ -149,9 +128,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     setTimeout(() => setCopied(false), 2000);
   }
 
-  useEffect(() => {
-    loadActivity();
-  }, [post.id, currentUser]);
+  useEffect(() => { loadActivity(); }, [post.id, currentUser]);
 
   const topLevelComments = comments.filter((c: BlogComment) => !c.parent_id);
 
@@ -161,7 +138,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
     return (
       <div key={comment.id} className={`flex gap-3 items-start ${isReply ? 'mt-3 pl-4 border-l-2 border-white/5' : 'mt-5'}`}>
         {isReply && <CornerDownRight size={14} className="text-gray-600 mt-2 shrink-0" />}
-        <img src={comment.author_player?.avatar_url || ''} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} className="border border-white/5 shrink-0" />
+        <Av src={comment.author_player?.avatar_url} size={36} />
         <div className="flex-1 bg-white/[0.02] border border-white/5 p-3 rounded-2xl relative min-w-0">
           <div className="flex justify-between items-center mb-1">
             <span className="text-xs font-black text-white">{comment.author_player?.mc_nickname || 'Неизвестный'}</span>
@@ -191,12 +168,8 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" 
-      style={{ WebkitOverflowScrolling: 'touch' }}
-    >
+    <div className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
       <div className="w-full max-w-3xl mx-auto block p-4 pt-36 pb-32 md:pl-[120px] animate-fade-in">
-        
         <div className="w-full select-none flex mb-11">
           <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 hover:text-white"><ArrowLeft size={20} /></button>
         </div>
@@ -204,7 +177,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
         <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col pt-2 relative">
           <div className="p-5 md:p-6 pb-2 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img src={post.author?.avatar_url || ''} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }} className="bg-black/50 border border-white/10" />
+              <Av src={post.author?.avatar_url} size={48} />
               <div>
                 <div className="text-base font-bold text-white truncate">{post.author?.rp_name || 'Неизвестный'}</div>
                 {post.author?.mc_nickname && <div className="text-xs text-gray-500 font-mono">{post.author.mc_nickname}</div>}
@@ -255,7 +228,6 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
             <input type="text" placeholder="Напишите свое мнение..." value={newCommentText} onChange={e => setNewCommentText(e.target.value)} className="w-full bg-black/30 border border-white/10 rounded-full p-4 px-6 text-sm text-white outline-none focus:border-[#c0ff00]/40 shadow-inner" />
             <button onClick={() => handleSendComment(null)} className="w-12 h-12 rounded-full flex items-center justify-center bg-[#c0ff00] text-black shrink-0"><Send size={18} /></button>
           </div>
-
           <div className="divide-y divide-white/5">
             {topLevelComments.map((mainComment: BlogComment) => {
               const replies = comments.filter((r: BlogComment) => r.parent_id === mainComment.id);
@@ -275,7 +247,6 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick,
             })}
           </div>
         </div>
-
       </div>
     </div>
   );
