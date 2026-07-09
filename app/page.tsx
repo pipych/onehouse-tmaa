@@ -53,6 +53,7 @@ interface Player {
   rp_name: string;
   avatar_url: string;
   roles: string[];
+  professions?: string[];
   party?: string;
   season?: string;
   status?: string;
@@ -122,11 +123,15 @@ export default function Home() {
   const [addAvatarUrl, setAddAvatarUrl] = useState('');
   const [addParty, setAddParty] = useState('');
   const [addRoles, setAddRoles] = useState<string[]>(['citizen']);
+  const [addProfessions, setAddProfessions] = useState<string[]>([]);
 
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
   const [newRolePerm, setNewRolePerm] = useState(false);
+  const [professions, setProfessions] = useState<CustomRole[]>([]);
+  const [newProfessionName, setNewProfessionName] = useState('');
+  const [newProfessionColor, setNewProfessionColor] = useState('#c0ff00');
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [guestTgId, setGuestTgId] = useState('');
   const [guestList, setGuestList] = useState<{ tg_id: number; created_at: string; added_by: string }[]>([]);
@@ -143,13 +148,13 @@ export default function Home() {
   const [seasonStartDate, setSeasonStartDate] = useState('2026-05-17');
   const [exarotonServerId, setExarotonServerId] = useState<string>('');
   const [newSeasonServerId, setNewSeasonServerId] = useState('');
-  const [adminSubTab, setAdminSubTab] = useState<'players' | 'characters' | 'roles' | 'guests' | 'seasons'>('players');
+  const [adminSubTab, setAdminSubTab] = useState<'players' | 'characters' | 'roles' | 'professions' | 'guests' | 'seasons'>('players');
   const [playersSubTab, setPlayersSubTab] = useState<'characters' | 'players'>('characters');
   const [allPlayers, setAllPlayers] = useState<any[]>([]);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '' });
   const [editingCharId, setEditingCharId] = useState<string | null>(null);
-  const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'Нет партии', avatar_url: '', roles: ['citizen'] as string[] });
+  const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'Нет партии', avatar_url: '', professions: [] as string[] });
   const [isUploadingAdminAvatar, setIsUploadingAdminAvatar] = useState(false);
   const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
   const currentSeasonName = `Сезон ${currentSeasonNum}`;
@@ -344,13 +349,20 @@ export default function Home() {
     });
   }
 
+  function getProfessionColor(profName: string) {
+    const found = professions.find(p => p.name.toLowerCase() === profName.toLowerCase());
+    return found ? found.color : '#888888';
+  }
+
   function getRoleColor(roleName: string) {
     const found = customRoles.find(cr => cr.name.toLowerCase() === roleName.toLowerCase());
     return found ? found.color : '#888888';
   }
 
-  function isDead(roles: string[]) {
-    return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
+  function isDead(player: Player | any) {
+    const r = Array.isArray(player) ? player : (player.roles || []);
+    const p = Array.isArray(player) ? [] : (player.professions || []);
+    return r.some((x: string) => x.toLowerCase() === 'мёртв') || p.some((x: string) => x.toLowerCase() === 'мёртв');
   }
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, setUrlCallback: (url: string) => void, setLoadingState: (loading: boolean) => void) {
@@ -549,6 +561,7 @@ export default function Home() {
             roles: ['guest'],
           });
           loadRoles();
+        loadProfessions();
           loadPlayers();
           loadLatestPosts();
           setLoading(false);
@@ -569,14 +582,8 @@ export default function Home() {
       }
 
       if (!charId) {
-        // Игрок есть, персонажа в текущем сезоне нет — проверяем есть ли админ-роль в любом сезоне
-        const { data: anyChar } = await supabase
-          .from('characters')
-          .select('roles')
-          .eq('player_id', player.id)
-          .limit(100);
-        const allRoles = anyChar ? anyChar.flatMap((c: any) => c.roles || []) : [];
-        const isAdminAnyway = allRoles.some((r: string) => ['admin', 'админ'].includes(r.toLowerCase()));
+        // Игрок есть, персонажа в текущем сезоне нет — проверяем роли на профиле игрока
+        const isAdminAnyway = (player.roles || []).some((r: string) => ['admin', 'админ'].includes(r.toLowerCase()));
         
         setDbUser({
           id: player.id,
@@ -594,6 +601,7 @@ export default function Home() {
         setNewRpName('');
         setNewAvatarUrl('');
         loadRoles();
+        loadProfessions();
         loadPlayers();
         loadConstitution();
         loadLatestPosts();
@@ -624,7 +632,7 @@ export default function Home() {
         mc_nickname: character.mc_nickname || player.mc_nickname,
         rp_name: character.rp_name,
         avatar_url: character.avatar_url || '',
-        roles: character.roles || [],
+        roles: player.roles || [],
         party: character.party || 'Нет партии',
         season: character.season,
         status: character.status,
@@ -634,6 +642,7 @@ export default function Home() {
       setNewRpName(character.rp_name);
       setNewAvatarUrl(character.avatar_url);
       loadRoles();
+        loadProfessions();
       loadPlayers();
       loadConstitution();
       loadLatestPosts();
@@ -656,10 +665,15 @@ export default function Home() {
     }
   }
 
+  async function loadProfessions() {
+    const { data } = await supabase.from('professions').select('*').order('name');
+    if (data) setProfessions(data.map((p: any) => ({ id: p.id, name: p.name, color: p.color, canEditConstitution: false })));
+  }
+
   async function loadPlayers() {
     const { data } = await supabase
       .from('characters')
-      .select('*, player:players(tg_id, tg_username, avatar_url)')
+      .select('*, player:players(tg_id, tg_username, avatar_url, roles)')
       .eq('season', currentSeasonName)
       .order('rp_name', { ascending: true });
     if (data) {
@@ -671,7 +685,8 @@ export default function Home() {
         mc_nickname: c.mc_nickname,
         rp_name: c.rp_name,
         avatar_url: c.avatar_url || c.player?.avatar_url,
-        roles: c.roles || [],
+        roles: c.player?.roles || [],
+        professions: c.professions || [],
         party: c.party,
         season: c.season,
         status: c.status,
@@ -767,25 +782,30 @@ export default function Home() {
     const existingPlayer = existingPlayers && existingPlayers.length > 0 ? existingPlayers[0] : null;
     let playerId = existingPlayer?.id;
     
+    if (existingPlayer) {
+      await supabase.from('players').update({ roles: addRoles }).eq('id', existingPlayer.id);
+    }
+    
     if (!playerId) {
       const { data: newPlayers, error: playerError } = await supabase.from('players').insert({
         mc_nickname: addMcNickname,
         tg_id: tgIdNum,
         tg_username: addTgUsername || 'unknown',
         avatar_url: addAvatarUrl || '',
+        roles: addRoles,
       }).select();
       if (playerError) { alert(`Ошибка создания игрока: ${playerError.message}`); return; }
       playerId = newPlayers?.[0]?.id;
     }
 
-    // 2. Создаём персонажа с ролями (роли теперь на characters)
+    // 2. Создаём персонажа с профессиями
     const { error } = await supabase.from('characters').insert({
       player_id: playerId,
       mc_nickname: addMcNickname,
       rp_name: addRpName,
       avatar_url: addAvatarUrl || '',
       party: addParty || 'Нет партии',
-      roles: addRoles,
+      professions: addRoles,
       season: currentSeasonName,
     });
     if (error) alert(`Ошибка создания персонажа: ${error.message}`);
@@ -796,7 +816,8 @@ export default function Home() {
     if (!newRoleName.trim()) return;
     const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
     const { error = null } = await supabase.from('roles').insert([newRole]);
-    if (!error) { setNewRoleName(''); setNewRolePerm(false); loadRoles(); }
+    if (!error) { setNewRoleName(''); setNewRolePerm(false); loadRoles();
+        loadProfessions(); }
     else alert(`Ошибка создания роли`);
   }
 
@@ -838,8 +859,8 @@ export default function Home() {
     if (!selectedPlayer || selectedPlayer.roles.includes(roleName)) return;
     const updatedRoles = [...selectedPlayer.roles, roleName];
     const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    // Роли теперь на characters
-    const { error } = await supabase.from('characters').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    // Роли теперь на players (Minecraft-профиль)
+    const { error } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedPlayer.player_id);
     if (!error) {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
@@ -851,12 +872,44 @@ export default function Home() {
     if (!selectedPlayer) return;
     const updatedRoles = selectedPlayer.roles.filter(r => r !== roleName);
     const updatedPlayer = { ...selectedPlayer, roles: updatedRoles };
-    // Роли теперь на characters
-    const { error = null } = await supabase.from('characters').update({ roles: updatedRoles }).eq('id', selectedPlayer.id);
+    // Роли теперь на players (Minecraft-профиль)
+    const { error = null } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedPlayer.player_id);
     if (!error) {
       setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
       if (dbUser?.id === selectedPlayer.id) setDbUser(updatedPlayer);
     }
+  }
+
+  async function handleAddProfessionToChar(professionName: string) {
+    if (!selectedPlayer || (selectedPlayer.professions || []).includes(professionName)) return;
+    const updatedProfessions = [...(selectedPlayer.professions || []), professionName];
+    const updatedPlayer = { ...selectedPlayer, professions: updatedProfessions };
+    const { error } = await supabase.from('characters').update({ professions: updatedProfessions }).eq('id', selectedPlayer.id);
+    if (!error) {
+      setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
+    }
+  }
+
+  async function handleRemoveProfessionFromChar(professionName: string) {
+    if (!selectedPlayer) return;
+    const updatedProfessions = (selectedPlayer.professions || []).filter(p => p !== professionName);
+    const updatedPlayer = { ...selectedPlayer, professions: updatedProfessions };
+    const { error } = await supabase.from('characters').update({ professions: updatedProfessions }).eq('id', selectedPlayer.id);
+    if (!error) {
+      setSelectedPlayer(updatedPlayer); setPlayers(players.map(p => p.id === selectedPlayer.id ? updatedPlayer : p));
+    }
+  }
+
+  async function handleCreateProfession() {
+    if (!newProfessionName.trim()) return;
+    const { error } = await supabase.from('professions').insert({ name: newProfessionName.toLowerCase(), color: newProfessionColor });
+    if (!error) { setNewProfessionName(''); loadProfessions(); }
+    else alert(`Ошибка: ${error.message}`);
+  }
+
+  async function saveProfessionToDb(profession: CustomRole) {
+    if (!profession.id) return;
+    await supabase.from('professions').update({ name: profession.name, color: profession.color }).eq('id', profession.id);
   }
 
   useEffect(() => {
@@ -958,15 +1011,15 @@ export default function Home() {
 
       {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ */}
       {selectedPlayer && (
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${isDead(selectedPlayer.roles) ? 'bg-[#050608]' : 'bg-[#14171c]'}`}>
+        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${isDead(selectedPlayer) ? 'bg-[#050608]' : 'bg-[#14171c]'}`}>
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
           <button onClick={() => { setSelectedPlayer(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
-          {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer.roles)) || isAdmin) && !isEditingProfile && (
+          {((selectedPlayer.id === dbUser?.id && !isDead(selectedPlayer)) || isAdmin) && !isEditingProfile && (
             <button onClick={() => { setNewRpName(selectedPlayer.rp_name); setNewAvatarUrl(selectedPlayer.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
           )}
 
-          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
+          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${isDead(selectedPlayer) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
             <img src={isEditingProfile ? newAvatarUrl : (selectedPlayer.avatar_url || '')} alt="avatar" className="w-full h-full object-cover" />
           </div>
 
@@ -983,7 +1036,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="w-full space-y-1">
-                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedPlayer) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
                   <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
@@ -1021,6 +1074,23 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Профессии персонажа */}
+          {(selectedPlayer?.professions || []).length > 0 && (
+            <>
+              <div className="w-full h-[1px] bg-white/5 my-2" />
+              <div className="text-left space-y-2 w-full">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Профессии</div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {(selectedPlayer.professions || []).map((p: string, idx: number) => (
+                    <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getProfessionColor(p)}15`, color: getProfessionColor(p), borderColor: `${getProfessionColor(p)}30` }}>
+                      <span>• {p.toUpperCase()}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Персонажи игрока */}
           {playerCharacters.length > 0 && (
             <>
@@ -1029,7 +1099,7 @@ export default function Home() {
                 <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {playerCharacters.map((pc: any) => (
-                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
+                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
                       <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
                         {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
                       </div>
@@ -1607,11 +1677,12 @@ export default function Home() {
                     </label>
                   </div>
                   <div className="space-y-2">
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Роли игрока (профиль)</div>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Профессии персонажа</div>
                     <div className="flex flex-wrap gap-2">
-                      {customRoles.map(cr => (
-                        <button key={cr.name} onClick={() => { setAddRoles(prev => prev.includes(cr.name) ? prev.filter(r => r !== cr.name) : [...prev, cr.name]); }} className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${addRoles.includes(cr.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: cr.color, backgroundColor: addRoles.includes(cr.name) ? `${cr.color}20` : 'transparent' }}>{cr.name.toUpperCase()}</button>
+                      {professions.map(prof => (
+                        <button key={prof.name} onClick={() => { setAddProfessions(prev => prev.includes(prof.name) ? prev.filter(r => r !== prof.name) : [...prev, prof.name]); }} className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${addProfessions.includes(prof.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: prof.color, backgroundColor: addProfessions.includes(prof.name) ? `${prof.color}20` : 'transparent' }}>{prof.name.toUpperCase()}</button>
                       ))}
+                      {professions.length === 0 && <span className="text-xs text-gray-500">Нет профессий</span>}
                     </div>
                   </div>
                   <button onClick={async () => {
@@ -1619,9 +1690,9 @@ export default function Home() {
                     const { data: playerData } = await supabase.from('players').select('id').eq('mc_nickname', addMcNickname.trim()).limit(1);
                     const player = playerData && playerData.length > 0 ? playerData[0] : null;
                     if (!player) { alert('Игрок не найден. Сначала создай профиль.'); return; }
-                    const { error } = await supabase.from('characters').insert({ player_id: player.id, mc_nickname: addMcNickname.trim(), rp_name: addRpName.trim(), party: addParty || 'Нет партии', roles: addRoles, avatar_url: addAvatarUrl || '', season: currentSeasonName, status: 'alive' });
+                    const { error } = await supabase.from('characters').insert({ player_id: player.id, mc_nickname: addMcNickname.trim(), rp_name: addRpName.trim(), party: addParty || 'Нет партии', professions: addProfessions, avatar_url: addAvatarUrl || '', season: currentSeasonName, status: 'alive' });
                     if (error) { alert(`Ошибка: ${error.message}`); return; }
-                    setAddMcNickname(''); setAddRpName(''); setAddParty('Нет партии'); setAddRoles(['citizen']); setAddAvatarUrl('');
+                    setAddMcNickname(''); setAddRpName(''); setAddParty('Нет партии'); setAddProfessions([]); setAddAvatarUrl('');
                     loadPlayers();
                   }} className="ui-pill-btn w-full justify-center py-3"><Plus size={16} /><span>Создать персонажа</span></button>
                 </div>
@@ -1674,8 +1745,8 @@ export default function Home() {
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               <div className="flex gap-1">
-                                {c.roles?.slice(0, 2).map((r, i) => (
-                                  <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
+                                {c.professions?.slice(0, 2).map((p, i) => (
+                                  <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getProfessionColor(p)}20`, color: getProfessionColor(p) }}>{p}</span>
                                 ))}
                               </div>
                               <button onClick={() => { setEditingCharId(c.id); setEditCharData({ rp_name: c.rp_name, party: c.party || 'Нет партии', avatar_url: c.avatar_url || '', professions: c.professions || [] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
@@ -1733,7 +1804,12 @@ export default function Home() {
                     <input type="text" placeholder="Название профессии" value={newProfessionName} onChange={e => setNewProfessionName(e.target.value)} className="ui-input flex-1"/>
                     <input type="color" value={newProfessionColor} onChange={e => setNewProfessionColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
                   </div>
-                  <button onClick={handleCreateProfession} className="ui-pill-btn w-full justify-center py-3"><UserPlus size={14} /><span>Создать профессию</span></button>
+                  <button onClick={async () => {
+                    if (!newProfessionName.trim()) return;
+                    const { error } = await supabase.from('professions').insert({ name: newProfessionName.toLowerCase(), color: newProfessionColor });
+                    if (!error) { setNewProfessionName(''); loadProfessions(); }
+                    else alert('Ошибка создания профессии');
+                  }} className="ui-pill-btn w-full justify-center py-3"><AnvilIcon size={14} /><span>Создать профессию</span></button>
                 </div>
 
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
@@ -1741,11 +1817,37 @@ export default function Home() {
                   <div className="space-y-2">
                     {professions.map((prof) => (
                       <div key={prof.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
-                        <input type="color" value={prof.color} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, color: e.target.value } : p)); }} onBlur={() => saveProfessionToDb(prof)} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
-                        <input type="text" value={prof.name} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, name: e.target.value } : p)); }} onBlur={() => saveProfessionToDb(prof)} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: prof.color }}/>
+                        <input type="color" value={prof.color} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, color: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ color: prof.color }).eq('id', prof.id); }} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
+                        <input type="text" value={prof.name} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, name: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ name: prof.name }).eq('id', prof.id); }} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: prof.color }}/>
                       </div>
                     ))}
                     {professions.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет профессий</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {/* --- Профессии --- */}
+            {adminSubTab === 'professions' && (
+              <div className="space-y-4">
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Создать профессию</span></div>
+                  <div className="flex gap-2 items-end">
+                    <input type="text" placeholder="Название профессии" value={newProfessionName} onChange={e => setNewProfessionName(e.target.value)} className="ui-input flex-1"/>
+                    <input type="color" value={newProfessionColor} onChange={e => setNewProfessionColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
+                  </div>
+                  <button onClick={handleCreateProfession} className="ui-pill-btn w-full justify-center py-2 bg-[#c0ff00] text-black font-bold"><UserPlus size={14} /><span>Создать профессию</span></button>
+                </div>
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><ShieldCheck size={16} /><span>Все профессии</span></div>
+                  <div className="space-y-2">
+                    {professions.map((prof) => (
+                      <div key={prof.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
+                        <input type="color" value={prof.color} onChange={e => setProfessions(profs => profs.map(p => p.id === prof.id ? {...p, color: e.target.value} : p))} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
+                        <span className="text-sm font-bold flex-1 min-w-0" style={{ color: prof.color }}>{prof.name.toUpperCase()}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1902,62 +2004,6 @@ export default function Home() {
                 </button>
                 <button onClick={() => handleTabChange('svod')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
                   <BookMarked size={22} />
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
-                </button>
-                <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-                  <Landmark size={22} />
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
-                </button>
-              </>
-            )}
-          </div>
-        </nav>
-
-        {/* Кружок Игроки справа — идеальный круг как в Монобанк */}
-        {!seasonEnded && (
-        <button
-          onClick={() => handleTabChange('players')}
-          className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
-            activeTab === 'players' || selectedPlayer
-              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-              : 'border-white/10 text-gray-500'
-          }`}
-        >
-          <Users size={22} />
-          <span className="text-[10px] font-bold tracking-wide">Игроки</span>
-        </button>
-        )}
-      </div>
-
-      {/* Мобильная FAB — создание статьи */}
-      {activeTab === 'media' && !seasonEnded && dbUser && !dbUser?.roles?.includes('guest') && (
-        <button 
-          onClick={() => router.push('/media/editor')} 
-          className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
-        >
-          <Plus size={28} />
-        </button>
-      )}
-
-      <style jsx global>{`
-        .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-        .prose h1, [contenteditable] h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-        .prose h2, [contenteditable] h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
-        .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; }
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
-        .ui-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #fff; outline: none; transition: all 0.2s; box-sizing: border-box; }
-        .ui-input:focus { border-color: rgba(192,255,0,0.4); background: rgba(255,255,255,0.08); }
-        .ui-input::placeholder { color: rgba(255,255,255,0.25); }
-        .ui-pill-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 9999px; font-size: 13px; font-weight: 700; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; }
-        .ui-pill-btn:hover { border-color: rgba(192,255,0,0.3); }
-        .ui-pill-btn:active { transform: scale(0.96); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-    </div>
-  );
-}
-   <BookMarked size={22} />
                   <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
                 </button>
                 <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
