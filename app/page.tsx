@@ -143,6 +143,11 @@ export default function Home() {
   const [newSeasonServerId, setNewSeasonServerId] = useState('');
   const [adminSubTab, setAdminSubTab] = useState<'players' | 'characters' | 'roles' | 'guests' | 'seasons'>('players');
   const [allPlayers, setAllPlayers] = useState<any[]>([]);
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '' });
+  const [editingCharId, setEditingCharId] = useState<string | null>(null);
+  const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'Нет партии', avatar_url: '', roles: ['citizen'] as string[] });
+  const [isUploadingAdminAvatar, setIsUploadingAdminAvatar] = useState(false);
   const currentSeasonName = `Сезон ${currentSeasonNum}`;
 
   // Динамический старт сезона из БД
@@ -1407,7 +1412,11 @@ export default function Home() {
                     <input type="text" placeholder="Minecraft ник *" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
                     <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
                     <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="URL аватара" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
+                    <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
+                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingAdminAvatar)} />
+                      <Upload size={14} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
+                      <span className="text-xs text-gray-500 truncate">{isUploadingAdminAvatar ? 'Загрузка...' : addAvatarUrl ? 'Аватар выбран' : 'Загрузить аватар'}</span>
+                    </label>
                   </div>
                   <button onClick={async () => {
                     const mcNick = addMcNickname.trim();
@@ -1428,13 +1437,45 @@ export default function Home() {
 
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Users size={16} /><span>Все профили ({allPlayers.length})</span></div>
-                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
                     {allPlayers.map((p: any) => (
-                      <div key={p.id} className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl">
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-white truncate">{p.mc_nickname}</div>
-                          <div className="text-[10px] text-gray-500">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'} {p.tg_username ? `@${p.tg_username}` : ''}</div>
-                        </div>
+                      <div key={p.id}>
+                        {editingPlayerId === p.id ? (
+                          <div className="bg-black/30 border border-[#c0ff00]/20 p-3 rounded-xl space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input type="text" placeholder="Minecraft ник" value={editPlayerData.mc_nickname} onChange={e => setEditPlayerData(prev => ({...prev, mc_nickname: e.target.value}))} className="ui-input text-xs" />
+                              <input type="number" placeholder="Telegram ID" value={editPlayerData.tg_id} onChange={e => setEditPlayerData(prev => ({...prev, tg_id: e.target.value}))} className="ui-input text-xs" />
+                              <input type="text" placeholder="TG Username" value={editPlayerData.tg_username} onChange={e => setEditPlayerData(prev => ({...prev, tg_username: e.target.value}))} className="ui-input text-xs" />
+                              <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
+                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, (url) => setEditPlayerData(prev => ({...prev, avatar_url: url})), setIsUploadingAdminAvatar)} />
+                                <Upload size={12} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
+                                <span className="text-[10px] text-gray-500 truncate">{editPlayerData.avatar_url ? '✓ Аватар' : 'Аватар'}</span>
+                              </label>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={async () => {
+                                const { error } = await supabase.from('players').update(editPlayerData).eq('id', p.id);
+                                if (error) { alert(`Ошибка: ${error.message}`); return; }
+                                setEditingPlayerId(null);
+                                loadAllPlayers();
+                              }} className="ui-pill-btn flex-1 justify-center !bg-[#c0ff00] !text-black text-xs py-1.5"><Save size={12} /><span>Сохранить</span></button>
+                              <button onClick={() => setEditingPlayerId(null)} className="ui-pill-btn px-4 !bg-white/5 text-xs py-1.5"><X size={12} /></button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-full bg-[#1c2026] border border-white/10 overflow-hidden flex-shrink-0">
+                                {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-white truncate">{p.mc_nickname}</div>
+                                <div className="text-[10px] text-gray-500">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'} {p.tg_username ? `@${p.tg_username}` : ''}</div>
+                              </div>
+                            </div>
+                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '' }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+                          </div>
+                        )}
                       </div>
                     ))}
                     {allPlayers.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет профилей</p>}
@@ -1452,7 +1493,11 @@ export default function Home() {
                     <input type="text" placeholder="Minecraft ник игрока *" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
                     <input type="text" placeholder="RP-имя персонажа *" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
                     <input type="text" placeholder="Партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
-                    <input type="text" placeholder="URL аватара" value={addAvatarUrl} onChange={e => setAddAvatarUrl(e.target.value)} className="ui-input"/>
+                    <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
+                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingAdminAvatar)} />
+                      <Upload size={14} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
+                      <span className="text-xs text-gray-500 truncate">{isUploadingAdminAvatar ? 'Загрузка...' : addAvatarUrl ? 'Аватар выбран' : 'Загрузить аватар'}</span>
+                    </label>
                   </div>
                   <div className="space-y-2">
                     <div className="text-[10px] text-gray-500 uppercase tracking-wider">Роли персонажа</div>
@@ -1476,18 +1521,59 @@ export default function Home() {
 
                 <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Users size={16} /><span>Персонажи сезона ({players.length})</span></div>
-                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
                     {players.map((c: Player) => (
-                      <div key={c.id} className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl">
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-white truncate">{c.rp_name}</div>
-                          <div className="text-[10px] text-gray-500">{c.mc_nickname} · {c.party}</div>
-                        </div>
-                        <div className="flex gap-1 flex-shrink-0">
-                          {c.roles?.slice(0, 3).map((r, i) => (
-                            <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
-                          ))}
-                        </div>
+                      <div key={c.id}>
+                        {editingCharId === c.id ? (
+                          <div className="bg-black/30 border border-[#c0ff00]/20 p-3 rounded-xl space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input type="text" placeholder="RP-имя" value={editCharData.rp_name} onChange={e => setEditCharData(prev => ({...prev, rp_name: e.target.value}))} className="ui-input text-xs" />
+                              <input type="text" placeholder="Партия" value={editCharData.party} onChange={e => setEditCharData(prev => ({...prev, party: e.target.value}))} className="ui-input text-xs" />
+                              <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative col-span-2">
+                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, (url) => setEditCharData(prev => ({...prev, avatar_url: url})), setIsUploadingAdminAvatar)} />
+                                <Upload size={12} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
+                                <span className="text-[10px] text-gray-500 truncate">{editCharData.avatar_url ? '✓ Аватар' : 'Загрузить аватар'}</span>
+                              </label>
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="text-[9px] text-gray-500 uppercase">Роли</div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {customRoles.map(cr => (
+                                  <button key={cr.name} onClick={() => { setEditCharData(prev => ({...prev, roles: prev.roles.includes(cr.name) ? prev.roles.filter(r => r !== cr.name) : [...prev.roles, cr.name]})); }} className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${editCharData.roles.includes(cr.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: cr.color, backgroundColor: editCharData.roles.includes(cr.name) ? `${cr.color}20` : 'transparent' }}>{cr.name.toUpperCase()}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={async () => {
+                                const { error } = await supabase.from('characters').update({ rp_name: editCharData.rp_name, party: editCharData.party, avatar_url: editCharData.avatar_url, roles: editCharData.roles }).eq('id', c.id);
+                                if (error) { alert(`Ошибка: ${error.message}`); return; }
+                                setEditingCharId(null);
+                                loadPlayers();
+                              }} className="ui-pill-btn flex-1 justify-center !bg-[#c0ff00] !text-black text-xs py-1.5"><Save size={12} /><span>Сохранить</span></button>
+                              <button onClick={() => setEditingCharId(null)} className="ui-pill-btn px-4 !bg-white/5 text-xs py-1.5"><X size={12} /></button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-full bg-[#1c2026] border border-white/10 overflow-hidden flex-shrink-0">
+                                {c.avatar_url ? <img src={c.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-white truncate">{c.rp_name}</div>
+                                <div className="text-[10px] text-gray-500">{c.mc_nickname} · {c.party}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="flex gap-1">
+                                {c.roles?.slice(0, 2).map((r, i) => (
+                                  <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(r)}20`, color: getRoleColor(r) }}>{r}</span>
+                                ))}
+                              </div>
+                              <button onClick={() => { setEditingCharId(c.id); setEditCharData({ rp_name: c.rp_name, party: c.party || 'Нет партии', avatar_url: c.avatar_url || '', roles: c.roles || ['citizen'] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                     {players.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет персонажей</p>}
