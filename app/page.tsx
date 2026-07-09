@@ -559,7 +559,15 @@ export default function Home() {
       }
 
       if (!charId) {
-        // Игрок есть, персонажа нет — пускаем без персонажа
+        // Игрок есть, персонажа в текущем сезоне нет — проверяем есть ли админ-роль в любом сезоне
+        const { data: anyChar } = await supabase
+          .from('characters')
+          .select('roles')
+          .eq('player_id', player.id)
+          .limit(100);
+        const allRoles = anyChar ? anyChar.flatMap((c: any) => c.roles || []) : [];
+        const isAdminAnyway = allRoles.some((r: string) => ['admin', 'админ'].includes(r.toLowerCase()));
+        
         setDbUser({
           id: player.id,
           player_id: player.id,
@@ -568,7 +576,7 @@ export default function Home() {
           mc_nickname: player.mc_nickname,
           rp_name: player.mc_nickname,
           avatar_url: player.avatar_url || '',
-          roles: [],
+          roles: isAdminAnyway ? ['admin'] : [],
           party: 'Нет партии',
           season: currentSeasonName,
           status: 'alive',
