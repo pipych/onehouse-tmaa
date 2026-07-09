@@ -66,10 +66,10 @@ interface Character {
   status: string;
 }
 
-/** Объединённые данные для UI: профиль + активный персонаж */
+/** Объединённые данные для UI: профиль + активный персонаж (опционально) */
 interface CombinedUser {
   player: Player;
-  character: Character;
+  character: Character | null;
 }
 
 interface CustomRole {
@@ -259,52 +259,9 @@ export default function Home() {
       }
 
       if (!charId) {
-        // Нет персонажа в текущем сезоне — проверяем есть ли персонажи из прошлых
-        const { data: lastChars } = await supabase
-          .from('characters')
-          .select('*')
-          .eq('player_id', player.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        
-        const lastChar = lastChars && lastChars.length > 0 ? lastChars[0] : null;
-
-        const { data: newChar, error: createError } = await supabase
-          .from('characters')
-          .insert({
-            player_id: player.id,
-            mc_nickname: player.mc_nickname,
-            rp_name: lastChar?.rp_name || tgUser?.username || player.mc_nickname,
-            avatar_url: lastChar?.avatar_url || player.avatar_url || '',
-            party: lastChar?.party || 'Нет партии',
-            roles: lastChar?.roles || ['citizen'],
-            season: currentSeasonName,
-            status: 'alive',
-          })
-          .select()
-          .single();
-
-        if (createError || !newChar) {
-          setError(`Не удалось создать персонажа для сезона. Обратись к администратору.`);
-          setLoading(false);
-          return;
-        }
-
-        const character: Character = {
-          id: newChar.id,
-          player_id: newChar.player_id,
-          rp_name: newChar.rp_name,
-          mc_nickname: newChar.mc_nickname,
-          avatar_url: newChar.avatar_url,
-          roles: newChar.roles,
-          party: newChar.party,
-          season: newChar.season,
-          status: newChar.status,
-        };
-
-        setDbUser({ player, character });
-        setNewRpName(character.rp_name);
-        setNewAvatarUrl(character.avatar_url);
+        // Игрок есть, но персонажа в текущем сезоне нет — это нормально.
+        // Админ создаст персонажа через админ-панель.
+        setDbUser({ player, character: null });
         loadRoles();
         loadCharacters();
         loadConstitution();
@@ -507,7 +464,7 @@ export default function Home() {
       const updated = { ...selectedCharacter, roles: updatedRoles };
       setSelectedCharacter(updated);
       setCharacters(characters.map(c => c.id === selectedCharacter.id ? updated : c));
-      if (dbUser?.character.id === selectedCharacter.id) {
+      if (dbUser?.character?.id === selectedCharacter.id) {
         setDbUser({ ...dbUser, character: updated });
       }
       setShowRoleSelector(false);
@@ -522,7 +479,7 @@ export default function Home() {
       const updated = { ...selectedCharacter, roles: updatedRoles };
       setSelectedCharacter(updated);
       setCharacters(characters.map(c => c.id === selectedCharacter.id ? updated : c));
-      if (dbUser?.character.id === selectedCharacter.id) {
+      if (dbUser?.character?.id === selectedCharacter.id) {
         setDbUser({ ...dbUser, character: updated });
       }
     }
@@ -534,7 +491,7 @@ export default function Home() {
     if (!error) {
       const updated = { ...selectedCharacter, rp_name: newRpName, avatar_url: newAvatarUrl };
       setSelectedCharacter(updated);
-      if (dbUser?.character.id === selectedCharacter.id) {
+      if (dbUser?.character?.id === selectedCharacter.id) {
         setDbUser({ ...dbUser, character: updated });
       }
       setIsEditingProfile(false);
@@ -596,7 +553,7 @@ export default function Home() {
     const tgId = parseInt(guestTgId);
     if (isNaN(tgId) || tgId <= 0) return;
     setGuestLoading(true);
-    const ok = await addGuest(tgId, dbUser?.character.rp_name || 'Админ');
+    const ok = await addGuest(tgId, dbUser?.character?.rp_name || 'Админ');
     if (ok) { setGuestTgId(''); loadGuests(); }
     else alert('Ошибка добавления гостя');
     setGuestLoading(false);
@@ -763,11 +720,11 @@ export default function Home() {
   }
 
   function isAdminUser(): boolean {
-    return dbUser?.character.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
+    return dbUser?.character?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
   }
 
   function canEditConstitution(): boolean {
-    return dbUser?.character.roles?.some(r => {
+    return dbUser?.character?.roles?.some(r => {
       const found = customRoles.find(cr => cr.name.toLowerCase() === r.toLowerCase());
       return found ? found.canEditConstitution : false;
     }) || false;
@@ -1040,7 +997,7 @@ export default function Home() {
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
           <button onClick={() => { setSelectedCharacter(null); setIsEditingProfile(false); setShowRoleSelector(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
-          {((selectedCharacter.id === dbUser?.character.id && !isDead(selectedCharacter.roles)) || isAdmin) && !isEditingProfile && (
+          {((selectedCharacter.id === dbUser?.character?.id && !isDead(selectedCharacter.roles)) || isAdmin) && !isEditingProfile && (
             <button onClick={() => { setNewRpName(selectedCharacter.rp_name); setNewAvatarUrl(selectedCharacter.avatar_url || ''); setIsEditingProfile(true); }} className="absolute top-4 left-4 p-2 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-[#c0ff00] active:scale-90 transition-all z-10"><Edit2 size={14} /></button>
           )}
 
@@ -1155,7 +1112,7 @@ export default function Home() {
                 {showWelcome ? (
                   <h3 className="flex flex-col items-center gap-1.5 animate-fade-in">
                     <span className="text-base md:text-xl font-black text-white tracking-wide leading-tight animate-welcome-glow">Добро пожаловать в One App</span>
-                    <span className="text-[#c0ff00] text-xl md:text-3xl font-black">{dbUser?.character.rp_name || dbUser?.player.mc_nickname}</span>
+                    <span className="text-[#c0ff00] text-xl md:text-3xl font-black">{dbUser?.character?.rp_name || dbUser?.player.mc_nickname}</span>
                   </h3>
                 ) : (
                   <h3 className="flex flex-col items-center gap-1 animate-fade-in">
@@ -1582,7 +1539,7 @@ export default function Home() {
         {/* --- МЕДИА, КАЗНА, АРХИВ (передаём управление компонентам) --- */}
         {activeTab === 'media' && (
           <MediaBlog 
-            currentUser={dbUser ? { id: dbUser.character.id, player_id: dbUser.player.id, tg_id: dbUser.player.tg_id || 0, tg_username: dbUser.player.tg_username, mc_nickname: dbUser.player.mc_nickname, rp_name: dbUser.character.rp_name, avatar_url: dbUser.character.avatar_url, roles: dbUser.character.roles } : null}
+            currentUser={dbUser?.character ? { id: dbUser.character.id, player_id: dbUser.player.id, tg_id: dbUser.player.tg_id || 0, tg_username: dbUser.player.tg_username, mc_nickname: dbUser.player.mc_nickname, rp_name: dbUser.character.rp_name, avatar_url: dbUser.character.avatar_url, roles: dbUser.character.roles } : null}
             onProfileClick={(p) => {
               const found = characters.find(c => c.id === p.id);
               if (found) setSelectedCharacter(found);
@@ -1593,10 +1550,10 @@ export default function Home() {
           />
         )}
         {activeTab === 'treasury' && (
-          <Treasury currentUser={dbUser ? { id: dbUser.character.id, tg_id: dbUser.player.tg_id || 0, tg_username: dbUser.player.tg_username, mc_nickname: dbUser.player.mc_nickname, rp_name: dbUser.character.rp_name, avatar_url: dbUser.character.avatar_url, roles: dbUser.character.roles } : null} />
+          <Treasury currentUser={dbUser?.character ? { id: dbUser.character.id, tg_id: dbUser.player.tg_id || 0, tg_username: dbUser.player.tg_username, mc_nickname: dbUser.player.mc_nickname, rp_name: dbUser.character.rp_name, avatar_url: dbUser.character.avatar_url, roles: dbUser.character.roles } : null} />
         )}
         {activeTab === 'archive' && (
-          <Archive currentUser={dbUser ? { id: dbUser.character.id, roles: dbUser.character.roles } : null} />
+          <Archive currentUser={dbUser?.character ? { id: dbUser.character.id, roles: dbUser.character.roles } : null} />
         )}
         {activeTab === 'map' && <div className="flex items-center justify-center py-20 text-gray-500 text-sm">Карта в разработке</div>}
 
@@ -1644,7 +1601,7 @@ export default function Home() {
       )}
 
       {/* FAB создания статьи */}
-      {activeTab === 'media' && !seasonEnded && dbUser && !dbUser.character.roles?.includes('guest') && (
+      {activeTab === 'media' && !seasonEnded && dbUser?.character && !dbUser.character.roles?.includes('guest') && (
         <button onClick={() => router.push('/media/editor')} className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50">
           <Plus size={28} />
         </button>
