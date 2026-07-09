@@ -42,6 +42,11 @@ CREATE INDEX IF NOT EXISTS idx_characters_season ON characters(season);
 CREATE INDEX IF NOT EXISTS idx_players_tg_id ON players(tg_id);
 CREATE INDEX IF NOT EXISTS idx_players_mc_nickname ON players(mc_nickname);
 
+-- Защита от дубликатов: один живой персонаж на игрока в одном сезоне
+CREATE UNIQUE INDEX IF NOT EXISTS idx_characters_player_season_unique
+ON characters (player_id, season)
+WHERE status = 'alive';
+
 -- 5. RLS
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE characters ENABLE ROW LEVEL SECURITY;
