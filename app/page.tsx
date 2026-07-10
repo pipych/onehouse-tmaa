@@ -44,7 +44,7 @@ import {
 
   Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar,
 
-  Swords, Skull
+  Swords, Skull, Trash2
 
 } from 'lucide-react';
 
@@ -1811,6 +1811,26 @@ export default function Home() {
       loadAllPlayers();
 
     }
+
+  }
+
+
+
+  async function deleteCharacter(charId: string, rpName: string) {
+
+    if (!confirm(`Удалить персонажа «${rpName}» навсегда? Это нельзя отменить.`)) return;
+
+    const { error } = await supabase.from('characters').delete().eq('id', charId);
+
+    if (error) { alert(`Ошибка: ${error.message}`); return; }
+
+    setSelectedCharacter(null);
+
+    setEditingCharId(null);
+
+    loadPlayers();
+
+    loadAllPlayers();
 
   }
 
@@ -3609,6 +3629,8 @@ export default function Home() {
                               </div>
 
                               <button onClick={() => { setEditingCharId(c.id); setEditCharData({ rp_name: c.rp_name, party: c.party || 'Нет партии', avatar_url: c.avatar_url || '', professions: c.professions || [] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+
+                              <button onClick={(e) => { e.stopPropagation(); deleteCharacter(c.id, c.rp_name); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-red-400"><Trash2 size={14} /></button>
 
                             </div>
 
