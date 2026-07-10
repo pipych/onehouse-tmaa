@@ -11,15 +11,26 @@ export default function OneLaunchContent() {
 
     setStatus('loading');
 
+    // Create invisible iframe for download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.name = 'download_frame_' + Date.now();
+    document.body.appendChild(iframe);
+
+    // Create link targeting the iframe
     const link = document.createElement('a');
-    link.href = '/api/download/launcher';
+    link.href = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
     link.download = 'OneLaunch_Setup.exe';
+    link.target = iframe.name;
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
 
     setStatus('done');
-    setTimeout(() => setStatus('idle'), 2000);
+    setTimeout(() => {
+      document.body.removeChild(link);
+      document.body.removeChild(iframe);
+      setStatus('idle');
+    }, 2000);
   };
 
   return (
