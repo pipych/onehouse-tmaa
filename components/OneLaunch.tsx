@@ -12,7 +12,8 @@ export default function OneLaunchContent() {
 
     setStatus('loading');
 
-    window.open(R2_URL, '_blank');
+    // cache-busting чтобы не отдавал старый файл из кеша CDN
+    window.open(`${R2_URL}?t=${Date.now()}`, '_blank');
 
     setStatus('done');
     setTimeout(() => setStatus('idle'), 2000);
