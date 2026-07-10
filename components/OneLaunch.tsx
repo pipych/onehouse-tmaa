@@ -53,18 +53,20 @@ export default function OneLaunchContent() {
         </span>
       </button>
 
-      {/* VirusTotal */}
-      <a
-        href="https://www.virustotal.com/gui/file/b554432c118ab98977e6c7fbbe463803690067431613344e0362d098b69f71a3/summary"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all bg-[#14171c]/80 border-white/10 text-gray-500 hover:text-white hover:border-white/20"
-      >
-        <Shield size={14} />
-        <span>VirusTotal</span>
-      </a>
+      {/* VirusTotal + подпись */}
+      <div className="flex flex-col items-center gap-1">
+        <a
+          href="https://www.virustotal.com/gui/file/b554432c118ab98977e6c7fbbe463803690067431613344e0362d098b69f71a3/summary"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all bg-[#14171c]/80 border-white/10 text-gray-500 hover:text-white hover:border-white/20"
+        >
+          <Shield size={14} />
+          <span>VirusTotal</span>
+        </a>
 
-      <p className="text-[10px] text-gray-600 font-mono">Для Кабана, если он все же осмелиться зайти в приложение</p>
+        <p className="text-[10px] text-gray-600 font-mono">Для Кабана, если он все же осмелиться зайти в приложение</p>
+      </div>
 
       <p className="text-[10px] text-gray-600 font-mono">OneLaunch_Setup.exe • Cloudflare R2</p>
     </div>
