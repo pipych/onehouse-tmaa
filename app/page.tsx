@@ -204,7 +204,8 @@ export default function Home() {
 
   const [selectedCharacter, setSelectedCharacter] = useState<Player | null>(null); 
 
-  const [showRoleSelector, setShowRoleSelector] = useState(false); 
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
+  const [showPlayerRoleMenu, setShowPlayerRoleMenu] = useState(false); 
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [characterMenuOpen, setCharacterMenuOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState(false); 
@@ -646,7 +647,7 @@ export default function Home() {
 
     .sort((a, b) => {
 
-      const aDead = isDead(a.roles); const bDead = isDead(b.roles);
+      const aDead = isDead(a); const bDead = isDead(b);
 
       if (aDead && !bDead) return 1;
 
@@ -1429,6 +1430,8 @@ export default function Home() {
 
       .eq('player_id', playerId)
 
+      .eq('season', currentSeasonName)
+
       .order('created_at', { ascending: false });
 
     if (data) setPlayerCharacters(data);
@@ -1769,6 +1772,50 @@ export default function Home() {
 
 
 
+  async function handleAddRoleToProfile(roleName: string) {
+
+    if (!selectedProfile || (selectedProfile.roles || []).includes(roleName)) return;
+
+    const updatedRoles = [...(selectedProfile.roles || []), roleName];
+
+    const updatedProfile = { ...selectedProfile, roles: updatedRoles };
+
+    const { error } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedProfile.id);
+
+    if (!error) {
+
+      setSelectedProfile(updatedProfile);
+
+      loadAllPlayers();
+
+    }
+
+  }
+
+
+
+  async function handleRemoveRoleFromProfile(roleName: string) {
+
+    if (!selectedProfile) return;
+
+    const updatedRoles = (selectedProfile.roles || []).filter(r => r !== roleName);
+
+    const updatedProfile = { ...selectedProfile, roles: updatedRoles };
+
+    const { error = null } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedProfile.id);
+
+    if (!error) {
+
+      setSelectedProfile(updatedProfile);
+
+      loadAllPlayers();
+
+    }
+
+  }
+
+
+
   async function handleAddProfessionToChar(professionName: string) {
 
     if (!selectedCharacter || (selectedCharacter.professions || []).includes(professionName)) return;
@@ -2044,7 +2091,7 @@ export default function Home() {
 
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
 
-          <button onClick={() => { setSelectedCharacter(null); setIsEditingProfile(false); setShowRoleSelector(false); setCharacterMenuOpen(false); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
+          <button onClick={() => { setSelectedCharacter(null); setIsEditingProfile(false); setShowRoleSelector(false); setCharacterMenuOpen(false); setPlayerCharacters([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
           {/* ... menu */}
           {isAdmin && !isEditingProfile && (
@@ -2191,7 +2238,7 @@ export default function Home() {
 
                     <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
 
-                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
+                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
 
                         {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
 
@@ -2199,7 +2246,7 @@ export default function Home() {
 
                       <div className="min-w-0 flex-1">
 
-                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
 
                         <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
 
@@ -2207,7 +2254,7 @@ export default function Home() {
 
                       <div className="flex gap-0.5 flex-shrink-0">
 
-                        {pc.roles?.some((r: string) => r.toLowerCase() === 'мёртв') && (
+                        {pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') && (
 
                           <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">мёртв</span>
 
@@ -2235,7 +2282,7 @@ export default function Home() {
       {selectedProfile && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 bg-[#14171c]">
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-          <button onClick={() => { setSelectedProfile(null); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
+          <button onClick={() => { setSelectedProfile(null); setShowPlayerRoleMenu(false); setPlayerCharacters([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
           <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg">
             {selectedProfile.avatar_url ? <img src={selectedProfile.avatar_url} alt="avatar" className="w-full h-full object-cover" /> : <User size={36} className="m-auto text-gray-600" />}
@@ -2252,9 +2299,23 @@ export default function Home() {
               {(selectedProfile.roles || []).map((role: string, idx: number) => (
                 <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
                   <span>• {role.toUpperCase()}</span>
+                  {isAdmin && <button onClick={() => handleRemoveRoleFromProfile(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
                 </span>
               ))}
               {(selectedProfile.roles || []).length === 0 && <span className="text-xs text-gray-500">Нет ролей</span>}
+              {isAdmin && (
+                <div className="relative inline-block">
+                  <button onClick={() => setShowPlayerRoleMenu(!showPlayerRoleMenu)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all shadow-sm"><Plus size={14} /></button>
+                  {showPlayerRoleMenu && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 backdrop-blur-xl">
+                      {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).map((role, idx) => (
+                        <button key={idx} onClick={() => { handleAddRoleToProfile(role.name); setShowPlayerRoleMenu(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-2" style={{color: role.color}}><span className="w-2 h-2 rounded-full" style={{backgroundColor: role.color}}/>{role.name.toUpperCase()}</button>
+                      ))}
+                      {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Все роли назначены</span>}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -2973,7 +3034,7 @@ export default function Home() {
 
                     <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой персонаж</div>
 
-                    <div onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser.roles) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
+                    <div onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
 
                       <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
 
