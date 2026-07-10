@@ -64,6 +64,8 @@ export default function OneLaunchContent() {
         <span>VirusTotal</span>
       </a>
 
+      <p className="text-[10px] text-gray-600 font-mono">Для Кабана, если он все же осмелиться зайти в приложение</p>
+
       <p className="text-[10px] text-gray-600 font-mono">OneLaunch_Setup.exe • Cloudflare R2</p>
     </div>
   );
