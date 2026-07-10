@@ -1780,13 +1780,15 @@ export default function Home() {
 
     const updatedProfile = { ...selectedProfile, roles: updatedRoles };
 
-    const { error } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedProfile.id);
+    const { error } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedProfile.player_id || selectedProfile.id);
 
     if (!error) {
 
       setSelectedProfile(updatedProfile);
 
       loadAllPlayers();
+
+      loadPlayers();
 
     }
 
@@ -1802,13 +1804,15 @@ export default function Home() {
 
     const updatedProfile = { ...selectedProfile, roles: updatedRoles };
 
-    const { error = null } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedProfile.id);
+    const { error = null } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedProfile.player_id || selectedProfile.id);
 
     if (!error) {
 
       setSelectedProfile(updatedProfile);
 
       loadAllPlayers();
+
+      loadPlayers();
 
     }
 
