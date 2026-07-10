@@ -28,7 +28,7 @@ BEGIN
       UPDATE characters 
       SET professions = array_cat(
         COALESCE(professions, ARRAY[]::TEXT[]),
-        ARRAY(SELECT unnest(c.roles) WHERE unnest NOT IN ('citizen'))
+        ARRAY(SELECT elem FROM unnest(c.roles) AS elem WHERE elem NOT IN ('citizen'))
       )
       WHERE id = c.id;
     END LOOP;
