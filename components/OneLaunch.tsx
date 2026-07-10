@@ -13,6 +13,7 @@ export default function OneLaunchContent() {
     setStatus('loading');
 
     try {
+      // Пробуем напрямую с R2 (работает если CORS настроен)
       const response = await fetch(R2_URL);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -23,9 +24,23 @@ export default function OneLaunchContent() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (e) {
-      // CORS не настроен — открываем в новой вкладке, браузер сам скачает .exe
-      window.open(R2_URL, '_blank');
+    } catch {
+      // CORS не пропускает — качаем через свой API (сервер-к-серверу)
+      try {
+        const proxyRes = await fetch('/api/download/launcher');
+        const blob = await proxyRes.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'OneLaunch_Setup.exe';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch {
+        // Совсем не вышло — прямой линк
+        window.open(R2_URL, '_blank');
+      }
     }
 
     setStatus('done');
