@@ -32,7 +32,8 @@ export default function OneLaunchContent() {
       </div>
 
       <div className="text-center space-y-3">
-        <h1 className="text-3xl md:text-4xl font-black text-white tracking-wide">OneLaunch</h1>
+        <h1 className="text-3xl md:text-4xl font-black text-white tracking-wide">One</h1>
+        <h1 className="text-3xl md:text-4xl font-black text-white tracking-wide">Launch</h1>
         <p className="text-sm text-gray-400 font-medium">Фирменный лаунчер OneHouse</p>
       </div>
 
