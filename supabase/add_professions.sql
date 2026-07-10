@@ -4,7 +4,7 @@
 -- Выполнить в Supabase Dashboard → SQL Editor
 -- ============================================================================
 
--- 1. Добавляем roles в players (если нет — после auth_rework_migration)
+-- 1. Добавляем roles в players (если нет)
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -15,8 +15,7 @@ BEGIN
   END IF;
 END $$;
 
--- 2. Убираем roles из characters (если есть — после auth_rework_migration)
---    и переносим не-мёртв роли в профессии
+-- 2. Убираем roles из characters, переносим в professions
 DO $$
 DECLARE
   c RECORD;
@@ -25,7 +24,6 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'characters' AND column_name = 'roles'
   ) THEN
-    -- Переносим роли в профессии (кроме citizen и мёртв)
     FOR c IN SELECT id, roles FROM characters WHERE roles IS NOT NULL LOOP
       UPDATE characters 
       SET professions = array_cat(
@@ -34,12 +32,11 @@ BEGIN
       )
       WHERE id = c.id;
     END LOOP;
-    -- Дропаем колонку roles на characters
     ALTER TABLE characters DROP COLUMN roles;
   END IF;
 END $$;
 
--- 3. Добавляем professions в characters (если ещё нет)
+-- 3. Добавляем professions в characters
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -50,7 +47,7 @@ BEGIN
   END IF;
 END $$;
 
--- 4. Создаём таблицу professions (список доступных профессий)
+-- 4. Таблица professions
 CREATE TABLE IF NOT EXISTS professions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
@@ -60,9 +57,19 @@ CREATE TABLE IF NOT EXISTS professions (
 
 -- 5. RLS для professions
 ALTER TABLE professions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "Allow all on professions" ON professions FOR ALL USING (true) WITH CHECK (true);
 
--- 6. Переносим роль "мёртв" в professions (если была в players.roles)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE policyname = 'Allow all on professions'
+    AND tablename = 'professions'
+  ) THEN
+    CREATE POLICY "Allow all on professions" ON professions FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- 6. Переносим "мёртв" из players.roles в characters.professions
 UPDATE characters
 SET professions = array_append(COALESCE(professions, ARRAY[]::TEXT[]), 'мёртв'),
     status = 'dead'
@@ -73,12 +80,12 @@ WHERE id IN (
 )
 AND NOT ('мёртв' = ANY(COALESCE(professions, ARRAY[]::TEXT[])));
 
--- 7. Убираем "мёртв" из players.roles
+-- 7. Чистим "мёртв" из players.roles
 UPDATE players
 SET roles = array_remove(roles, 'мёртв')
 WHERE 'мёртв' = ANY(roles);
 
--- 8. Добавляем дефолтную профессию "мёртв" в таблицу professions
+-- 8. Дефолтная профессия "мёртв"
 INSERT INTO professions (name, color)
 VALUES ('мёртв', '#ef4444')
 ON CONFLICT (name) DO NOTHING;
