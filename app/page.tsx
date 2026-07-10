@@ -22,6 +22,8 @@ import MediaBlog from '../components/MediaBlog';
 
 import Archive from '../components/Archive';
 
+import OneLaunchContent from '../components/OneLaunch';
+
 import Treasury from '../components/Treasury';
 
 import Avatar from '../components/Avatar';
@@ -177,7 +179,7 @@ export default function Home() {
 
   
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod' | 'onelaunch'>('profile');
 
   const [activeSvodTab, setActiveSvodTab] = useState<'laws' | 'archive'>('laws');
 
@@ -597,7 +599,7 @@ export default function Home() {
 
 
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod') {
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'admin' | 'map' | 'media' | 'archive' | 'treasury' | 'svod' | 'onelaunch') {
 
     setSelectedCharacter(null); 
     setSelectedProfile(null); 
@@ -3069,6 +3071,8 @@ export default function Home() {
 
         {activeTab === 'treasury' && (seasonEnded ? <SeasonPlaceholder /> : <Treasury currentUser={dbUser} />)}
 
+        {activeTab === 'onelaunch' && <OneLaunchContent />}
+
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedCharacter} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} seasonName={currentSeasonName} /></div>}
 
 
@@ -4037,8 +4041,6 @@ export default function Home() {
 
           {seasonEnded ? (
 
-            <>
-
             <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
 
               <Library size={23} />
@@ -4046,18 +4048,6 @@ export default function Home() {
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
 
             </button>
-
-
-
-            <button onClick={() => router.push('/onelaunch')} className="group relative flex flex-col items-center justify-center w-full transition-all duration-300 text-gray-500 hover:text-[#c0ff00]">
-
-              <Download size={23} />
-
-              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">OneLaunch</span>
-
-            </button>
-
-            </>
 
           ) : (
 
@@ -4096,6 +4086,36 @@ export default function Home() {
           )}
 
         </nav>
+
+
+
+        {/* Кружок OneLaunch — под пилем, когда сезон завершён */}
+
+        {seasonEnded && (
+
+        <button
+
+          onClick={() => handleTabChange('onelaunch')}
+
+          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 ${
+
+            activeTab === 'onelaunch'
+
+              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
+
+              : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
+
+          }`}
+
+        >
+
+          <Download size={23} />
+
+          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">OneLaunch</span>
+
+        </button>
+
+        )}
 
 
 
@@ -4159,7 +4179,7 @@ export default function Home() {
 
               </button>
 
-              <button onClick={() => router.push('/onelaunch')} className="flex flex-col items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#c0ff00]">
+              <button onClick={() => handleTabChange('onelaunch')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'onelaunch' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
 
                 <Download size={22} />
 
