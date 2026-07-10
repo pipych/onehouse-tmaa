@@ -5,37 +5,40 @@ import { Download, Check } from 'lucide-react';
 
 export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
+  const R2_URL = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (status !== 'idle') return;
 
     setStatus('loading');
 
-    // Create invisible iframe for download
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.name = 'download_frame_' + Date.now();
-    document.body.appendChild(iframe);
-
-    // Create link targeting the iframe
-    const link = document.createElement('a');
-    link.href = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
-    link.download = 'OneLaunch_Setup.exe';
-    link.target = iframe.name;
-    document.body.appendChild(link);
-    link.click();
+    try {
+      const response = await fetch(R2_URL);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'OneLaunch_Setup.exe';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      // CORS не настроен — fallback на прямой линк
+      const a = document.createElement('a');
+      a.href = R2_URL;
+      a.download = 'OneLaunch_Setup.exe';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
 
     setStatus('done');
-    setTimeout(() => {
-      document.body.removeChild(link);
-      document.body.removeChild(iframe);
-      setStatus('idle');
-    }, 2000);
+    setTimeout(() => setStatus('idle'), 2000);
   };
 
   return (
     <div className="flex flex-col items-center justify-center gap-10 p-6 pt-12">
-      {/* Иконка + Название */}
       <div className="flex items-center gap-6">
         <img
           src="/OneLaunch_icon.webp"
@@ -48,7 +51,6 @@ export default function OneLaunchContent() {
         </div>
       </div>
 
-      {/* Кнопка */}
       <button
         onClick={handleDownload}
         disabled={status !== 'idle'}
