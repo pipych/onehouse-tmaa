@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { getSeasonState, getAllPastSeasons, seasonName } from '../../../lib/season';
 import Avatar from '../../../components/Avatar';
-import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X, Skull, Swords } from 'lucide-react';
 
 export default function ArchiveCharactersPage() {
   const router = useRouter();
@@ -18,8 +18,10 @@ export default function ArchiveCharactersPage() {
   const [playerChars, setPlayerChars] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<string[]>(['Сезон 2']);
 
-  function isDead(roles: string[]) {
-    return roles ? roles.some(r => r.toLowerCase() === 'мёртв') : false;
+  function isDead(char: any) {
+    if (!char) return false;
+    const profs = char.professions || [];
+    return profs.some((p: string) => p.toLowerCase() === 'мёртв') || char.status === 'dead';
   }
 
   useEffect(() => {
@@ -69,6 +71,24 @@ export default function ArchiveCharactersPage() {
     fetchArchivedPlayers();
   }, [selectedSeason, searchQuery]);
 
+  function renderChar(char: any) {
+    const dead = isDead(char);
+    return (
+      <div 
+        key={char.id}
+        onClick={() => { loadPlayerChars(char.player_id); setSelectedPlayer(char); }}
+        className={`p-4 rounded-[24px] border flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}
+      >
+        <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={char.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{char.rp_name}</div>
+          <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{char.mc_nickname}</div>
+          <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {char.party || 'Нет партии'}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
@@ -103,45 +123,48 @@ export default function ArchiveCharactersPage() {
           <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Персонажи ({selectedSeason})</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {loading ? (
-            <div className="col-span-full flex justify-center py-12"><RefreshCw className="animate-spin text-[#c0ff00]" size={24} /></div>
-          ) : characters.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-[24px]">ПЕРСОНАЖЕЙ НЕ НАЙДЕНО</div>
-          ) : characters.map(char => {
-            const dead = isDead(char.roles);
-            return (
-              <div 
-                key={char.id}
-                onClick={() => { loadPlayerChars(char.player_id); setSelectedPlayer(char); }}
-                className={`p-4 rounded-[24px] border flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}
-              >
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={char.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{char.rp_name}</div>
-                  <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{char.mc_nickname}</div>
-                  <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {char.party || 'Нет партии'}</div>
+        {loading ? (
+          <div className="col-span-full flex justify-center py-12"><RefreshCw className="animate-spin text-[#c0ff00]" size={24} /></div>
+        ) : characters.length === 0 ? (
+          <div className="col-span-full text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-[24px]">ПЕРСОНАЖЕЙ НЕ НАЙДЕНО</div>
+        ) : (
+          <>
+            {/* Живые */}
+            {characters.filter(c => !isDead(c)).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 px-1"><Swords size={14} className="text-[#c0ff00]" /><span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Живые ({characters.filter(c => !isDead(c)).length})</span></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {characters.filter(c => !isDead(c)).map(char => renderChar(char))}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            )}
+            {/* Мёртвые */}
+            {characters.filter(c => isDead(c)).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 px-1"><Skull size={14} className="text-gray-500" /><span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Мёртвые ({characters.filter(c => isDead(c)).length})</span></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {characters.filter(c => isDead(c)).map(char => renderChar(char))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Модальное окно персонажа */}
       {selectedPlayer && (
         <>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} />
-          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible ${isDead(selectedPlayer.roles) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
+          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible ${isDead(selectedPlayer) ? 'bg-[#0a0c0f]' : 'bg-[#14171c]'}`}>
             <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
             <button onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white transition-all"><X size={14} /></button>
 
-            <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg ${isDead(selectedPlayer.roles) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
+            <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg ${isDead(selectedPlayer) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
               <img src={selectedPlayer.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" />
             </div>
 
             <div className="space-y-1">
-              <h2 className={`text-2xl font-black tracking-wide break-all px-6 ${isDead(selectedPlayer.roles) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
+              <h2 className={`text-2xl font-black tracking-wide break-all px-6 ${isDead(selectedPlayer) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
               <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
                 <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
@@ -169,12 +192,12 @@ export default function ArchiveCharactersPage() {
                   <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
                   <div className="space-y-1.5 max-h-40 overflow-y-auto">
                     {playerChars.map((pc: any) => (
-                      <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border ${isDead(pc.roles || []) ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
-                        <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${isDead(pc.roles || []) ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
+                      <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border ${isDead(pc) ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
+                        <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${isDead(pc) ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
                           {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <Users size={14} className="m-auto text-gray-600" />}
                         </div>
                         <div className="min-w-0 flex-1 text-left">
-                          <div className={`text-xs font-bold truncate ${isDead(pc.roles || []) ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                          <div className={`text-xs font-bold truncate ${isDead(pc) ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
                           <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
                         </div>
                       </div>
