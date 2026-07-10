@@ -4111,7 +4111,7 @@ export default function Home() {
 
           <Download size={23} />
 
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">One Launch</span>
+          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Лаунчер</span>
 
         </button>
 
@@ -4153,9 +4153,7 @@ export default function Home() {
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
 
-      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-
-        {seasonEnded && <div className="flex-1" />}
+      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center justify-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
 
         <nav className={`bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl transition-all duration-300 ${seasonEnded ? 'px-10' : 'flex-1'}`}>
 
@@ -4247,11 +4245,9 @@ export default function Home() {
 
 
 
-        {/* Кружок OneLaunch справа — при завершённом сезоне */}
+        {/* Кружок Лаунчер — при завершённом сезоне, в центре с пилем */}
 
         {seasonEnded && (
-
-        <div className="flex-1 flex justify-end">
 
         <button
 
@@ -4271,11 +4267,9 @@ export default function Home() {
 
           <Download size={22} />
 
-          <span className="text-[10px] font-bold tracking-wide leading-tight text-center">One<br/>Launch</span>
+          <span className="text-[10px] font-bold tracking-wide">Лаунчер</span>
 
         </button>
-
-        </div>
 
         )}
 
