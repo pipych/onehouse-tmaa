@@ -416,6 +416,8 @@ export default function Home() {
 
         refreshSeasons();
 
+        loadPlayers();
+
       } else {
 
         alert('Ошибка завершения сезона. Проверь, выполнен ли SQL из supabase/season_migration.sql в Supabase.');
@@ -501,6 +503,8 @@ export default function Home() {
       setNewSeasonServerId('');
 
       refreshSeasons();
+
+      loadPlayers();
 
     } else {
 
@@ -613,7 +617,7 @@ export default function Home() {
 
     if (tab === 'admin') { loadGuests(); loadAllPlayers(); loadPlayers(); loadProfessions(); }
 
-    if (tab === 'players') { loadAllPlayers(); }
+    if (tab === 'players') { loadAllPlayers(); loadPlayers(); }
 
   }
 
