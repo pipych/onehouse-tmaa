@@ -4037,6 +4037,8 @@ export default function Home() {
 
           {seasonEnded ? (
 
+            <>
+
             <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
 
               <Library size={23} />
@@ -4044,6 +4046,18 @@ export default function Home() {
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
 
             </button>
+
+
+
+            <button onClick={() => router.push('/onelaunch')} className="group relative flex flex-col items-center justify-center w-full transition-all duration-300 text-gray-500 hover:text-[#c0ff00]">
+
+              <Download size={23} />
+
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">OneLaunch</span>
+
+            </button>
+
+            </>
 
           ) : (
 
@@ -4135,6 +4149,8 @@ export default function Home() {
 
             {seasonEnded ? (
 
+              <>
+
               <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
 
                 <Library size={22} />
@@ -4142,6 +4158,16 @@ export default function Home() {
                 <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
 
               </button>
+
+              <button onClick={() => router.push('/onelaunch')} className="flex flex-col items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#c0ff00]">
+
+                <Download size={22} />
+
+                <span className="text-[10px] font-bold mt-1 tracking-wide">OneLaunch</span>
+
+              </button>
+
+              </>
 
             ) : (
 
