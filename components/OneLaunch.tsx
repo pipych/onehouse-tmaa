@@ -7,41 +7,12 @@ export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
   const R2_URL = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (status !== 'idle') return;
 
     setStatus('loading');
 
-    try {
-      // Пробуем напрямую с R2 (работает если CORS настроен)
-      const response = await fetch(R2_URL);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'OneLaunch_Setup.exe';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch {
-      // CORS не пропускает — качаем через свой API (сервер-к-серверу)
-      try {
-        const proxyRes = await fetch('/api/download/launcher');
-        const blob = await proxyRes.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'OneLaunch_Setup.exe';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } catch {
-        // Совсем не вышло — прямой линк
-        window.open(R2_URL, '_blank');
-      }
-    }
+    window.open(R2_URL, '_blank');
 
     setStatus('done');
     setTimeout(() => setStatus('idle'), 2000);
