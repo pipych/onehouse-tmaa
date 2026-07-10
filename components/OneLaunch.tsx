@@ -7,19 +7,26 @@ export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
   const R2_URL = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (status !== 'idle') return;
 
     setStatus('loading');
 
-    const link = document.createElement('a');
-    link.href = R2_URL;
-    link.download = 'OneLaunch_Setup.exe';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const response = await fetch(R2_URL);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'OneLaunch_Setup.exe';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      // fallback: direct link
+      window.open(R2_URL, '_blank');
+    }
 
     setStatus('done');
     setTimeout(() => setStatus('idle'), 2000);
