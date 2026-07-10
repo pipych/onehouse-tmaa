@@ -44,7 +44,7 @@ import {
 
   Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar,
 
-  Swords, Skull, Trash2
+  Swords, Skull, Trash2, Send
 
 } from 'lucide-react';
 
@@ -172,7 +172,8 @@ export default function Home() {
 
   const [loading, setLoading] = useState(true); 
 
-  const [error, setError] = useState<string | null>(null); 
+  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'notTelegram' | 'notWhitelisted' | null>(null); 
 
   
 
@@ -1148,7 +1149,7 @@ export default function Home() {
 
         }
 
-        setError(`Пользователь с TG ID ${tgId} не найден. Обратись к администратору.`);
+        setErrorType('notWhitelisted');
 
         setLoading(false);
 
@@ -1955,7 +1956,7 @@ export default function Home() {
 
     } else {
 
-      setError('Пожалуйста, откройте приложение внутри Telegram.');
+      setErrorType('notTelegram');
 
       setLoading(false);
 
@@ -2026,6 +2027,66 @@ export default function Home() {
       </div>
 
     );
+
+  }
+
+
+
+  if (errorType) {
+
+    if (errorType === 'notTelegram') {
+
+      return (
+
+        <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-6 p-6">
+
+          <img src="/errorAuthIcon.webp" alt="Error" className="w-24 h-24 object-contain" />
+
+          <h1 className="text-2xl font-black text-red-400 text-center">Зайди в приложение через телеграм!</h1>
+
+          <a
+
+            href="https://t.me/onehserver_bot"
+
+            target="_blank"
+
+            rel="noopener noreferrer"
+
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+
+            style={{ backgroundColor: '#0088cc' }}
+
+          >
+
+            <Send size={18} />
+
+            <span>Telegram</span>
+
+          </a>
+
+        </div>
+
+      );
+
+    }
+
+
+
+    if (errorType === 'notWhitelisted') {
+
+      return (
+
+        <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-6 p-6">
+
+          <img src="/errorAuthIcon.webp" alt="Error" className="w-24 h-24 object-contain" />
+
+          <h1 className="text-2xl font-black text-red-400 text-center">Тебе сюда нельзя!</h1>
+
+        </div>
+
+      );
+
+    }
 
   }
 
