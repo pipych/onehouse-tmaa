@@ -3070,7 +3070,7 @@ export default function Home() {
 
                 {(() => {
 
-                  const alive = sortedPlayers.filter(p => !isDead(p.roles));
+                  const alive = sortedPlayers.filter(p => !isDead(p));
 
                   if (alive.length === 0) return null;
 
@@ -3126,7 +3126,7 @@ export default function Home() {
 
                 {(() => {
 
-                  const dead = sortedPlayers.filter(p => isDead(p.roles));
+                  const dead = sortedPlayers.filter(p => isDead(p));
 
                   if (dead.length === 0) return null;
 
