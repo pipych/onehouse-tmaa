@@ -4153,7 +4153,7 @@ export default function Home() {
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
 
-      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center justify-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+      <div className={`md:hidden fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
 
         <nav className={`bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl transition-all duration-300 ${seasonEnded ? 'px-10' : 'flex-1'}`}>
 

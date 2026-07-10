@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Check, Monitor } from 'lucide-react';
+import { Download, Check } from 'lucide-react';
 
 export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
@@ -27,15 +27,20 @@ export default function OneLaunchContent() {
 
   return (
     <div className="flex flex-col items-center justify-center gap-10 p-6 pt-12">
-      <div className="w-28 h-28 rounded-[28px] bg-[#14171c] border-2 border-[#c0ff00]/30 flex items-center justify-center shadow-2xl shadow-[#c0ff00]/5">
-        <Monitor size={52} className="text-[#c0ff00]" />
+      {/* Иконка + Название */}
+      <div className="flex items-center gap-6">
+        <img
+          src="/OneLaunch_icon.webp"
+          alt="OneLaunch"
+          className="w-20 h-20 object-contain flex-shrink-0"
+        />
+        <div className="text-left">
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-wide">OneLaunch</h1>
+          <p className="text-sm text-gray-400 font-medium mt-1">Фирменный лаунчер OneHouse</p>
+        </div>
       </div>
 
-      <div className="text-center space-y-3">
-        <h1 className="text-3xl md:text-4xl font-black text-white tracking-wide">OneLaunch</h1>
-        <p className="text-sm text-gray-400 font-medium">Фирменный лаунчер OneHouse</p>
-      </div>
-
+      {/* Кнопка */}
       <button
         onClick={handleDownload}
         disabled={status !== 'idle'}
