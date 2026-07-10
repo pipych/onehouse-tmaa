@@ -24,13 +24,8 @@ export default function OneLaunchContent() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (e) {
-      // CORS не настроен — fallback на прямой линк
-      const a = document.createElement('a');
-      a.href = R2_URL;
-      a.download = 'OneLaunch_Setup.exe';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // CORS не настроен — открываем в новой вкладке, браузер сам скачает .exe
+      window.open(R2_URL, '_blank');
     }
 
     setStatus('done');

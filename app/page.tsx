@@ -313,7 +313,7 @@ export default function Home() {
 
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
 
-  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '' });
+  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '', tg_id_2: '' });
 
   const [editingCharId, setEditingCharId] = useState<string | null>(null);
 
@@ -1101,7 +1101,7 @@ export default function Home() {
 
         .select('*')
 
-        .eq('tg_id', tgId)
+        .or(`tg_id.eq.${tgId},tg_id_2.eq.${tgId}`)
 
         .limit(1);
 
@@ -3443,6 +3443,8 @@ export default function Home() {
 
                               <input type="number" placeholder="Telegram ID" value={editPlayerData.tg_id} onChange={e => setEditPlayerData(prev => ({...prev, tg_id: e.target.value}))} className="ui-input text-xs" />
 
+                              <input type="number" placeholder="Второй Telegram ID" value={editPlayerData.tg_id_2} onChange={e => setEditPlayerData(prev => ({...prev, tg_id_2: e.target.value}))} className="ui-input text-xs" />
+
                               <input type="text" placeholder="TG Username" value={editPlayerData.tg_username} onChange={e => setEditPlayerData(prev => ({...prev, tg_username: e.target.value}))} className="ui-input text-xs" />
 
                               <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
@@ -3461,7 +3463,9 @@ export default function Home() {
 
                               <button onClick={async () => {
 
-                                const { error } = await supabase.from('players').update(editPlayerData).eq('id', p.id);
+                                const payload = { ...editPlayerData, tg_id: editPlayerData.tg_id ? parseInt(editPlayerData.tg_id) : null, tg_id_2: editPlayerData.tg_id_2 ? parseInt(editPlayerData.tg_id_2) : null };
+
+                                const { error } = await supabase.from('players').update(payload).eq('id', p.id);
 
                                 if (error) { alert(`Ошибка: ${error.message}`); return; }
 
@@ -3493,13 +3497,13 @@ export default function Home() {
 
                                 <div className="text-sm font-bold text-white truncate">{p.mc_nickname}</div>
 
-                                <div className="text-[10px] text-gray-500">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'} {p.tg_username ? `@${p.tg_username}` : ''}</div>
+                                <div className="text-[10px] text-gray-500">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'} {p.tg_username ? `@${p.tg_username}` : ''}{p.tg_id_2 ? ` | TG2: ${p.tg_id_2}` : ''}</div>
 
                               </div>
 
                             </div>
 
-                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '' }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '', tg_id_2: p.tg_id_2?.toString() || '' }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
 
                           </div>
 
