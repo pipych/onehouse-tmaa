@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Check } from 'lucide-react';
+import { Download, Check, Shield } from 'lucide-react';
 
 export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
@@ -52,6 +52,17 @@ export default function OneLaunchContent() {
           {status === 'done' && 'Готово!'}
         </span>
       </button>
+
+      {/* VirusTotal */}
+      <a
+        href="https://www.virustotal.com/gui/file/b554432c118ab98977e6c7fbbe463803690067431613344e0362d098b69f71a3/summary"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all bg-[#14171c]/80 border-white/10 text-gray-500 hover:text-white hover:border-white/20"
+      >
+        <Shield size={14} />
+        <span>VirusTotal</span>
+      </a>
 
       <p className="text-[10px] text-gray-600 font-mono">OneLaunch_Setup.exe • Cloudflare R2</p>
     </div>
