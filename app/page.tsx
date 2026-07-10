@@ -4153,7 +4153,9 @@ export default function Home() {
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
 
-      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'} ${seasonEnded ? 'justify-center' : ''}`}>
+      <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 flex items-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+
+        {seasonEnded && <div className="flex-1" />}
 
         <nav className={`bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl transition-all duration-300 ${seasonEnded ? 'px-10' : 'flex-1'}`}>
 
@@ -4169,8 +4171,6 @@ export default function Home() {
 
             {seasonEnded ? (
 
-              <>
-
               <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
 
                 <Library size={22} />
@@ -4178,16 +4178,6 @@ export default function Home() {
                 <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
 
               </button>
-
-              <button onClick={() => handleTabChange('onelaunch')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'onelaunch' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-
-                <Download size={22} />
-
-                <span className="text-[10px] font-bold mt-1 tracking-wide">OneLaunch</span>
-
-              </button>
-
-              </>
 
             ) : (
 
@@ -4252,6 +4242,40 @@ export default function Home() {
           <span className="text-[10px] font-bold tracking-wide">Игроки</span>
 
         </button>
+
+        )}
+
+
+
+        {/* Кружок OneLaunch справа — при завершённом сезоне */}
+
+        {seasonEnded && (
+
+        <div className="flex-1 flex justify-end">
+
+        <button
+
+          onClick={() => handleTabChange('onelaunch')}
+
+          className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
+
+            activeTab === 'onelaunch'
+
+              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
+
+              : 'border-white/10 text-gray-500'
+
+          }`}
+
+        >
+
+          <Download size={22} />
+
+          <span className="text-[10px] font-bold tracking-wide">OneLaunch</span>
+
+        </button>
+
+        </div>
 
         )}
 
