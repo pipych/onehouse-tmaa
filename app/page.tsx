@@ -2040,9 +2040,9 @@ export default function Home() {
 
         <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-6 p-6">
 
-          <img src="/errorAuthIcon.webp" alt="Error" className="w-24 h-24 object-contain" />
+          <img src="/errorAuthIcon.webp" alt="Error" className="w-40 h-40 object-contain" />
 
-          <h1 className="text-2xl font-black text-red-400 text-center">Зайди в приложение через телеграм!</h1>
+          <h1 className="text-2xl font-black text-center" style={{ color: '#ef4444' }}>Зайди в приложение через телеграм!</h1>
 
           <a
 
@@ -2078,9 +2078,9 @@ export default function Home() {
 
         <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-6 p-6">
 
-          <img src="/errorAuthIcon.webp" alt="Error" className="w-24 h-24 object-contain" />
+          <img src="/errorAuthIcon.webp" alt="Error" className="w-40 h-40 object-contain" />
 
-          <h1 className="text-2xl font-black text-red-400 text-center">Тебе сюда нельзя!</h1>
+          <h1 className="text-2xl font-black text-center" style={{ color: '#ef4444' }}>Тебе сюда нельзя!</h1>
 
         </div>
 
