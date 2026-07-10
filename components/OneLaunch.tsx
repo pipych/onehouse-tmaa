@@ -5,28 +5,18 @@ import { Download, Check } from 'lucide-react';
 
 export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
-  const R2_URL = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (status !== 'idle') return;
 
     setStatus('loading');
 
-    try {
-      const response = await fetch(R2_URL);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'OneLaunch_Setup.exe';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      // fallback: direct link
-      window.open(R2_URL, '_blank');
-    }
+    const link = document.createElement('a');
+    link.href = '/api/download/launcher';
+    link.download = 'OneLaunch_Setup.exe';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
     setStatus('done');
     setTimeout(() => setStatus('idle'), 2000);
