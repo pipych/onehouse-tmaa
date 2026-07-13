@@ -5,7 +5,7 @@ import { Download, Check, Shield } from 'lucide-react';
 
 export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');
-  const R2_URL = 'https://pub-f6e5d69d8dfd4ec194b0ebc7b4c3de96.r2.dev/OneLaunch_Setup.exe';
+  const R2_URL = 'https://update.onelaunch.pp.ua/OneLaunch_Setup.exe';
 
   const handleDownload = () => {
     if (status !== 'idle') return;
