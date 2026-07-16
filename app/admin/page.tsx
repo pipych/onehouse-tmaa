@@ -8,7 +8,8 @@ import {
   ArrowLeft, ShieldAlert, Users, Folder, Calendar, Package,
   User, UserPlus, ShieldCheck, Edit2, Save, X, Plus, Upload,
   Check, Play, Flag, RotateCcw, Library, Server as ServerIcon, Trash2,
-  Home, ChevronRight, FolderOpen, File, Download, RefreshCw
+  Home, ChevronRight, FolderOpen, File, Download, RefreshCw,
+  MoreVertical, FolderPlus
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
@@ -128,6 +129,9 @@ export default function AdminPage() {
   const [r2Items, setR2Items] = useState<{key:string;name:string;type:'folder'|'file';size?:number;lastModified?:string}[]>([]);
   const [r2Loading, setR2Loading] = useState(false);
   const [r2Error, setR2Error] = useState('');
+  const [r2MenuOpen, setR2MenuOpen] = useState<string | null>(null);
+  const [r2NewFolderName, setR2NewFolderName] = useState('');
+  const [r2ShowNewFolder, setR2ShowNewFolder] = useState(false);
 
   // --- Helpers ---
   const getProfessionColor = (name: string) => {
@@ -289,8 +293,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (serverSubTab === 'modpack') {
-      setR2Path('');
-      loadR2Items('');
+      const initialPath = 'onehouse-pack-v1/';
+      setR2Path(initialPath);
+      loadR2Items(initialPath);
     }
   }, [serverSubTab]);
 
@@ -314,6 +319,45 @@ export default function AdminPage() {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const handleDeleteR2 = async (key: string, type: 'file' | 'folder') => {
+    const label = type === 'folder' ? 'папку' : 'файл';
+    if (!confirm('Удалить ' + label + '?')) return;
+    try {
+      const res = await fetch('/api/r2-browser?key=' + encodeURIComponent(key) + '&type=' + type, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setR2MenuOpen(null);
+        loadR2Items();
+      } else {
+        alert('Ошибка: ' + (data.error || 'неизвестно'));
+      }
+    } catch (e: any) {
+      alert('Ошибка: ' + e.message);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    const name = r2NewFolderName.trim();
+    if (!name) return;
+    try {
+      const res = await fetch('/api/r2-browser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderName: name, prefix: r2Path }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setR2NewFolderName('');
+        setR2ShowNewFolder(false);
+        loadR2Items();
+      } else {
+        alert('Ошибка: ' + (data.error || 'неизвестно'));
+      }
+    } catch (e: any) {
+      alert('Ошибка: ' + e.message);
+    }
   };
 
   // ===================================================================
@@ -791,6 +835,31 @@ export default function AdminPage() {
                   ))}
                 </div>
 
+                {/* Create folder */}
+                {r2ShowNewFolder ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Название папки"
+                      value={r2NewFolderName}
+                      onChange={e => setR2NewFolderName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') { setR2ShowNewFolder(false); setR2NewFolderName(''); } }}
+                      className="ui-input flex-1"
+                      autoFocus
+                    />
+                    <button onClick={handleCreateFolder} className="ui-pill-btn !bg-[#c0ff00] !text-black shrink-0"><Plus size={14} /> Создать</button>
+                    <button onClick={() => { setR2ShowNewFolder(false); setR2NewFolderName(''); }} className="ui-pill-btn shrink-0"><X size={14} /></button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setR2ShowNewFolder(true)}
+                    className="ui-pill-btn w-full justify-center"
+                  >
+                    <FolderPlus size={14} />
+                    <span>Создать папку</span>
+                  </button>
+                )}
+
                 {/* Content */}
                 <div className="bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 shadow-xl overflow-hidden">
                   {r2Loading ? (
@@ -803,7 +872,6 @@ export default function AdminPage() {
                     <div className="text-center py-12 text-xs text-gray-500">Папка пуста</div>
                   ) : (
                     <div className="divide-y divide-white/5">
-                      {/* Parent folder */}
                       {r2Path && (
                         <button
                           onClick={navigateR2Up}
@@ -814,25 +882,76 @@ export default function AdminPage() {
                         </button>
                       )}
                       {r2Items.map((item) => (
-                        <div key={item.key}>
+                        <div key={item.key} className="relative">
                           {item.type === 'folder' ? (
-                            <button
-                              onClick={() => navigateR2(item.name)}
-                              className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
-                            >
-                              <FolderOpen size={18} className="text-[#c0ff00] shrink-0" />
-                              <span className="text-sm font-medium text-white truncate">{item.name}</span>
-                            </button>
+                            <div className="flex items-center group">
+                              <button
+                                onClick={() => navigateR2(item.name)}
+                                className="flex-1 flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
+                              >
+                                <FolderOpen size={18} className="text-[#c0ff00] shrink-0" />
+                                <span className="text-sm font-medium text-white truncate">{item.name}</span>
+                              </button>
+                              <div className="relative shrink-0 pr-3">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setR2MenuOpen(r2MenuOpen === item.key ? null : item.key); }}
+                                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400"
+                                >
+                                  <MoreVertical size={14} />
+                                </button>
+                                {r2MenuOpen === item.key && (
+                                  <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setR2MenuOpen(null)} />
+                                    <div className="absolute right-0 top-full mt-1 z-20 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[140px] backdrop-blur-xl">
+                                      <button
+                                        onClick={() => { handleDeleteR2(item.key, 'folder'); }}
+                                        className="w-full text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-red-500/10 text-red-400 flex items-center gap-2"
+                                      >
+                                        <Trash2 size={12} /> Удалить
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           ) : (
-                            <a
-                              href={`/api/r2-browser?download=${encodeURIComponent(item.key)}`}
-                              className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
-                            >
-                              <File size={18} className="text-gray-500 shrink-0" />
-                              <span className="text-sm text-gray-300 truncate flex-1">{item.name}</span>
-                              <span className="text-[10px] text-gray-600 shrink-0">{formatSize(item.size)}</span>
-                              <Download size={14} className="text-gray-600 shrink-0" />
-                            </a>
+                            <div className="flex items-center group">
+                              <a
+                                href={`/api/r2-browser?download=${encodeURIComponent(item.key)}`}
+                                className="flex-1 flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
+                              >
+                                <File size={18} className="text-gray-500 shrink-0" />
+                                <span className="text-sm text-gray-300 truncate">{item.name}</span>
+                                <span className="text-[10px] text-gray-600 shrink-0 ml-auto mr-3">{formatSize(item.size)}</span>
+                              </a>
+                              <div className="relative shrink-0 pr-3">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); setR2MenuOpen(r2MenuOpen === item.key ? null : item.key); }}
+                                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400"
+                                >
+                                  <MoreVertical size={14} />
+                                </button>
+                                {r2MenuOpen === item.key && (
+                                  <>
+                                    <div className="fixed inset-0 z-10" onClick={() => setR2MenuOpen(null)} />
+                                    <div className="absolute right-0 top-full mt-1 z-20 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[140px] backdrop-blur-xl">
+                                      <a
+                                        href={`/api/r2-browser?download=${encodeURIComponent(item.key)}`}
+                                        className="w-full text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-white/5 text-white flex items-center gap-2 no-underline"
+                                      >
+                                        <Download size={12} /> Скачать
+                                      </a>
+                                      <button
+                                        onClick={() => { handleDeleteR2(item.key, 'file'); }}
+                                        className="w-full text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-red-500/10 text-red-400 flex items-center gap-2"
+                                      >
+                                        <Trash2 size={12} /> Удалить
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
                       ))}
