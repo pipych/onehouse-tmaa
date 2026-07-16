@@ -99,7 +99,7 @@ export default function AdminPage() {
   const [addAvatarUrl, setAddAvatarUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '', tg_id_2: '' });
+  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '', tg_id_2: '', roles: [] as string[] });
 
   // --- Form: Characters ---
   const [addRpName, setAddRpName] = useState('');
@@ -154,11 +154,9 @@ export default function AdminPage() {
     const state = await getSeasonState();
     setCurrentSeasonNum(state.season_number);
     setCurrentSeasonName('Сезон ' + state.season_number);
+    setSeasonEnded(!state.is_active);
     const all = await getAllPastSeasons();
     setPastSeasons(all);
-    // Check if season is ended by querying the season table
-    const { data: activeSeason } = await supabase.from('season').select('*').eq('is_ended', false).maybeSingle();
-    setSeasonEnded(!activeSeason);
   };
 
   // --- Data loading ---
@@ -555,9 +553,29 @@ export default function AdminPage() {
                               <Upload size={12} className={isUploading ? 'animate-bounce' : ''} />
                               <span className="text-[10px] text-gray-500 truncate">{editPlayerData.avatar_url ? 'Аватар' : 'Аватар'}</span>
                             </label>
+                            <div className="space-y-1.5 col-span-2">
+                              <div className="text-[9px] text-gray-500 uppercase">Роли</div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {customRoles.map(role => {
+                                  const hasRole = editPlayerData.roles.includes(role.name);
+                                  return (
+                                    <button key={role.id} onClick={() => {
+                                      setEditPlayerData(prev => ({
+                                        ...prev,
+                                        roles: hasRole ? prev.roles.filter(r => r !== role.name) : [...prev.roles, role.name]
+                                      }));
+                                    }} className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${hasRole ? 'border-current' : 'border-white/10 opacity-40'}`}
+                                      style={{ color: role.color, backgroundColor: hasRole ? role.color + '20' : 'transparent' }}
+                                    >{role.name.toUpperCase()}</button>
+                                  );
+                                })}
+                                {customRoles.length === 0 && <span className="text-[10px] text-gray-500">Нет ролей</span>}
+                              </div>
+                            </div>
+
                             <div className="flex gap-2">
                               <button onClick={async () => {
-                                const payload = { ...editPlayerData, tg_id: editPlayerData.tg_id ? parseInt(editPlayerData.tg_id) : null, tg_id_2: editPlayerData.tg_id_2 ? parseInt(editPlayerData.tg_id_2) : null };
+                                const payload = { ...editPlayerData, tg_id: editPlayerData.tg_id ? parseInt(editPlayerData.tg_id) : null, tg_id_2: editPlayerData.tg_id_2 ? parseInt(editPlayerData.tg_id_2) : null, roles: editPlayerData.roles };
                                 const { error } = await supabase.from('players').update(payload).eq('id', p.id);
                                 if (error) { alert('Ошибка: ' + error.message); return; }
                                 setEditingPlayerId(null);
@@ -577,7 +595,7 @@ export default function AdminPage() {
                                 <div className="text-[10px] text-gray-500">{p.tg_id ? 'TG: ' + p.tg_id : 'Без TG'} {p.tg_username ? '@' + p.tg_username : ''}{p.tg_id_2 ? ' | TG2: ' + p.tg_id_2 : ''}</div>
                               </div>
                             </div>
-                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '', tg_id_2: p.tg_id_2?.toString() || '' }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '', tg_id_2: p.tg_id_2?.toString() || '', roles: p.roles || [] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
                           </div>
                         )}
                       </div>
