@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { S3Client } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 
 const R2_ACCOUNT_ID = '89476ea08498adb1813b3607c5079df7';
 const R2_ACCESS_KEY_ID = '3513b185f8a785a30fb5e77c78203215';
@@ -23,13 +23,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'key is required' }, { status: 400 });
     }
 
-    // Don't sign ContentType — lets browser use default (avoids CORS preflight)
-    const url = await getSignedUrl(s3, new PutObjectCommand({
+    // Presigned POST — multipart/form-data upload avoids CORS preflight
+    const { url, fields } = await createPresignedPost(s3, {
       Bucket: R2_BUCKET,
       Key: key,
-    }), { expiresIn: 600 });
+      Expires: 600,
+      Conditions: [
+        ['content-length-range', 0, 500 * 1024 * 1024], // 500 MB max
+      ],
+    });
 
-    return NextResponse.json({ url, key });
+    return NextResponse.json({ url, fields, key });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

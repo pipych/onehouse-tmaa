@@ -367,7 +367,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- Upload handler (presigned URL → direct R2 → extract) ---
+  // --- Upload handler (presigned POST → direct R2 → extract) ---
   const handleUploadSubmit = async () => {
     const input = uploadFileRef.current;
     if (!input?.files?.length) return;
@@ -376,7 +376,7 @@ export default function AdminPage() {
     setUploadProgress(0);
 
     try {
-      // Step 1: Get presigned URL
+      // Step 1: Get presigned POST
       const zipKey = r2Path + file.name;
       const presignRes = await fetch('/api/r2-presign', {
         method: 'POST',
@@ -386,11 +386,15 @@ export default function AdminPage() {
       const presignData = await presignRes.json();
       if (!presignData.url) throw new Error(presignData.error || 'Failed to get upload URL');
 
-      // Step 2: Upload directly to R2 (no Content-Type header = no CORS preflight)
+      // Step 2: Upload directly to R2 via presigned POST (multipart = no CORS preflight)
       setUploadProgress(5);
+      const formData = new FormData();
+      Object.entries(presignData.fields).forEach(([k, v]) => formData.append(k, v as string));
+      formData.append('file', file);
+
       const uploadRes = await fetch(presignData.url, {
-        method: 'PUT',
-        body: file,
+        method: 'POST',
+        body: formData,
       });
       if (!uploadRes.ok) throw new Error('Upload failed: ' + uploadRes.status);
       setUploadProgress(50);
