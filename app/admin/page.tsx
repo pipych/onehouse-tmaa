@@ -1105,7 +1105,7 @@ export default function AdminPage() {
 
             {/* Mode selector */}
             <div className="space-y-2 mb-1">
-              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Режим для ZIP</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Режим замены для ZIP-архива</div>
               <div className="flex gap-2">
                 <label className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold ${
                   uploadMode === 'merge'
@@ -1113,7 +1113,7 @@ export default function AdminPage() {
                     : 'border-white/5 bg-white/5 text-gray-400'
                 }`}>
                   <input type="radio" name="uploadMode" value="merge" checked={uploadMode === 'merge'} onChange={() => setUploadMode('merge')} className="hidden" />
-                  Замена без удаления
+                  Замена и дополнение
                 </label>
                 <label className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold ${
                   uploadMode === 'replace'
@@ -1121,13 +1121,13 @@ export default function AdminPage() {
                     : 'border-white/5 bg-white/5 text-gray-400'
                 }`}>
                   <input type="radio" name="uploadMode" value="replace" checked={uploadMode === 'replace'} onChange={() => setUploadMode('replace')} className="hidden" />
-                  Полная замена
+                  Пересборка
                 </label>
               </div>
               <p className="text-[10px] text-gray-600 leading-relaxed">
                 {uploadMode === 'merge'
-                  ? 'Заменит совпадающие файлы, остальные не тронет'
-                  : 'Удалит всё в этой папке и загрузит только новые файлы'
+                  ? 'Заменит совпадающие и добавит новые файлы, остальные не тронет'
+                  : 'Удалит всё в этой папке и загрузит только новые файлы из архива'
                 }
               </p>
             </div>
