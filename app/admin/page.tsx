@@ -367,56 +367,67 @@ export default function AdminPage() {
     }
   };
 
-  // --- Upload handler ---
-  const handleUploadSubmit = () => {
+  // --- Upload handler (presigned URL → direct R2 → extract) ---
+  const handleUploadSubmit = async () => {
     const input = uploadFileRef.current;
     if (!input?.files?.length) return;
     const file = input.files[0];
     setUploadProcessing(true);
     setUploadProgress(0);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('mode', uploadMode);
-    formData.append('prefix', r2Path);
+    try {
+      // Step 1: Get presigned URL
+      const zipKey = r2Path + file.name;
+      const presignRes = await fetch('/api/r2-presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: zipKey, contentType: file.type || 'application/zip' }),
+      });
+      const presignData = await presignRes.json();
+      if (!presignData.url) throw new Error(presignData.error || 'Failed to get upload URL');
 
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        setUploadProgress(Math.round((e.loaded / e.total) * 90)); // 0-90% for upload
-      }
-    };
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        const data = JSON.parse(xhr.responseText);
-        if (data.success) {
-          setUploadProgress(100);
-          setTimeout(() => {
-            setUploadOpen(false);
-            setUploadProgress(0);
-            setUploadProcessing(false);
-            setUploadFileName('');
-            if (input) input.value = '';
-            loadR2Items();
-          }, 500);
-        } else {
-          alert('Ошибка: ' + (data.error || 'неизвестно'));
-          setUploadProcessing(false);
-          setUploadProgress(0);
-        }
-      } else {
-        alert('Ошибка загрузки: ' + xhr.status);
-        setUploadProcessing(false);
+      // Step 2: Upload directly to R2 via presigned URL
+      const xhr = new XMLHttpRequest();
+      await new Promise<void>((resolve, reject) => {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 50)); // 0-50% for upload
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status === 200) resolve();
+          else reject(new Error('Upload failed: ' + xhr.status));
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.open('PUT', presignData.url);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/zip');
+        xhr.send(file);
+      });
+
+      // Step 3: Extract ZIP on server
+      setUploadProgress(55);
+      const extractRes = await fetch('/api/r2-extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zipKey, prefix: r2Path, mode: uploadMode }),
+      });
+      const extractData = await extractRes.json();
+      if (!extractData.success) throw new Error(extractData.error || 'Extract failed');
+
+      setUploadProgress(100);
+      setTimeout(() => {
+        setUploadOpen(false);
         setUploadProgress(0);
-      }
-    };
-    xhr.onerror = () => {
-      alert('Ошибка сети');
+        setUploadProcessing(false);
+        setUploadFileName('');
+        if (input) input.value = '';
+        loadR2Items();
+      }, 500);
+    } catch (e: any) {
+      alert('Ошибка: ' + (e.message || 'неизвестно'));
       setUploadProcessing(false);
       setUploadProgress(0);
-    };
-    xhr.open('POST', '/api/r2-upload');
-    xhr.send(formData);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1160,7 +1171,7 @@ export default function AdminPage() {
                   />
                 </div>
                 <p className="text-[10px] text-gray-500 text-center">
-                  {uploadProgress < 100 ? 'Загрузка... ' + uploadProgress + '%' : 'Готово!'}
+                  {uploadProgress < 50 ? 'Загрузка в R2... ' + uploadProgress + '%' : uploadProgress < 100 ? 'Распаковка... ' + uploadProgress + '%' : 'Готово!'}
                 </p>
               </div>
             )}
@@ -1174,7 +1185,7 @@ export default function AdminPage() {
               {uploadProcessing ? (
                 <>
                   <RefreshCw className="animate-spin" size={14} />
-                  <span>{uploadProgress < 100 ? 'Загрузка...' : 'Обработка...'}</span>
+                  <span>{uploadProgress < 50 ? 'Загрузка...' : 'Распаковка...'}</span>
                 </>
               ) : (
                 <>
