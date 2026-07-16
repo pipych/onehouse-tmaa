@@ -2374,7 +2374,8 @@ export default function Home() {
 
               </button>
 
-              {/* Админ-доступ */\n\n              {hasAdminAccess && (
+              {/* Админ-доступ */}
+              {hasAdminAccess && (
 
                 <button
 
@@ -2402,7 +2403,8 @@ export default function Home() {
 
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none relative">
 
-              {/* Админ-кнопка */\n\n              {hasAdminAccess && (
+              {/* Админ-кнопка */}
+              {hasAdminAccess && (
 
                 <button
 
