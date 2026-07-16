@@ -268,7 +268,7 @@ export default function AdminPage() {
   // RENDER
   // ===================================================================
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-6 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-20 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-5">
 
         {/* --- Header --- */}
@@ -285,27 +285,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* --- Main tab bar --- */}
-        <div className="flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-1.5 px-1.5 rounded-full shadow-xl">
-          {([
-            { key: 'home' as const, label: 'Главная', icon: <ShieldAlert size={18} /> },
-            { key: 'players' as const, label: 'Игроки', icon: <Users size={18} /> },
-            { key: 'server' as const, label: 'Сервер', icon: <Folder size={18} /> },
-          ]).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setMainTab(tab.key)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-                mainTab === tab.key
-                  ? 'bg-[#c0ff00]/15 text-[#c0ff00]'
-                  : 'text-gray-500 hover:text-white'
-              }`}
-            >
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
-        </div>
+
 
         {/* ==================== ГЛАВНАЯ ==================== */}
         {mainTab === 'home' && (
@@ -749,6 +729,35 @@ export default function AdminPage() {
             )}
           </>
         )}
+      </div>
+
+      {/* Fixed bottom navbar — matches main app style */}
+      <div className="fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center">
+        <nav className="bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl flex-1">
+          <div className="flex items-center w-full justify-around px-2">
+            <button
+              onClick={() => setMainTab('home')}
+              className={`flex flex-col items-center justify-center transition-all duration-300 ${mainTab === 'home' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
+            >
+              <ShieldAlert size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
+            </button>
+            <button
+              onClick={() => setMainTab('players')}
+              className={`flex flex-col items-center justify-center transition-all duration-300 ${mainTab === 'players' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
+            >
+              <Users size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
+            </button>
+            <button
+              onClick={() => setMainTab('server')}
+              className={`flex flex-col items-center justify-center transition-all duration-300 ${mainTab === 'server' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
+            >
+              <Folder size={22} />
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Сервер</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );
