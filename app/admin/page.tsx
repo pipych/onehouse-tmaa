@@ -7,7 +7,8 @@ import { addGuest, removeGuest, getGuests } from '../../lib/guests';
 import {
   ArrowLeft, ShieldAlert, Users, Folder, Calendar, Package,
   User, UserPlus, ShieldCheck, Edit2, Save, X, Plus, Upload,
-  Check, Play, Flag, RotateCcw, Library, Server as ServerIcon, Trash2
+  Check, Play, Flag, RotateCcw, Library, Server as ServerIcon, Trash2,
+  Home, ChevronRight, FolderOpen, File, Download, RefreshCw
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
@@ -121,6 +122,12 @@ export default function AdminPage() {
 
   // --- Form: Seasons ---
   const [newSeasonServerId, setNewSeasonServerId] = useState('');
+
+  // --- R2 Modpack browser ---
+  const [r2Path, setR2Path] = useState('');
+  const [r2Items, setR2Items] = useState<{key:string;name:string;type:'folder'|'file';size?:number;lastModified?:string}[]>([]);
+  const [r2Loading, setR2Loading] = useState(false);
+  const [r2Error, setR2Error] = useState('');
 
   // --- Helpers ---
   const getProfessionColor = (name: string) => {
@@ -262,6 +269,51 @@ export default function AdminPage() {
     const ok = await removeGuest(tgId);
     if (ok) loadGuestsData();
     else alert('Ошибка удаления гостя');
+  };
+
+  // --- R2 modpack browser ---
+  const loadR2Items = async (prefix?: string) => {
+    const path = prefix !== undefined ? prefix : r2Path;
+    setR2Loading(true);
+    setR2Error('');
+    try {
+      const res = await fetch('/api/r2-browser?prefix=' + encodeURIComponent(path));
+      const data = await res.json();
+      if (data.error) { setR2Error(data.error); setR2Items([]); }
+      else setR2Items(data.items || []);
+    } catch (e: any) {
+      setR2Error(e.message || 'Ошибка загрузки');
+    }
+    setR2Loading(false);
+  };
+
+  useEffect(() => {
+    if (serverSubTab === 'modpack') {
+      setR2Path('');
+      loadR2Items('');
+    }
+  }, [serverSubTab]);
+
+  const navigateR2 = (folder: string) => {
+    const newPath = r2Path + folder + '/';
+    setR2Path(newPath);
+    loadR2Items(newPath);
+  };
+
+  const navigateR2Up = () => {
+    if (!r2Path) return;
+    const parts = r2Path.split('/').filter(Boolean);
+    parts.pop();
+    const newPath = parts.length > 0 ? parts.join('/') + '/' : '';
+    setR2Path(newPath);
+    loadR2Items(newPath);
+  };
+
+  const formatSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   // ===================================================================
@@ -716,14 +768,76 @@ export default function AdminPage() {
 
             {/* --- Модпак --- */}
             {serverSubTab === 'modpack' && (
-              <div className="flex flex-col items-center justify-center text-center gap-4 py-20 animate-fade-in">
-                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Package size={36} className="text-gray-600" />
+              <div className="space-y-4 animate-fade-in">
+                {/* Breadcrumbs */}
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">
+                  <button onClick={() => { setR2Path(''); loadR2Items(''); }} className="flex items-center gap-1 hover:text-[#c0ff00] transition-colors">
+                    <Home size={14} />
+                  </button>
+                  {r2Path.split('/').filter(Boolean).map((part, i, arr) => (
+                    <span key={i} className="flex items-center gap-1.5">
+                      <ChevronRight size={12} className="text-gray-600" />
+                      <button
+                        onClick={() => {
+                          const newPath = arr.slice(0, i + 1).join('/') + '/';
+                          setR2Path(newPath);
+                          loadR2Items(newPath);
+                        }}
+                        className="hover:text-[#c0ff00] transition-colors truncate max-w-[120px]"
+                      >
+                        {part}
+                      </button>
+                    </span>
+                  ))}
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-white">Модпак</h3>
-                  <p className="text-sm text-gray-500">Управление модпаком сервера</p>
-                  <p className="text-xs text-gray-700 uppercase tracking-[0.2em] mt-2">Скоро...</p>
+
+                {/* Content */}
+                <div className="bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 shadow-xl overflow-hidden">
+                  {r2Loading ? (
+                    <div className="flex justify-center py-12">
+                      <RefreshCw className="animate-spin text-[#c0ff00]" size={24} />
+                    </div>
+                  ) : r2Error ? (
+                    <div className="text-center py-12 text-xs text-red-400">{r2Error}</div>
+                  ) : r2Items.length === 0 ? (
+                    <div className="text-center py-12 text-xs text-gray-500">Папка пуста</div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {/* Parent folder */}
+                      {r2Path && (
+                        <button
+                          onClick={navigateR2Up}
+                          className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
+                        >
+                          <FolderOpen size={18} className="text-[#c0ff00] shrink-0" />
+                          <span className="text-sm font-medium text-gray-400">..</span>
+                        </button>
+                      )}
+                      {r2Items.map((item) => (
+                        <div key={item.key}>
+                          {item.type === 'folder' ? (
+                            <button
+                              onClick={() => navigateR2(item.name)}
+                              className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
+                            >
+                              <FolderOpen size={18} className="text-[#c0ff00] shrink-0" />
+                              <span className="text-sm font-medium text-white truncate">{item.name}</span>
+                            </button>
+                          ) : (
+                            <a
+                              href={`/api/r2-browser?download=${encodeURIComponent(item.key)}`}
+                              className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
+                            >
+                              <File size={18} className="text-gray-500 shrink-0" />
+                              <span className="text-sm text-gray-300 truncate flex-1">{item.name}</span>
+                              <span className="text-[10px] text-gray-600 shrink-0">{formatSize(item.size)}</span>
+                              <Download size={14} className="text-gray-600 shrink-0" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
