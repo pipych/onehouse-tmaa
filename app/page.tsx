@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 
 
@@ -26,11 +26,13 @@ import OneLaunchContent from '../components/OneLaunch';
 
 import Treasury from '../components/Treasury';
 
+import AdminPanel from '../components/AdminPanel';
+
 import Avatar from '../components/Avatar';
 
 import { getBalance } from '../lib/treasury';
 
-import { addGuest, removeGuest, getGuests, isGuest } from '../lib/guests';
+import { isGuest } from '../lib/guests';
 
 import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSeason, deletePastSeason, getAllPastSeasons, getLastEndedSeason, seasonName, SeasonState, PastSeason } from '../lib/season';
 
@@ -261,25 +263,9 @@ export default function Home() {
 
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
 
-  const [newRoleName, setNewRoleName] = useState('');
-
-  const [newRoleColor, setNewRoleColor] = useState('#c0ff00');
-
-  const [newRolePerm, setNewRolePerm] = useState(false);
-
   const [professions, setProfessions] = useState<CustomRole[]>([]);
 
-  const [newProfessionName, setNewProfessionName] = useState('');
-
-  const [newProfessionColor, setNewProfessionColor] = useState('#c0ff00');
-
   const [isCreatingPost, setIsCreatingPost] = useState(false);
-
-  const [guestTgId, setGuestTgId] = useState('');
-
-  const [guestList, setGuestList] = useState<{ tg_id: number; created_at: string; added_by: string }[]>([]);
-
-  const [guestLoading, setGuestLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -303,23 +289,9 @@ export default function Home() {
 
   const [exarotonServerId, setExarotonServerId] = useState<string>('');
 
-  const [newSeasonServerId, setNewSeasonServerId] = useState('');
-
-  const [adminSubTab, setAdminSubTab] = useState<'players' | 'characters' | 'roles' | 'professions' | 'guests' | 'seasons'>('players');
-
   const [playersSubTab, setPlayersSubTab] = useState<'characters' | 'players'>('characters');
 
   const [allPlayers, setAllPlayers] = useState<any[]>([]);
-
-  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-
-  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '', tg_id_2: '' });
-
-  const [editingCharId, setEditingCharId] = useState<string | null>(null);
-
-  const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'Нет партии', avatar_url: '', professions: [] as string[] });
-
-  const [isUploadingAdminAvatar, setIsUploadingAdminAvatar] = useState(false);
 
   const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
 
@@ -485,7 +457,7 @@ export default function Home() {
 
 
 
-  async function handleStartNewSeason() {
+  async function handleStartNewSeason(serverId?: string) {
 
     const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : currentSeasonNum) + 1;
 
@@ -495,15 +467,13 @@ export default function Home() {
 
     setSeasonLoading(true);
 
-    const ok = await startNewSeason(newSeasonServerId || undefined);
+    const ok = await startNewSeason(serverId || undefined);
 
     if (ok) {
 
       setSeasonEnded(false);
 
       setLastSeason(null);
-
-      setNewSeasonServerId('');
 
       refreshSeasons();
 
@@ -617,8 +587,6 @@ export default function Home() {
     setSearchQuery('');
 
     if (tab === 'profile') loadLatestPosts();
-
-    if (tab === 'admin') { loadGuests(); loadAllPlayers(); loadPlayers(); loadProfessions(); }
 
     if (tab === 'players') { loadAllPlayers(); loadPlayers(); }
 
@@ -1643,92 +1611,6 @@ export default function Home() {
 
 
 
-  async function handleCreateRole() {
-
-    if (!newRoleName.trim()) return;
-
-    const newRole = { name: newRoleName.toLowerCase(), color: newRoleColor, can_edit_constitution: newRolePerm };
-
-    const { error = null } = await supabase.from('roles').insert([newRole]);
-
-    if (!error) { setNewRoleName(''); setNewRolePerm(false); loadRoles();
-
-        loadProfessions(); }
-
-    else alert(`Ошибка создания роли`);
-
-  }
-
-
-
-  function handleRoleChange(id: string, field: string, value: any) {
-
-    setCustomRoles(roles => roles.map(r => r.id === id ? { ...r, [field]: value } : r));
-
-  }
-
-
-
-  async function saveRoleToDb(role: CustomRole) {
-
-    if (!role.id) return;
-
-    await supabase.from('roles').update({ name: role.name, color: role.color, can_edit_constitution: role.canEditConstitution }).eq('id', role.id);
-
-  }
-
-
-
-  async function handleAddGuest() {
-
-    const tgId = parseInt(guestTgId);
-
-    if (isNaN(tgId) || tgId <= 0) return;
-
-    setGuestLoading(true);
-
-    const ok = await addGuest(tgId, dbUser?.rp_name || 'Админ');
-
-    if (ok) {
-
-      setGuestTgId('');
-
-      loadGuests();
-
-    } else {
-
-      alert('Ошибка добавления гостя');
-
-    }
-
-    setGuestLoading(false);
-
-  }
-
-
-
-  async function handleRemoveGuest(tgId: number) {
-
-    const ok = await removeGuest(tgId);
-
-    if (ok) loadGuests();
-
-    else alert('Ошибка удаления гостя');
-
-  }
-
-
-
-  async function loadGuests() {
-
-    const list = await getGuests();
-
-    setGuestList(list);
-
-  }
-
-
-
   async function handleAddRoleToUser(roleName: string) {
 
     if (!selectedCharacter || selectedCharacter.roles.includes(roleName)) return;
@@ -1837,8 +1719,6 @@ export default function Home() {
 
     setSelectedCharacter(null);
 
-    setEditingCharId(null);
-
     loadPlayers();
 
     loadAllPlayers();
@@ -1896,17 +1776,7 @@ export default function Home() {
 
 
 
-  async function handleCreateProfession() {
-
-    if (!newProfessionName.trim()) return;
-
-    const { error } = await supabase.from('professions').insert({ name: newProfessionName.toLowerCase(), color: newProfessionColor });
-
-    if (!error) { setNewProfessionName(''); loadProfessions(); }
-
-    else alert(`Ошибка: ${error.message}`);
-
-  }
+  // handleCreateProfession moved to AdminPanel
 
 
 
@@ -2003,16 +1873,6 @@ export default function Home() {
     getBalance(currentSeasonName).then(b => setTreasuryBalance(isNaN(b) ? 0 : b));
 
   }, [currentSeasonName]);
-
-
-
-  // Загрузка списка гостей при входе в админку
-
-  useEffect(() => {
-
-    if (activeTab === 'admin') loadGuests();
-
-  }, [activeTab]);
 
 
 
@@ -2245,7 +2105,7 @@ export default function Home() {
 
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
 
-                  <span>🏛️ Партия:</span><span className="font-bold">{selectedCharacter.party || 'Нет партии'}</span>
+                  <span>??? Партия:</span><span className="font-bold">{selectedCharacter.party || 'Нет партии'}</span>
 
                 </div>
 
@@ -3137,7 +2997,7 @@ export default function Home() {
 
                         <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
 
-                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
+                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">??? {dbUser.party || 'Нет партии'}</div>
 
                         <div className="flex flex-wrap gap-1 mt-1.5">
 
@@ -3187,7 +3047,7 @@ export default function Home() {
 
                               <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
 
-                              <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
+                              <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">??? {player.party || 'Нет партии'}</div>
 
                               <div className="flex flex-wrap gap-1 mt-1.5">
 
@@ -3321,692 +3181,42 @@ export default function Home() {
 
         {activeTab === 'admin' && isAdmin && (
 
-          <div className="space-y-6 animate-fade-in w-full">
+          <AdminPanel
 
-            <div className="flex items-center justify-between">
+            onBack={() => { setActiveTab('profile'); setSelectedCharacter(null); }}
 
-              <h2 className="text-xl font-black text-white flex items-center gap-2"><ShieldAlert size={20} className="text-[#c0ff00]" /> Админ-панель</h2>
+            seasonEnded={seasonEnded}
 
-            </div>
+            currentSeasonNum={currentSeasonNum}
 
+            currentSeasonName={currentSeasonName}
 
+            seasonLoading={seasonLoading}
 
-            {/* Саб-табы */}
+            setSeasonLoading={setSeasonLoading}
 
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            pastSeasons={pastSeasons}
 
-              {(['players', 'characters', 'roles', 'professions', 'guests', 'seasons'] as const).map(tab => (
+            onSeasonEnd={handleEndSeason}
 
-                <button key={tab} onClick={() => setAdminSubTab(tab)} className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${adminSubTab === tab ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30' : 'bg-white/5 text-gray-400 border border-white/5'}`}>
+            onSeasonUndoEnd={handleUndoEndSeason}
 
-                  {tab === 'players' && 'Профили'}
+            onSeasonStartNew={handleStartNewSeason}
 
-                  {tab === 'characters' && 'Персонажи'}
+            onSeasonRestore={handleRestoreSeason}
 
-                  {tab === 'roles' && 'Роли'}
+            onSeasonDelete={handleDeleteSeason}
 
-                  {tab === 'professions' && 'Профессии'}
+            onRefreshSeason={refreshSeasons}
 
-                  {tab === 'guests' && 'Гости'}
+            onRefreshPlayers={loadPlayers}
 
-                  {tab === 'seasons' && 'Сезоны'}
+            onRefreshAllPlayers={loadAllPlayers}
 
-                </button>
+            handleFileUpload={handleFileUpload}
 
-              ))}
-
-            </div>
-
-
-
-            {/* --- Профили игроков --- */}
-
-            {adminSubTab === 'players' && (
-
-              <div className="space-y-4">
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Создать Minecraft-профиль</span></div>
-
-                  <div className="grid grid-cols-2 gap-3">
-
-                    <input type="text" placeholder="Minecraft ник *" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
-
-                    <input type="number" placeholder="Telegram ID" value={addTgId} onChange={e => setAddTgId(e.target.value)} className="ui-input"/>
-
-                    <input type="text" placeholder="Telegram Username" value={addTgUsername} onChange={e => setAddTgUsername(e.target.value)} className="ui-input"/>
-
-                    <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
-
-                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingAdminAvatar)} />
-
-                      <Upload size={14} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
-
-                      <span className="text-xs text-gray-500 truncate">{isUploadingAdminAvatar ? 'Загрузка...' : addAvatarUrl ? 'Аватар выбран' : 'Загрузить аватар'}</span>
-
-                    </label>
-
-                  </div>
-
-                  <button onClick={async () => {
-
-                    const mcNick = addMcNickname.trim();
-
-                    if (!mcNick) return;
-
-                    const tgIdNum = addTgId ? parseInt(addTgId) : null;
-
-                    const { data: existing } = await supabase.from('players').select('id').eq('mc_nickname', mcNick).limit(1);
-
-                    if (existing && existing.length > 0) { alert('Игрок с таким ником уже существует!'); return; }
-
-                    if (tgIdNum) {
-
-                      const { data: tgExists } = await supabase.from('players').select('id').eq('tg_id', tgIdNum).limit(1);
-
-                      if (tgExists && tgExists.length > 0) { alert('Этот Telegram ID уже привязан!'); return; }
-
-                    }
-
-                    const { error } = await supabase.from('players').insert({ mc_nickname: mcNick, tg_id: tgIdNum, tg_username: addTgUsername || '', avatar_url: addAvatarUrl || '' });
-
-                    if (error) { alert(`Ошибка: ${error.message}`); return; }
-
-                    setAddMcNickname(''); setAddTgId(''); setAddTgUsername(''); setAddAvatarUrl('');
-
-                    loadAllPlayers();
-
-                  }} className="ui-pill-btn w-full justify-center py-3"><Check size={16} /><span>Создать профиль</span></button>
-
-                </div>
-
-
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Users size={16} /><span>Все профили ({allPlayers.length})</span></div>
-
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
-
-                    {allPlayers.map((p: any) => (
-
-                      <div key={p.id}>
-
-                        {editingPlayerId === p.id ? (
-
-                          <div className="bg-black/30 border border-[#c0ff00]/20 p-3 rounded-xl space-y-2">
-
-                            <div className="grid grid-cols-2 gap-2">
-
-                              <input type="text" placeholder="Minecraft ник" value={editPlayerData.mc_nickname} onChange={e => setEditPlayerData(prev => ({...prev, mc_nickname: e.target.value}))} className="ui-input text-xs" />
-
-                              <input type="number" placeholder="Telegram ID" value={editPlayerData.tg_id} onChange={e => setEditPlayerData(prev => ({...prev, tg_id: e.target.value}))} className="ui-input text-xs" />
-
-                              <input type="number" placeholder="Второй Telegram ID" value={editPlayerData.tg_id_2} onChange={e => setEditPlayerData(prev => ({...prev, tg_id_2: e.target.value}))} className="ui-input text-xs" />
-
-                              <input type="text" placeholder="TG Username" value={editPlayerData.tg_username} onChange={e => setEditPlayerData(prev => ({...prev, tg_username: e.target.value}))} className="ui-input text-xs" />
-
-                              <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
-
-                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, (url) => setEditPlayerData(prev => ({...prev, avatar_url: url})), setIsUploadingAdminAvatar)} />
-
-                                <Upload size={12} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
-
-                                <span className="text-[10px] text-gray-500 truncate">{editPlayerData.avatar_url ? '✓ Аватар' : 'Аватар'}</span>
-
-                              </label>
-
-                            </div>
-
-                            <div className="flex gap-2">
-
-                              <button onClick={async () => {
-
-                                const payload = { ...editPlayerData, tg_id: editPlayerData.tg_id ? parseInt(editPlayerData.tg_id) : null, tg_id_2: editPlayerData.tg_id_2 ? parseInt(editPlayerData.tg_id_2) : null };
-
-                                const { error } = await supabase.from('players').update(payload).eq('id', p.id);
-
-                                if (error) { alert(`Ошибка: ${error.message}`); return; }
-
-                                setEditingPlayerId(null);
-
-                                loadAllPlayers();
-
-                              }} className="ui-pill-btn flex-1 justify-center !bg-[#c0ff00] !text-black text-xs py-1.5"><Save size={12} /><span>Сохранить</span></button>
-
-                              <button onClick={() => setEditingPlayerId(null)} className="ui-pill-btn px-4 !bg-white/5 text-xs py-1.5"><X size={12} /></button>
-
-                            </div>
-
-                          </div>
-
-                        ) : (
-
-                          <div className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl group">
-
-                            <div className="flex items-center gap-3 min-w-0">
-
-                              <div className="w-9 h-9 rounded-full bg-[#1c2026] border border-white/10 overflow-hidden flex-shrink-0">
-
-                                {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
-
-                              </div>
-
-                              <div className="min-w-0">
-
-                                <div className="text-sm font-bold text-white truncate">{p.mc_nickname}</div>
-
-                                <div className="text-[10px] text-gray-500">{p.tg_id ? `TG: ${p.tg_id}` : 'Без TG'} {p.tg_username ? `@${p.tg_username}` : ''}{p.tg_id_2 ? ` | TG2: ${p.tg_id_2}` : ''}</div>
-
-                              </div>
-
-                            </div>
-
-                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '', tg_id_2: p.tg_id_2?.toString() || '' }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
-
-                          </div>
-
-                        )}
-
-                      </div>
-
-                    ))}
-
-                    {allPlayers.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет профилей</p>}
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            )}
-
-
-
-            {/* --- Персонажи --- */}
-
-            {adminSubTab === 'characters' && (
-
-              <div className="space-y-4">
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><UserPlus size={16} /><span>Создать персонажа для сезона</span></div>
-
-                  <div className="grid grid-cols-2 gap-3">
-
-                    <input type="text" placeholder="Minecraft ник игрока *" value={addMcNickname} onChange={e => setAddMcNickname(e.target.value)} className="ui-input"/>
-
-                    <input type="text" placeholder="RP-имя персонажа *" value={addRpName} onChange={e => setAddRpName(e.target.value)} className="ui-input"/>
-
-                    <input type="text" placeholder="Партия" value={addParty} onChange={e => setAddParty(e.target.value)} className="ui-input"/>
-
-                    <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative">
-
-                      <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, setAddAvatarUrl, setIsUploadingAdminAvatar)} />
-
-                      <Upload size={14} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
-
-                      <span className="text-xs text-gray-500 truncate">{isUploadingAdminAvatar ? 'Загрузка...' : addAvatarUrl ? 'Аватар выбран' : 'Загрузить аватар'}</span>
-
-                    </label>
-
-                  </div>
-
-                  <div className="space-y-2">
-
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">Профессии персонажа</div>
-
-                    <div className="flex flex-wrap gap-2">
-
-                      {professions.map(prof => (
-
-                        <button key={prof.name} onClick={() => { setAddProfessions(prev => prev.includes(prof.name) ? prev.filter(r => r !== prof.name) : [...prev, prof.name]); }} className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all ${addProfessions.includes(prof.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: prof.color, backgroundColor: addProfessions.includes(prof.name) ? `${prof.color}20` : 'transparent' }}>{prof.name.toUpperCase()}</button>
-
-                      ))}
-
-                      {professions.length === 0 && <span className="text-xs text-gray-500">Нет профессий</span>}
-
-                    </div>
-
-                  </div>
-
-                  <button onClick={async () => {
-
-                    if (!addMcNickname.trim() || !addRpName.trim()) return;
-
-                    const { data: playerData } = await supabase.from('players').select('id').eq('mc_nickname', addMcNickname.trim()).limit(1);
-
-                    const player = playerData && playerData.length > 0 ? playerData[0] : null;
-
-                    if (!player) { alert('Игрок не найден. Сначала создай профиль.'); return; }
-
-                    const { data: existingChars } = await supabase.from('characters').select('professions').eq('player_id', player.id).order('created_at', { ascending: false }).limit(1);
-                    const inheritedProfs = existingChars?.[0]?.professions || [];
-                    const finalProfs = addProfessions.length > 0 ? Array.from(new Set([...inheritedProfs, ...addProfessions])) : inheritedProfs;
-
-                    const { error } = await supabase.from('characters').insert({ player_id: player.id, mc_nickname: addMcNickname.trim(), rp_name: addRpName.trim(), party: addParty || 'Нет партии', professions: finalProfs, avatar_url: addAvatarUrl || '', season: currentSeasonName, status: 'alive' });
-
-                    if (error) { alert(`Ошибка: ${error.message}`); return; }
-
-                    setAddMcNickname(''); setAddRpName(''); setAddParty('Нет партии'); setAddProfessions([]); setAddAvatarUrl('');
-
-                    loadPlayers();
-
-                  }} className="ui-pill-btn w-full justify-center py-3"><Plus size={16} /><span>Создать персонажа</span></button>
-
-                </div>
-
-
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Users size={16} /><span>Персонажи сезона ({players.length})</span></div>
-
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
-
-                    {players.map((c: Player) => (
-
-                      <div key={c.id}>
-
-                        {editingCharId === c.id ? (
-
-                          <div className="bg-black/30 border border-[#c0ff00]/20 p-3 rounded-xl space-y-2">
-
-                            <div className="grid grid-cols-2 gap-2">
-
-                              <input type="text" placeholder="RP-имя" value={editCharData.rp_name} onChange={e => setEditCharData(prev => ({...prev, rp_name: e.target.value}))} className="ui-input text-xs" />
-
-                              <input type="text" placeholder="Партия" value={editCharData.party} onChange={e => setEditCharData(prev => ({...prev, party: e.target.value}))} className="ui-input text-xs" />
-
-                              <label className="ui-input flex items-center gap-2 cursor-pointer overflow-hidden relative col-span-2">
-
-                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleFileUpload(e, (url) => setEditCharData(prev => ({...prev, avatar_url: url})), setIsUploadingAdminAvatar)} />
-
-                                <Upload size={12} className={isUploadingAdminAvatar ? 'animate-bounce' : ''} />
-
-                                <span className="text-[10px] text-gray-500 truncate">{editCharData.avatar_url ? '✓ Аватар' : 'Загрузить аватар'}</span>
-
-                              </label>
-
-                            </div>
-
-                            <div className="space-y-1.5">
-
-                              <div className="text-[9px] text-gray-500 uppercase">Профессии</div>
-
-                              <div className="flex flex-wrap gap-1.5">
-
-                                {professions.map(prof => (
-
-                                  <button key={prof.name} onClick={() => { setEditCharData(prev => ({...prev, professions: prev.professions.includes(prof.name) ? prev.professions.filter(r => r !== prof.name) : [...prev.professions, prof.name]})); }} className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${editCharData.professions.includes(prof.name) ? 'border-current' : 'border-white/10 opacity-40'}`} style={{ color: prof.color, backgroundColor: editCharData.professions.includes(prof.name) ? `${prof.color}20` : 'transparent' }}>{prof.name.toUpperCase()}</button>
-
-                                ))}
-
-                                {professions.length === 0 && <span className="text-[10px] text-gray-500">Нет профессий</span>}
-
-                              </div>
-
-                            </div>
-
-                            <div className="flex gap-2">
-
-                              <button onClick={async () => {
-
-                                const { error } = await supabase.from('characters').update({ rp_name: editCharData.rp_name, party: editCharData.party, avatar_url: editCharData.avatar_url, professions: editCharData.professions }).eq('id', c.id);
-
-                                if (error) { alert(`Ошибка: ${error.message}`); return; }
-
-                                setEditingCharId(null);
-
-                                loadPlayers();
-
-                              }} className="ui-pill-btn flex-1 justify-center !bg-[#c0ff00] !text-black text-xs py-1.5"><Save size={12} /><span>Сохранить</span></button>
-
-                              <button onClick={() => setEditingCharId(null)} className="ui-pill-btn px-4 !bg-white/5 text-xs py-1.5"><X size={12} /></button>
-
-                            </div>
-
-                          </div>
-
-                        ) : (
-
-                          <div className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl group">
-
-                            <div className="flex items-center gap-3 min-w-0">
-
-                              <div className="w-9 h-9 rounded-full bg-[#1c2026] border border-white/10 overflow-hidden flex-shrink-0">
-
-                                {c.avatar_url ? <img src={c.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
-
-                              </div>
-
-                              <div className="min-w-0">
-
-                                <div className="text-sm font-bold text-white truncate">{c.rp_name}</div>
-
-                                <div className="text-[10px] text-gray-500">{c.mc_nickname} · {c.party}</div>
-
-                              </div>
-
-                            </div>
-
-                            <div className="flex items-center gap-2 flex-shrink-0">
-
-                              <div className="flex gap-1">
-
-                                {c.professions?.slice(0, 2).map((p, i) => (
-
-                                  <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${getProfessionColor(p)}20`, color: getProfessionColor(p) }}>{p}</span>
-
-                                ))}
-
-                              </div>
-
-                              <button onClick={() => { setEditingCharId(c.id); setEditCharData({ rp_name: c.rp_name, party: c.party || 'Нет партии', avatar_url: c.avatar_url || '', professions: c.professions || [] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
-
-                              <button onClick={(e) => { e.stopPropagation(); deleteCharacter(c.id, c.rp_name); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-red-400"><Trash2 size={14} /></button>
-
-                            </div>
-
-                          </div>
-
-                        )}
-
-                      </div>
-
-                    ))}
-
-                    {players.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет персонажей</p>}
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            )}
-
-
-
-            {/* --- Роли --- */}
-
-            {adminSubTab === 'roles' && (
-
-              <div className="space-y-4">
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Создать роль</span></div>
-
-                  <div className="flex gap-2 items-end">
-
-                    <input type="text" placeholder="Название роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input flex-1"/>
-
-                    <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
-
-                  </div>
-
-                  <label className="flex items-center gap-2 text-xs text-gray-400">
-
-                    <input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="accent-[#c0ff00]"/>
-
-                    Может редактировать конституцию
-
-                  </label>
-
-                  <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-3"><UserPlus size={14} /><span>Создать роль</span></button>
-
-                </div>
-
-
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><ShieldCheck size={16} /><span>Все роли</span></div>
-
-                  <div className="space-y-2">
-
-                    {customRoles.map((role) => (
-
-                      <div key={role.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
-
-                        <input type="color" value={role.color} onChange={e => handleRoleChange(role.id!, 'color', e.target.value)} onBlur={() => saveRoleToDb(role)} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
-
-                        <input type="text" value={role.name} onChange={e => handleRoleChange(role.id!, 'name', e.target.value)} onBlur={() => saveRoleToDb(role)} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: role.color }}/>
-
-                        <label className="flex items-center gap-1 text-[10px] text-gray-500 flex-shrink-0">
-
-                          <input type="checkbox" checked={role.canEditConstitution} onChange={e => { handleRoleChange(role.id!, 'canEditConstitution', e.target.checked); saveRoleToDb({...role, canEditConstitution: e.target.checked}); }} className="accent-[#c0ff00]"/>
-
-                          Конст.
-
-                        </label>
-
-                      </div>
-
-                    ))}
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            )}
-
-
-
-            {/* --- Профессии --- */}
-
-            {adminSubTab === 'professions' && (
-
-              <div className="space-y-4">
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><ShieldCheck size={16} /><span>Создать профессию</span></div>
-
-                  <div className="flex gap-2 items-end">
-
-                    <input type="text" placeholder="Название профессии" value={newProfessionName} onChange={e => setNewProfessionName(e.target.value)} className="ui-input flex-1"/>
-
-                    <input type="color" value={newProfessionColor} onChange={e => setNewProfessionColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
-
-                  </div>
-
-                  <button onClick={async () => {
-
-                    if (!newProfessionName.trim()) return;
-
-                    const { error } = await supabase.from('professions').insert({ name: newProfessionName.toLowerCase(), color: newProfessionColor });
-
-                    if (!error) { setNewProfessionName(''); loadProfessions(); }
-
-                    else alert('Ошибка создания профессии');
-
-                  }} className="ui-pill-btn w-full justify-center py-3"><AnvilIcon size={14} /><span>Создать профессию</span></button>
-
-                </div>
-
-
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><ShieldCheck size={16} /><span>Все профессии</span></div>
-
-                  <div className="space-y-2">
-
-                    {professions.map((prof) => (
-
-                      <div key={prof.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
-
-                        <input type="color" value={prof.color} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, color: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ color: prof.color }).eq('id', prof.id); }} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
-
-                        <input type="text" value={prof.name} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, name: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ name: prof.name }).eq('id', prof.id); }} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: prof.color }}/>
-
-                      </div>
-
-                    ))}
-
-                    {professions.length === 0 && <p className="text-xs text-gray-500 text-center py-4">Нет профессий</p>}
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            )}
-
-
-
-
-
-            {/* --- Гости --- */}
-
-            {adminSubTab === 'guests' && (
-
-              <div className="space-y-4">
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><User size={16} /><span>Добавить гостя</span></div>
-
-                  <div className="flex gap-2">
-
-                    <input type="number" placeholder="Telegram ID" value={guestTgId} onChange={e => setGuestTgId(e.target.value)} className="ui-input flex-1"/>
-
-                    <button onClick={handleAddGuest} disabled={guestLoading || !guestTgId} className="ui-pill-btn shrink-0 px-4 disabled:opacity-30"><Plus size={16} /></button>
-
-                  </div>
-
-                  {guestList.length > 0 && (
-
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
-
-                      {guestList.map(g => (
-
-                        <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl border border-white/5 text-xs">
-
-                          <div>
-
-                            <span className="text-white font-bold">ID: {g.tg_id}</span>
-
-                            <span className="text-gray-500 ml-2">{new Date(g.created_at).toLocaleDateString('ru-RU')}</span>
-
-                          </div>
-
-                          <button onClick={() => handleRemoveGuest(g.tg_id)} className="text-gray-500 hover:text-red-400 transition-colors p-1"><X size={14} /></button>
-
-                        </div>
-
-                      ))}
-
-                    </div>
-
-                  )}
-
-                </div>
-
-              </div>
-
-            )}
-
-
-
-            {/* --- Сезоны --- */}
-
-            {adminSubTab === 'seasons' && (
-
-              <div className="space-y-4">
-
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider"><Calendar size={16} /><span>Управление сезонами</span></div>
-
-                  <div className="text-sm text-gray-400">Текущий: <span className="text-[#c0ff00] font-bold">{currentSeasonName}</span> {seasonEnded ? <span className="text-red-400 font-bold ml-2">• Завершён</span> : <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>}</div>
-
-                  {!seasonEnded && (
-
-                    <button onClick={handleEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30"><Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span></button>
-
-                  )}
-
-                  {seasonEnded && (
-
-                    <>
-
-                      <button onClick={handleUndoEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30"><RotateCcw size={14} /><span className="text-[11px] font-bold">Восстановить сезон</span></button>
-
-                      <div className="space-y-2">
-
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500"><Server size={12} className="text-[#c0ff00]" /><span>Exaroton Server ID</span></div>
-
-                        <input type="text" placeholder="e.g. abc123def456" value={newSeasonServerId} onChange={e => setNewSeasonServerId(e.target.value)} className="ui-input text-xs"/>
-
-                        <button onClick={handleStartNewSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold disabled:opacity-30"><Play size={14} /><span>Начать новый сезон</span></button>
-
-                      </div>
-
-                    </>
-
-                  )}
-
-                </div>
-
-
-
-                {pastSeasons.length > 0 && (
-
-                  <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
-
-                    <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3"><Library size={16} /><span>Архив сезонов</span></div>
-
-                    <div className="space-y-2">
-
-                      {pastSeasons.map(s => (
-
-                        <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
-
-                          <div className="text-sm">
-
-                            <span className="text-white font-bold">Сезон #{s.season_number}</span>
-
-                            <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
-
-                            <span className="text-gray-600 ml-2 text-[11px]">{new Date(s.end_date).toLocaleDateString('ru-RU')}</span>
-
-                          </div>
-
-                          <div className="flex gap-1.5">
-
-                            <button onClick={() => handleRestoreSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-[#c0ff00]/10 !border-[#c0ff00]/20 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 px-3 py-1.5"><RotateCcw size={12} /></button>
-
-                            <button onClick={() => handleDeleteSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-red-500/10 !border-red-500/20 !text-red-400 hover:!bg-red-500/20 disabled:opacity-30 px-3 py-1.5"><X size={12} /></button>
-
-                          </div>
-
-                        </div>
-
-                      ))}
-
-                    </div>
-
-                  </div>
-
-                )}
-
-              </div>
-
-            )}
-
-          </div>
-
+          />
         )}
-
       </main>
 
 
