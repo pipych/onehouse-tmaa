@@ -135,8 +135,9 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    let deletedKeys: string[] = [];
+
     if (type === 'folder') {
-      // Delete all objects with this prefix
       const prefix = key.endsWith('/') ? key : `${key}/`;
       const listCommand = new ListObjectsV2Command({
         Bucket: R2_BUCKET,
@@ -146,39 +147,73 @@ export async function DELETE(request: NextRequest) {
       const objects = listed.Contents || [];
 
       if (objects.length === 0) {
-        // Empty folder marker — try deleting it directly
-        await s3.send(new DeleteObjectCommand({
+        await s3.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: prefix }));
+        deletedKeys = [prefix];
+      } else {
+        deletedKeys = objects.map(obj => obj.Key!);
+        await s3.send(new DeleteObjectsCommand({
           Bucket: R2_BUCKET,
-          Key: prefix,
+          Delete: { Objects: objects.map(obj => ({ Key: obj.Key! })), Quiet: true },
         }));
-        return NextResponse.json({ success: true, deleted: 0 });
       }
-
-      const deleteCommand = new DeleteObjectsCommand({
-        Bucket: R2_BUCKET,
-        Delete: {
-          Objects: objects.map(obj => ({ Key: obj.Key! })),
-          Quiet: false,
-        },
-      });
-      const result = await s3.send(deleteCommand);
-      return NextResponse.json({
-        success: true,
-        deleted: result.Deleted?.length || 0,
-      });
     } else {
-      // Single file
-      await s3.send(new DeleteObjectCommand({
-        Bucket: R2_BUCKET,
-        Key: key,
-      }));
-      return NextResponse.json({ success: true, deleted: 1 });
+      deletedKeys = [key];
+      await s3.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
     }
+
+    // Update manifest if deleting from modpack folder
+    await syncManifestAfterDelete(deletedKeys);
+
+    return NextResponse.json({ success: true, deleted: deletedKeys.length });
   } catch (error: any) {
     console.error('R2 delete error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to delete' },
       { status: 500 }
     );
+  }
+}
+
+async function syncManifestAfterDelete(deletedKeys: string[]) {
+  // Find which prefixes have a manifest.json
+  const affectedPrefixes = new Set<string>();
+  for (const k of deletedKeys) {
+    const parts = k.split('/');
+    parts.pop(); // remove filename
+    if (parts.length > 0) {
+      affectedPrefixes.add(parts.join('/') + '/');
+    }
+  }
+
+  for (const prefix of Array.from(affectedPrefixes)) {
+    try {
+      const manifestKey = prefix + 'manifest.json';
+      const cmd = new GetObjectCommand({ Bucket: R2_BUCKET, Key: manifestKey });
+      const data = await s3.send(cmd);
+      if (data.Body) {
+        const body = await data.Body.transformToString();
+        const manifest = JSON.parse(body);
+        if (manifest.files) {
+          let changed = false;
+          for (const dk of deletedKeys) {
+            const fileName = dk.replace(prefix, '');
+            if (manifest.files[fileName]) {
+              delete manifest.files[fileName];
+              changed = true;
+            }
+          }
+          if (changed) {
+            await s3.send(new PutObjectCommand({
+              Bucket: R2_BUCKET,
+              Key: manifestKey,
+              Body: JSON.stringify(manifest, null, 2),
+              ContentType: 'application/json',
+            }));
+          }
+        }
+      }
+    } catch {
+      // No manifest, skip
+    }
   }
 }

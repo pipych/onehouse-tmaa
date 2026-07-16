@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { addGuest, removeGuest, getGuests } from '../../lib/guests';
@@ -9,7 +9,7 @@ import {
   User, UserPlus, ShieldCheck, Edit2, Save, X, Plus, Upload,
   Check, Play, Flag, RotateCcw, Library, Server as ServerIcon, Trash2,
   Home, ChevronRight, FolderOpen, File, Download, RefreshCw,
-  MoreVertical, FolderPlus
+  MoreVertical, FolderPlus, UploadCloud
 } from 'lucide-react';
 
 const AnvilIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
@@ -132,6 +132,15 @@ export default function AdminPage() {
   const [r2MenuOpen, setR2MenuOpen] = useState<string | null>(null);
   const [r2NewFolderName, setR2NewFolderName] = useState('');
   const [r2ShowNewFolder, setR2ShowNewFolder] = useState(false);
+
+  // --- Upload overlay ---
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'merge' | 'replace'>('merge');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProcessing, setUploadProcessing] = useState(false);
+  const [uploadFileName, setUploadFileName] = useState('');
+  const [uploadDragOver, setUploadDragOver] = useState(false);
+  const uploadFileRef = useRef<HTMLInputElement>(null);
 
   // --- Helpers ---
   const getProfessionColor = (name: string) => {
@@ -357,6 +366,75 @@ export default function AdminPage() {
       }
     } catch (e: any) {
       alert('Ошибка: ' + e.message);
+    }
+  };
+
+  // --- Upload handler ---
+  const handleUploadSubmit = () => {
+    const input = uploadFileRef.current;
+    if (!input?.files?.length) return;
+    const file = input.files[0];
+    setUploadProcessing(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mode', uploadMode);
+    formData.append('prefix', r2Path);
+
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 90)); // 0-90% for upload
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        if (data.success) {
+          setUploadProgress(100);
+          setTimeout(() => {
+            setUploadOpen(false);
+            setUploadProgress(0);
+            setUploadProcessing(false);
+            setUploadFileName('');
+            if (input) input.value = '';
+            loadR2Items();
+          }, 500);
+        } else {
+          alert('Ошибка: ' + (data.error || 'неизвестно'));
+          setUploadProcessing(false);
+          setUploadProgress(0);
+        }
+      } else {
+        alert('Ошибка загрузки: ' + xhr.status);
+        setUploadProcessing(false);
+        setUploadProgress(0);
+      }
+    };
+    xhr.onerror = () => {
+      alert('Ошибка сети');
+      setUploadProcessing(false);
+      setUploadProgress(0);
+    };
+    xhr.open('POST', '/api/r2-upload');
+    xhr.send(formData);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) setUploadFileName(f.name);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setUploadDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f && uploadFileRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(f);
+      uploadFileRef.current.files = dt.files;
+      setUploadFileName(f.name);
     }
   };
 
@@ -851,13 +929,22 @@ export default function AdminPage() {
                     <button onClick={() => { setR2ShowNewFolder(false); setR2NewFolderName(''); }} className="ui-pill-btn shrink-0"><X size={14} /></button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => setR2ShowNewFolder(true)}
-                    className="ui-pill-btn w-full justify-center"
-                  >
-                    <FolderPlus size={14} />
-                    <span>Создать папку</span>
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setR2ShowNewFolder(true)}
+                      className="ui-pill-btn flex-1 justify-center"
+                    >
+                      <FolderPlus size={14} />
+                      <span>Создать папку</span>
+                    </button>
+                    <button
+                      onClick={() => setUploadOpen(true)}
+                      className="ui-pill-btn flex-1 justify-center"
+                    >
+                      <UploadCloud size={14} />
+                      <span>Загрузить</span>
+                    </button>
+                  </div>
                 )}
 
                 {/* Content */}
@@ -963,6 +1050,124 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+      {/* Upload overlay modal */}
+      {uploadOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => { if (!uploadProcessing) setUploadOpen(false); }} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md bg-[#14171c] border border-white/10 rounded-[32px] p-6 shadow-2xl">
+            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/5 to-transparent pointer-events-none rounded-t-[32px]" />
+
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-black text-white flex items-center gap-2">
+                <UploadCloud size={18} className="text-[#c0ff00]" />
+                Загрузить файлы
+              </h3>
+              <button onClick={() => { if (!uploadProcessing) setUploadOpen(false); }} className="p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all">
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Drag & drop zone */}
+            <label
+              className={`block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all mb-4 ${
+                uploadDragOver
+                  ? 'border-[#c0ff00] bg-[#c0ff00]/5'
+                  : uploadFileName
+                    ? 'border-[#c0ff00]/40 bg-[#c0ff00]/5'
+                    : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }}
+              onDragLeave={() => setUploadDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={uploadFileRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileSelect}
+                accept=".jar,.zip"
+              />
+              <UploadCloud size={32} className={`mx-auto mb-3 ${uploadFileName ? 'text-[#c0ff00]' : 'text-gray-600'}`} />
+              {uploadFileName ? (
+                <>
+                  <p className="text-sm font-bold text-[#c0ff00] truncate">{uploadFileName}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">Нажмите чтобы заменить</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-gray-400">Перетащите файл сюда</p>
+                  <p className="text-[10px] text-gray-600 mt-1">или нажмите чтобы выбрать</p>
+                  <p className="text-[10px] text-gray-700 mt-2">.jar / .zip</p>
+                </>
+              )}
+            </label>
+
+            {/* Mode selector */}
+            <div className="space-y-2 mb-1">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Режим для ZIP</div>
+              <div className="flex gap-2">
+                <label className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold ${
+                  uploadMode === 'merge'
+                    ? 'border-[#c0ff00]/30 bg-[#c0ff00]/10 text-[#c0ff00]'
+                    : 'border-white/5 bg-white/5 text-gray-400'
+                }`}>
+                  <input type="radio" name="uploadMode" value="merge" checked={uploadMode === 'merge'} onChange={() => setUploadMode('merge')} className="hidden" />
+                  Замена без удаления
+                </label>
+                <label className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold ${
+                  uploadMode === 'replace'
+                    ? 'border-red-500/30 bg-red-500/10 text-red-400'
+                    : 'border-white/5 bg-white/5 text-gray-400'
+                }`}>
+                  <input type="radio" name="uploadMode" value="replace" checked={uploadMode === 'replace'} onChange={() => setUploadMode('replace')} className="hidden" />
+                  Полная замена
+                </label>
+              </div>
+              <p className="text-[10px] text-gray-600 leading-relaxed">
+                {uploadMode === 'merge'
+                  ? 'Заменит совпадающие файлы, остальные не тронет'
+                  : 'Удалит всё в этой папке и загрузит только новые файлы'
+                }
+              </p>
+            </div>
+
+            {/* Progress bar */}
+            {uploadProcessing && (
+              <div className="mt-4 space-y-2">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#c0ff00] rounded-full transition-all duration-300"
+                    style={{ width: uploadProgress + '%' }}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-500 text-center">
+                  {uploadProgress < 100 ? 'Загрузка... ' + uploadProgress + '%' : 'Готово!'}
+                </p>
+              </div>
+            )}
+
+            {/* Upload button */}
+            <button
+              onClick={handleUploadSubmit}
+              disabled={uploadProcessing || !uploadFileName}
+              className="ui-pill-btn w-full justify-center mt-4 !bg-[#c0ff00] !text-black font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {uploadProcessing ? (
+                <>
+                  <RefreshCw className="animate-spin" size={14} />
+                  <span>{uploadProgress < 100 ? 'Загрузка...' : 'Обработка...'}</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={14} />
+                  <span>Загрузить</span>
+                </>
+              )}
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Fixed bottom navbar — matches main app style */}
       <div className="fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center">
