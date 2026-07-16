@@ -1,0 +1,33 @@
+﻿   тЦ▓ Next.js 14.1.0
+
+   Creating an optimized production build ...
+node.exe : Failed to compile.
+строка:1 знак:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Failed to compile.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+./app/admin/page.tsx
+Error: 
+  [31mx[0m Unexpected token `div`. Expected jsx identifier
+     ,-[[36;1;4mC:\Users\pshen\.openclaw\workspace\onehouse-tmaa\app\admin\page.tsx[0m:470:1]
+ [2m470[0m |   // RENDER
+ [2m471[0m |   // ===================================================================
+ [2m472[0m |   return (
+ [2m473[0m |     <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
+     : [31;1m     ^^^[0m
+ [2m474[0m |       <div className="w-full max-w-3xl mx-auto flex flex-col gap-5">
+ [2m475[0m | 
+ [2m475[0m |         {/* --- Header --- */}
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/admin/page.tsx
+
+
+> Build failed because of webpack errors
