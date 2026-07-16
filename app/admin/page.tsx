@@ -381,31 +381,21 @@ export default function AdminPage() {
       const presignRes = await fetch('/api/r2-presign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: zipKey, contentType: file.type || 'application/zip' }),
+        body: JSON.stringify({ key: zipKey }),
       });
       const presignData = await presignRes.json();
       if (!presignData.url) throw new Error(presignData.error || 'Failed to get upload URL');
 
-      // Step 2: Upload directly to R2 via presigned URL
-      const xhr = new XMLHttpRequest();
-      await new Promise<void>((resolve, reject) => {
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            setUploadProgress(Math.round((e.loaded / e.total) * 50)); // 0-50% for upload
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status === 200) resolve();
-          else reject(new Error('Upload failed: ' + xhr.status));
-        };
-        xhr.onerror = () => reject(new Error('Network error'));
-        xhr.open('PUT', presignData.url);
-        xhr.setRequestHeader('Content-Type', file.type || 'application/zip');
-        xhr.send(file);
+      // Step 2: Upload directly to R2 (no Content-Type header = no CORS preflight)
+      setUploadProgress(5);
+      const uploadRes = await fetch(presignData.url, {
+        method: 'PUT',
+        body: file,
       });
+      if (!uploadRes.ok) throw new Error('Upload failed: ' + uploadRes.status);
+      setUploadProgress(50);
 
       // Step 3: Extract ZIP on server
-      setUploadProgress(55);
       const extractRes = await fetch('/api/r2-extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -413,6 +403,7 @@ export default function AdminPage() {
       });
       const extractData = await extractRes.json();
       if (!extractData.success) throw new Error(extractData.error || 'Extract failed');
+      setUploadProgress(90);
 
       setUploadProgress(100);
       setTimeout(() => {

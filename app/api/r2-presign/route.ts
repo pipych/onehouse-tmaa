@@ -18,16 +18,16 @@ const s3 = new S3Client({
 
 export async function POST(request: NextRequest) {
   try {
-    const { key, contentType } = await request.json();
+    const { key } = await request.json();
     if (!key) {
       return NextResponse.json({ error: 'key is required' }, { status: 400 });
     }
 
+    // Don't sign ContentType — lets browser use default (avoids CORS preflight)
     const url = await getSignedUrl(s3, new PutObjectCommand({
       Bucket: R2_BUCKET,
       Key: key,
-      ContentType: contentType || 'application/octet-stream',
-    }), { expiresIn: 600 }); // 10 min
+    }), { expiresIn: 600 });
 
     return NextResponse.json({ url, key });
   } catch (error: any) {
