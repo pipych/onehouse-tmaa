@@ -562,6 +562,8 @@ export default function Home() {
 
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
 
+  const hasAdminAccess = dbUser?.roles?.some(r => ['admin', 'админ', 'редактор'].includes(r.toLowerCase())) || false;
+
 
 
   const canEditConstitution = dbUser?.roles?.some(r => {
@@ -2376,9 +2378,7 @@ export default function Home() {
 
               </button>
 
-              {/* Админ-доступ */}
-
-              {isAdmin && (
+              {/* Админ-доступ */\n\n              {hasAdminAccess && (
 
                 <button
 
@@ -2406,9 +2406,7 @@ export default function Home() {
 
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none relative">
 
-              {/* Админ-кнопка */}
-
-              {isAdmin && (
+              {/* Админ-кнопка */\n\n              {hasAdminAccess && (
 
                 <button
 
