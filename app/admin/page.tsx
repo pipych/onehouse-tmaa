@@ -99,7 +99,7 @@ export default function AdminPage() {
   const [addAvatarUrl, setAddAvatarUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '', tg_id_2: '' });
+  const [editPlayerData, setEditPlayerData] = useState({ mc_nickname: '', tg_id: '', tg_username: '', avatar_url: '', tg_id_2: '', roles: [] as string[] });
 
   // --- Form: Characters ---
   const [addRpName, setAddRpName] = useState('');
@@ -123,6 +123,34 @@ export default function AdminPage() {
 
   // --- Form: Seasons ---
   const [newSeasonServerId, setNewSeasonServerId] = useState('');
+
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const tg = (window as any).Telegram?.WebApp;
+        const tgu = tg?.initDataUnsafe?.user;
+        if (!tgu?.id) { router.push('/'); return; }
+        const { data } = await supabase.from('players').select('roles').eq('tg_id', tgu.id).maybeSingle();
+        if (data?.roles) setUserRoles(data.roles.map((r: string) => r.toLowerCase()));
+      } catch (e) {}
+      setAuthLoading(false);
+    }
+    checkAuth();
+  }, []);
+
+  const isAdmin = userRoles.some(r => r === 'admin' || r === 'админ');
+  const isEditor = userRoles.some(r => r === 'редактор');
+  const hasAccess = isAdmin || isEditor;
+
+  useEffect(() => {
+    if (!authLoading && isEditor && !isAdmin) {
+      setMainTab('players');
+      setPlayersSubTab('professions');
+    }
+  }, [authLoading]);
 
   // --- R2 Modpack browser ---
   const [r2Path, setR2Path] = useState('');
@@ -456,10 +484,46 @@ export default function AdminPage() {
           <div className="flex items-center gap-2">
             <ShieldAlert size={18} className="text-[#c0ff00]" />
             <h2 className="text-lg font-black text-white">Админ-панель</h2>
+            {isEditor && !isAdmin && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/20">Редактор</span>}
           </div>
         </div>
 
+        {authLoading ? (
+          <div className="flex justify-center py-20"><RefreshCw className="animate-spin text-[#c0ff00]" size={32} /></div>
+        ) : !hasAccess ? (
+          <div className="flex flex-col items-center justify-center text-center gap-4 py-20">
+            <ShieldAlert size={48} className="text-gray-700" />
+            <h3 className="text-lg font-black text-white">Нет доступа</h3>
+            <p className="text-sm text-gray-500">У вас нет прав для входа в админ-панель</p>
+            <button onClick={() => router.push('/')} className="ui-pill-btn"><ArrowLeft size={14} /> На главную</button>
+          </div>
+        ) : (
+          <>
 
+
+
+        {/* --- Main tab bar --- */}
+        <div className="flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-1.5 px-1.5 rounded-full shadow-xl">
+          {(isAdmin ? [
+            { key: 'home', label: 'Главная', icon: <ShieldAlert size={18} /> },
+            { key: 'players', label: 'Игроки', icon: <Users size={18} /> },
+            { key: 'server', label: 'Сервер', icon: <Folder size={18} /> },
+          ] : [
+            { key: 'players', label: 'Игроки', icon: <Users size={18} /> },
+            { key: 'server', label: 'Сервер', icon: <Folder size={18} /> },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setMainTab(tab.key)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
+                mainTab === tab.key ? 'bg-[#c0ff00]/15 text-[#c0ff00]' : 'text-gray-500 hover:text-white'
+              }`}
+            >
+              {tab.icon}
+              <span className="hidden sm:inline">{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
         {/* ==================== ГЛАВНАЯ ==================== */}
         {mainTab === 'home' && (
@@ -479,12 +543,14 @@ export default function AdminPage() {
           <>
             {/* Sub-tabs */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {([
-                { key: 'profiles' as const, label: 'Профили', icon: <User size={13} /> },
-                { key: 'characters' as const, label: 'Персонажи', icon: <Users size={13} /> },
-                { key: 'professions' as const, label: 'Профессии', icon: <AnvilIcon size={13} /> },
-                { key: 'roles' as const, label: 'Роли', icon: <ShieldCheck size={13} /> },
-                { key: 'guests' as const, label: 'Гости', icon: <UserPlus size={13} /> },
+              {(isAdmin ? [
+                { key: 'profiles', label: 'Профили', icon: <User size={13} /> },
+                { key: 'characters', label: 'Персонажи', icon: <Users size={13} /> },
+                { key: 'professions', label: 'Профессии', icon: <AnvilIcon size={13} /> },
+                { key: 'roles', label: 'Роли', icon: <ShieldCheck size={13} /> },
+                { key: 'guests', label: 'Гости', icon: <UserPlus size={13} /> },
+              ] : [
+                { key: 'professions', label: 'Профессии', icon: <AnvilIcon size={13} /> },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -557,7 +623,7 @@ export default function AdminPage() {
                             </label>
                             <div className="flex gap-2">
                               <button onClick={async () => {
-                                const payload = { ...editPlayerData, tg_id: editPlayerData.tg_id ? parseInt(editPlayerData.tg_id) : null, tg_id_2: editPlayerData.tg_id_2 ? parseInt(editPlayerData.tg_id_2) : null };
+                                const payload = { ...editPlayerData, tg_id: editPlayerData.tg_id ? parseInt(editPlayerData.tg_id) : null, tg_id_2: editPlayerData.tg_id_2 ? parseInt(editPlayerData.tg_id_2) : null, roles: editPlayerData.roles };
                                 const { error } = await supabase.from('players').update(payload).eq('id', p.id);
                                 if (error) { alert('Ошибка: ' + error.message); return; }
                                 setEditingPlayerId(null);
@@ -577,7 +643,7 @@ export default function AdminPage() {
                                 <div className="text-[10px] text-gray-500">{p.tg_id ? 'TG: ' + p.tg_id : 'Без TG'} {p.tg_username ? '@' + p.tg_username : ''}{p.tg_id_2 ? ' | TG2: ' + p.tg_id_2 : ''}</div>
                               </div>
                             </div>
-                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '', tg_id_2: p.tg_id_2?.toString() || '' }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
+                            <button onClick={() => { setEditingPlayerId(p.id); setEditPlayerData({ mc_nickname: p.mc_nickname, tg_id: p.tg_id?.toString() || '', tg_username: p.tg_username || '', avatar_url: p.avatar_url || '', tg_id_2: p.tg_id_2?.toString() || '', roles: p.roles || [] }); }} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-[#c0ff00]"><Edit2 size={14} /></button>
                           </div>
                         )}
                       </div>
@@ -807,9 +873,11 @@ export default function AdminPage() {
           <>
             {/* Sub-tabs */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {([
-                { key: 'seasons' as const, label: 'Сезоны', icon: <Calendar size={13} /> },
-                { key: 'modpack' as const, label: 'Модпак', icon: <Package size={13} /> },
+              {(isAdmin ? [
+                { key: 'seasons', label: 'Сезоны', icon: <Calendar size={13} /> },
+                { key: 'modpack', label: 'Модпак', icon: <Package size={13} /> },
+              ] : [
+                { key: 'modpack', label: 'Модпак', icon: <Package size={13} /> },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -1050,6 +1118,9 @@ export default function AdminPage() {
           </>
         )}
       </div>
+
+          </>
+        )}
 
       {/* Upload overlay modal */}
       {uploadOpen && (

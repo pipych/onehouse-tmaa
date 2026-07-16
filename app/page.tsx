@@ -561,6 +561,7 @@ export default function Home() {
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
 
   const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
+  const hasAdminAccess = dbUser?.roles?.some(r => ['admin', 'админ', 'редактор'].includes(r.toLowerCase())) || false;
 
 
 
@@ -2378,7 +2379,7 @@ export default function Home() {
 
               {/* Админ-доступ */}
 
-              {isAdmin && (
+              {hasAdminAccess && (
 
                 <button
 
@@ -2408,7 +2409,7 @@ export default function Home() {
 
               {/* Админ-кнопка */}
 
-              {isAdmin && (
+              {hasAdminAccess && (
 
                 <button
 
