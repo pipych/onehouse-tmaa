@@ -268,7 +268,7 @@ export default function AdminPage() {
   // RENDER
   // ===================================================================
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-20 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-5">
 
         {/* --- Header --- */}
@@ -365,7 +365,7 @@ export default function AdminPage() {
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                     <Users size={16} /><span>Все профили ({allPlayers.length})</span>
                   </div>
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto no-scrollbar">
                     {allPlayers.map((p: any) => (
                       <div key={p.id}>
                         {editingPlayerId === p.id ? (
@@ -459,7 +459,7 @@ export default function AdminPage() {
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                     <Users size={16} /><span>Персонажи сезона ({players.length})</span>
                   </div>
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto no-scrollbar">
                     {players.map((c: any) => (
                       <div key={c.id}>
                         {editingCharId === c.id ? (
@@ -610,7 +610,7 @@ export default function AdminPage() {
                     <button onClick={handleAddGuest} disabled={guestLoading || !guestTgId} className="ui-pill-btn shrink-0 px-4 disabled:opacity-30"><Plus size={16} /></button>
                   </div>
                   {guestList.length > 0 && (
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto no-scrollbar">
                       {guestList.map(g => (
                         <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl border border-white/5 text-xs">
                           <div>

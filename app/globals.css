@@ -41,3 +41,59 @@ body {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* UI Kit — shared across all pages */
+.ui-input {
+  width: 100%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #fff;
+  outline: none;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.ui-input:focus {
+  border-color: rgba(192,255,0,0.4);
+  background: rgba(255,255,255,0.08);
+}
+
+.ui-input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+
+.ui-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  cursor: pointer;
+}
+
+.ui-pill-btn:hover {
+  border-color: rgba(192,255,0,0.3);
+}
+
+.ui-pill-btn:active {
+  transform: scale(0.96);
+}
+
+/* Hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
