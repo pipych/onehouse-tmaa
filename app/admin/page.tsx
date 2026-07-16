@@ -1187,8 +1187,35 @@ export default function AdminPage() {
         </>
       )}
 
-      {/* Fixed bottom navbar — matches main app style */}
-      <div className="fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center">
+      {/* ПК САЙДБАР */}
+      <aside className="hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50">
+        <nav className="bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative transition-all duration-300 w-[72px] py-6 px-1">
+          <button
+            onClick={() => setMainTab('home')}
+            className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${mainTab === 'home' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}
+          >
+            <ShieldAlert size={23} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
+          </button>
+          <button
+            onClick={() => setMainTab('players')}
+            className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${mainTab === 'players' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}
+          >
+            <Users size={23} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
+          </button>
+          <button
+            onClick={() => setMainTab('server')}
+            className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${mainTab === 'server' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}
+          >
+            <Folder size={23} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Сервер</span>
+          </button>
+        </nav>
+      </aside>
+
+      {/* Мобильный навбар */}
+      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center">
         <nav className="bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl flex-1">
           <div className="flex items-center w-full justify-around px-2">
             <button
