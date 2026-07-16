@@ -1162,10 +1162,6 @@ export default function Home() {
 
         // Игрок есть, персонажа в текущем сезоне нет — проверяем роли на профиле игрока
 
-        const isAdminAnyway = (player.roles || []).some((r: string) => ['admin', 'админ'].includes(r.toLowerCase()));
-
-        
-
         setDbUser({
 
           id: player.id,
@@ -1182,7 +1178,7 @@ export default function Home() {
 
           avatar_url: player.avatar_url || '',
 
-          roles: isAdminAnyway ? ['admin'] : [],
+          roles: player.roles || [],
 
           party: 'Нет партии',
 
