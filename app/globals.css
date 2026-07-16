@@ -10,4 +10,34 @@ body {
 /* Намертво перекрываем все текстовые узлы, чтобы шрифт применился везде одинаково */
 * {
   font-family: var(--font-wix), -apple-system, BlinkMacSystemFont, sans-serif !important;
+  /* Firefox кастомный скроллбар */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Chrome / Edge / Opera / Safari */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
