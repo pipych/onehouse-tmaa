@@ -9,10 +9,10 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const R2_ACCOUNT_ID = '89476ea08498adb1813b3607c5079df7';
-const R2_ACCESS_KEY_ID = '3513b185f8a785a30fb5e77c78203215';
-const R2_SECRET_ACCESS_KEY = '4a03f9f253413aaabb3bcfbc4579de7bca4ae60a0cb30c944e2e84e59912500d';
-const R2_BUCKET = 'onelaunch-mods';
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
+const R2_BUCKET = process.env.R2_BUCKET_NAME || 'onelaunch-mods';
 
 const s3 = new S3Client({
   region: 'auto',

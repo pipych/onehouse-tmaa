@@ -9,10 +9,10 @@ import {
 } from '@aws-sdk/client-s3';
 import AdmZip from 'adm-zip';
 
-const R2_ACCOUNT_ID = '89476ea08498adb1813b3607c5079df7';
-const R2_ACCESS_KEY_ID = '3513b185f8a785a30fb5e77c78203215';
-const R2_SECRET_ACCESS_KEY = '4a03f95cb2cfe9be657977c0b58f3dc712bedba0d236c17e545a97a538c0500d';
-const R2_BUCKET = 'onelaunch-mods';
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
+const R2_BUCKET = process.env.R2_BUCKET_NAME || 'onelaunch-mods';
 
 const s3 = new S3Client({
   region: 'auto',
