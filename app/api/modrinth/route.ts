@@ -32,6 +32,7 @@ const LOADERS = ['forge', 'neoforge'];
 const MODPACK_PREFIX = 'onehouse-pack-v1/';
 const MODS_PATH = MODPACK_PREFIX + 'mods/';
 const MANIFEST_KEY = MODPACK_PREFIX + 'manifest.json';
+const PUBLIC_BASE = 'https://modpack.onelaunch.pp.ua/';
 
 const MODRINTH_HEADERS = {
   'User-Agent': 'OneHouse/1.0 (admin@onehouse.pp.ua)',
@@ -108,15 +109,29 @@ async function readManifest(): Promise<any> {
     const data = await s3.send(cmd);
     if (data.Body) {
       const body = await data.Body.transformToString();
-      return JSON.parse(body);
+      const parsed = JSON.parse(body);
+      // Ensure mods array exists
+      if (!Array.isArray(parsed.mods)) {
+        parsed.mods = [];
+      }
+      return parsed;
     }
   } catch {
-    return { files: {} };
+    // Manifest doesn't exist yet — create from scratch
   }
-  return { files: {} };
+  return {
+    minecraft: GAME_VERSION,
+    id: 'onehouse-pack-v1',
+    version: 0,
+    loader: 'forge',
+    description: 'Модпак OneHouse (Forge 1.20.1)',
+    mods: [],
+  };
 }
 
 async function writeManifest(manifest: any) {
+  // Increment version
+  manifest.version = (manifest.version || 0) + 1;
   await s3.send(new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: MANIFEST_KEY,
@@ -126,7 +141,7 @@ async function writeManifest(manifest: any) {
 }
 
 function getFileHash(buffer: Buffer): string {
-  return crypto.createHash('sha256').update(buffer).digest('hex').substring(0, 12);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
 async function fetchModrinth(path: string, init?: RequestInit): Promise<any> {
@@ -159,9 +174,9 @@ async function downloadAndUploadMod(
   if (visited.has(projectId)) return results;
   visited.add(projectId);
 
-  // Ensure manifest.files exists
-  if (!manifest.files) {
-    manifest.files = {};
+  // Ensure mods array exists on manifest
+  if (!Array.isArray(manifest.mods)) {
+    manifest.mods = [];
   }
 
   // Process required dependencies first (depth-first)
@@ -184,33 +199,44 @@ async function downloadAndUploadMod(
   if (!primaryFile) return results;
 
   const r2Key = MODS_PATH + primaryFile.filename;
+  const modPath = 'mods/' + primaryFile.filename;
+  const publicUrl = PUBLIC_BASE + MODS_PATH + primaryFile.filename;
+
+  // Check if this mod already exists in manifest
+  const existingIdx = manifest.mods.findIndex((m: any) => m.path === modPath);
 
   // Download from Modrinth
   const fileRes = await fetch(primaryFile.url, { headers: MODRINTH_HEADERS });
   if (!fileRes.ok) throw new Error(`Failed to download ${primaryFile.filename}: ${fileRes.status}`);
   const fileBuffer = Buffer.from(await fileRes.arrayBuffer());
 
-  // Upload to R2
+  // Upload to R2 (skip if already exists and hash matches, but always update manifest)
+  const r2Existing = manifest.mods.find((m: any) => m.path === modPath);
+  const sha256 = getFileHash(fileBuffer);
+
   await s3.send(new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: r2Key,
     Body: fileBuffer,
   }));
 
-  const hash = getFileHash(fileBuffer);
-  const manifestKey = 'mods/' + primaryFile.filename;
-
-  // Update manifest
-  manifest.files[manifestKey] = {
-    name: primaryFile.filename,
-    size: fileBuffer.length,
-    hash,
+  // Update or add mod entry in manifest
+  const modEntry = {
+    path: modPath,
+    url: publicUrl,
+    sha256,
   };
+
+  if (existingIdx >= 0) {
+    manifest.mods[existingIdx] = modEntry;
+  } else {
+    manifest.mods.push(modEntry);
+  }
 
   results.push({
     fileName: primaryFile.filename,
     size: fileBuffer.length,
-    hash,
+    hash: sha256,
   });
 
   return results;
