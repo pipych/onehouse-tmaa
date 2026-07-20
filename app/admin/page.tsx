@@ -68,7 +68,7 @@ async function uploadFile(event: React.ChangeEvent<HTMLInputElement>, setUrl: (u
 // --- Types ---
 type MainTab = 'home' | 'players' | 'server';
 type PlayersSubTab = 'profiles' | 'characters' | 'professions' | 'roles' | 'guests';
-type ServerSubTab = 'seasons' | 'modpack';
+type ServerSubTab = 'seasons' | 'modpack' | 'mods';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -132,6 +132,15 @@ export default function AdminPage() {
   const [r2MenuOpen, setR2MenuOpen] = useState<string | null>(null);
   const [r2NewFolderName, setR2NewFolderName] = useState('');
   const [r2ShowNewFolder, setR2ShowNewFolder] = useState(false);
+
+  // --- Modrinth mod search ---
+  const [modSearch, setModSearch] = useState('');
+  const [modResults, setModResults] = useState<any[]>([]);
+  const [modLoading, setModLoading] = useState(false);
+  const [modError, setModError] = useState('');
+  const [modTotalHits, setModTotalHits] = useState(0);
+  const [installing, setInstalling] = useState<string | null>(null);
+  const [installMsg, setInstallMsg] = useState('');
 
   // --- Upload overlay ---
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -440,6 +449,47 @@ export default function AdminPage() {
       uploadFileRef.current.files = dt.files;
       setUploadFileName(f.name);
     }
+  };
+
+  // --- Modrinth handlers ---
+  const handleModSearch = async (query?: string) => {
+    const q = (query !== undefined ? query : modSearch).trim();
+    if (!q) return;
+    setModLoading(true);
+    setModError('');
+    try {
+      const res = await fetch('/api/modrinth?query=' + encodeURIComponent(q));
+      const data = await res.json();
+      if (data.error) { setModError(data.error); setModResults([]); }
+      else {
+        setModResults(data.hits || []);
+        setModTotalHits(data.total || 0);
+      }
+    } catch (e: any) {
+      setModError(e.message || 'Ошибка поиска');
+    }
+    setModLoading(false);
+  };
+
+  const handleModInstall = async (item: any) => {
+    setInstalling(item.project_id || item.slug);
+    setInstallMsg('');
+    try {
+      const res = await fetch('/api/modrinth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: item.slug, projectId: item.project_id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInstallMsg('✅ ' + data.message + ' (' + data.installed.map((f: any) => f.fileName).join(', ') + ')');
+      } else {
+        setInstallMsg('❌ ' + (data.error || 'Ошибка установки'));
+      }
+    } catch (e: any) {
+      setInstallMsg('❌ ' + e.message);
+    }
+    setInstalling(null);
   };
 
   // ===================================================================
@@ -834,6 +884,7 @@ export default function AdminPage() {
               {([
                 { key: 'seasons' as const, label: 'Сезоны', icon: <Calendar size={13} /> },
                 { key: 'modpack' as const, label: 'Модпак', icon: <Package size={13} /> },
+                { key: 'mods' as const, label: 'Моды', icon: <Package size={13} /> },
               ]).map(tab => (
                 <button
                   key={tab.key}
@@ -1069,6 +1120,135 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* --- Моды (Modrinth) --- */}
+            {serverSubTab === 'mods' && (
+              <div className="space-y-4 animate-fade-in">
+                {/* Search */}
+                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-3 shadow-xl">
+                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                    <Package size={16} /><span>Поиск модов на Modrinth</span>
+                  </div>
+                  <div className="text-[10px] text-gray-500">
+                    Фильтр: <span className="text-[#c0ff00]">1.20.1</span> · <span className="text-[#c0ff00]">Forge / NeoForge</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Название мода..."
+                      value={modSearch}
+                      onChange={e => setModSearch(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleModSearch(); }}
+                      className="ui-input flex-1"
+                    />
+                    <button
+                      onClick={() => handleModSearch()}
+                      disabled={modLoading || !modSearch.trim()}
+                      className="ui-pill-btn shrink-0 disabled:opacity-30"
+                    >
+                      {modLoading ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
+                      <span>Найти</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Install message */}
+                {installMsg && (
+                  <div className={`p-3 rounded-xl text-xs font-bold border ${installMsg.startsWith('✅') ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                    {installMsg}
+                  </div>
+                )}
+
+                {/* Error */}
+                {modError && (
+                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-bold">{modError}</div>
+                )}
+
+                {/* Results */}
+                {modResults.length > 0 && (
+                  <>
+                    <div className="text-xs text-gray-500">Найдено: {modTotalHits}</div>
+                    <div className="space-y-3">
+                      {modResults.map((mod: any) => (
+                        <div key={mod.project_id} className="bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[20px] border border-white/5 shadow-xl flex gap-3">
+                          {/* Icon */}
+                          {mod.icon_url ? (
+                            <img
+                              src={mod.icon_url}
+                              alt={mod.title}
+                              className="w-12 h-12 rounded-xl object-cover bg-[#1c2026] border border-white/10 flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-[#1c2026] border border-white/10 flex items-center justify-center flex-shrink-0">
+                              <Package size={18} className="text-gray-600" />
+                            </div>
+                          )}
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className="text-sm font-bold text-white truncate cursor-pointer hover:text-[#c0ff00] transition-colors"
+                              onClick={() => window.open(`https://modrinth.com/mod/${mod.slug}`, '_blank')}
+                              title="Открыть на Modrinth"
+                            >
+                              {mod.title}
+                            </div>
+                            <div className="text-[10px] text-gray-500 mt-0.5">{mod.author}</div>
+                            <div className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                              {mod.description || 'Нет описания'}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {mod.categories?.slice(0, 3).map((cat: string, i: number) => (
+                                <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/10">
+                                  {cat}
+                                </span>
+                              ))}
+                              <span className="text-[8px] text-gray-600 px-1.5 py-0.5">
+                                {mod.downloads?.toLocaleString() || 0} загрузок
+                              </span>
+                            </div>
+                          </div>
+                          {/* Actions */}
+                          <div className="flex flex-col gap-1.5 flex-shrink-0 items-end">
+                            <button
+                              onClick={() => window.open(`https://modrinth.com/mod/${mod.slug}`, '_blank')}
+                              className="text-[10px] text-gray-500 hover:text-[#c0ff00] transition-colors px-2 py-1"
+                              title="Открыть на Modrinth"
+                            >
+                              Modrinth ↗
+                            </button>
+                            <button
+                              onClick={() => handleModInstall(mod)}
+                              disabled={installing === mod.project_id}
+                              className="ui-pill-btn !bg-[#c0ff00] !text-black text-[10px] font-bold px-3 py-1.5 disabled:opacity-50"
+                            >
+                              {installing === mod.project_id ? (
+                                <><RefreshCw size={11} className="animate-spin" /> Установка...</>
+                              ) : (
+                                <><Download size={11} /> Установить</>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Empty state */}
+                {!modLoading && !modError && modResults.length === 0 && (
+                  <div className="text-center py-12 text-xs text-gray-500">
+                    {modSearch ? 'Ничего не найдено' : 'Введите название мода для поиска'}
+                  </div>
+                )}
+
+                {/* Loading state */}
+                {modLoading && (
+                  <div className="flex justify-center py-12">
+                    <RefreshCw className="animate-spin text-[#c0ff00]" size={24} />
+                  </div>
+                )}
               </div>
             )}
           </>
