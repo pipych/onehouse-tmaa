@@ -9,7 +9,7 @@ import crypto from 'crypto';
 // --- R2 config (same as other routes) ---
 const R2_ACCOUNT_ID = '89476ea08498adb1813b3607c5079df7';
 const R2_ACCESS_KEY_ID = '3513b185f8a785a30fb5e77c78203215';
-const R2_SECRET_ACCESS_KEY = '4a03f95cb2cfe9be657977c0b58f3dc712bedba0d236c17e545a97a538c0500d';
+const R2_SECRET_ACCESS_KEY = '4a03f9f253413aaabb3bcfbc4579de7bca4ae60a0cb30c944e2e84e59912500d';
 const R2_BUCKET = 'onelaunch-mods';
 
 const s3 = new S3Client({
