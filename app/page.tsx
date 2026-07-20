@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 
 
@@ -1070,6 +1070,29 @@ export default function Home() {
 
 
 
+
+
+  // --- Auth by Minecraft nickname (for OneLaunch desktop launcher) ---
+  async function checkMcNickname(mcNickname: string) {
+    try {
+      const { findPlayerByNickname } = await import('../lib/mc-auth');
+      const player = await findPlayerByNickname(mcNickname);
+
+      if (!player) {
+        setErrorType('notWhitelisted');
+        setLoading(false);
+        return;
+      }
+
+      // Устанавливаем tgUser как заглушку (раз мы не из Telegram)
+      setTgUser({ id: player.tg_id || 0, username: player.tg_username || player.mc_nickname });
+      await checkUserInDb(player.tg_id || (-Date.now()));
+    } catch (e: any) {
+      setError(`Ошибка БД: ${e.message}`);
+      setLoading(false);
+    }
+  }
+
   async function checkUserInDb(tgId: number) {
 
     try {
@@ -1851,15 +1874,20 @@ export default function Home() {
         if (articleId) router.push(`/media/${articleId}`);
 
       }
-
     } else {
+      // Проверяем: может это вход через OneLaunch с MC-ником
+      const mcSearch = window.location.search;
+      const mcNickname = new URLSearchParams(mcSearch).get('mc_nickname');
+      if (mcNickname && mcNickname.trim()) {
+        checkMcNickname(mcNickname.trim());
+        return;
+      }
 
       setErrorType('notTelegram');
 
       setLoading(false);
 
     }
-
   }, []);
 
 
