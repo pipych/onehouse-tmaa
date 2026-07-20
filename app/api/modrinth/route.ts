@@ -159,6 +159,11 @@ async function downloadAndUploadMod(
   if (visited.has(projectId)) return results;
   visited.add(projectId);
 
+  // Ensure manifest.files exists
+  if (!manifest.files) {
+    manifest.files = {};
+  }
+
   // Process required dependencies first (depth-first)
   for (const dep of version.dependencies) {
     if (dep.dependency_type === 'required' && dep.project_id) {
