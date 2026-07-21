@@ -1086,7 +1086,32 @@ export default function Home() {
 
       // Устанавливаем tgUser как заглушку (раз мы не из Telegram)
       setTgUser({ id: player.tg_id || 0, username: player.tg_username || player.mc_nickname });
-      await checkUserInDb(player.tg_id || (-Date.now()));
+
+      if (player.tg_id) {
+        // Игрок привязан к Telegram — используем стандартную загрузку
+        await checkUserInDb(player.tg_id);
+      } else {
+        // Игрок без Telegram — минимальный профиль
+        setDbUser({
+          id: player.id,
+          player_id: player.id,
+          tg_id: 0,
+          tg_username: '',
+          mc_nickname: player.mc_nickname,
+          rp_name: player.mc_nickname,
+          avatar_url: player.avatar_url || '',
+          roles: player.roles || [],
+          party: 'Нет партии',
+          season: currentSeasonName,
+          status: 'alive',
+        });
+        loadRoles();
+        loadProfessions();
+        loadPlayers();
+        loadConstitution();
+        loadLatestPosts();
+        setLoading(false);
+      }
     } catch (e: any) {
       setError(`Ошибка БД: ${e.message}`);
       setLoading(false);
@@ -1877,7 +1902,7 @@ export default function Home() {
     } else {
       // Проверяем: может это вход через OneLaunch с MC-ником
       const mcSearch = window.location.search;
-      const mcNickname = new URLSearchParams(mcSearch).get('mc_nickname');
+      const mcNickname = new URLSearchParams(mcSearch).get('nickname');
       if (mcNickname && mcNickname.trim()) {
         checkMcNickname(mcNickname.trim());
         return;
