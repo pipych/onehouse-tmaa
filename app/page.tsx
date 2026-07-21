@@ -2383,7 +2383,7 @@ export default function Home() {
 
       {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК */}
 
-      <main className="p-4 pt-36 pb-24 md:p-12 md:pl-[140px] md:pr-8 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
+      <main className="p-4 pt-36 pb-24 md:p-12 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
 
         {activeTab === 'profile' && (
 
