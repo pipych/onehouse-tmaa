@@ -24,11 +24,12 @@ export default function RootLayout({
     // Добавляем переменную шрифта в тег html
     <html lang="ru" className={wixFont.variable}>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         {/* Этот скрипт жизненно необходим для работы внутри Telegram */}
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
       </head>
       {/* Принудительно задаем класс шрифта для всего приложения */}
-      <body className={wixFont.className}>{children}</body>
+      <body className={`${wixFont.className} h-full w-full m-0 p-0 overflow-x-hidden`}>{children}</body>
     </html>
   );
 }
