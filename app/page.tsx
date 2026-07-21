@@ -1874,7 +1874,15 @@ export default function Home() {
 
       tg.ready();
 
-      tg.expand(); 
+      // Форсируем expand с повтором — на ПК-версии Telegram бывает нужно
+      tg.expand();
+      // Повторный expand через небольшую задержку для надёжности
+      setTimeout(() => {
+        try { tg.expand(); } catch (e) {}
+      }, 150);
+      setTimeout(() => {
+        try { tg.expand(); } catch (e) {}
+      }, 500);
 
       if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
 
