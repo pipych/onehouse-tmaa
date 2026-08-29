@@ -1,0 +1,29 @@
+﻿name: Supabase Keepalive Trigger
+
+on:
+  schedule:
+    # Запуск каждые 3 дня в 06:00 UTC (для гарантированного предотвращения 7-дневной паузы)
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: # Возможность ручного запуска из вкладки Actions на GitHub
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          echo "Sending keepalive request to Supabase gateway..."
+          HTTP_STATUS=$(curl -s -o response.json -w "%{http_code}" -X GET \
+            "https://sxdswqgoqgvkmdknqzir.supabase.co/rest/v1/players?select=id&limit=1" \
+            -H "apikey: sb_publishable_7_PN5q0F5n9wdnnSm4xiLQ_vHEftQL9" \
+            -H "Authorization: Bearer sb_publishable_7_PN5q0F5n9wdnnSm4xiLQ_vHEftQL9")
+          
+          echo "HTTP Status: $HTTP_STATUS"
+          cat response.json
+          
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Supabase activity ping succeeded!"
+          else
+            echo "Failed to ping Supabase, status: $HTTP_STATUS"
+            exit 1
+          fi
