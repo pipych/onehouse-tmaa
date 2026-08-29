@@ -1,4 +1,4 @@
-﻿name: Supabase Keepalive Trigger
+name: Supabase Keepalive Trigger
 
 on:
   schedule:
