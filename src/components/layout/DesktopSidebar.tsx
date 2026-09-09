@@ -50,11 +50,15 @@ export function DesktopSidebar({
           onClick={() => onTabChange('profile')}
           className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
             activeTab === 'profile'
-              ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+              ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
               : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
           }`}
         >
-          <SFSymbol name="house.fill" size={22} />
+          <SFSymbol
+            name="house.fill"
+            size={24}
+            className={`transition-all duration-300 ${activeTab === 'profile' ? 'sf-glow-green' : ''}`}
+          />
           <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
             Главная
           </span>
@@ -65,11 +69,15 @@ export function DesktopSidebar({
             onClick={() => onTabChange('archive')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               activeTab === 'archive'
-                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
-            <SFSymbol name="archivebox.fill" size={22} />
+            <SFSymbol
+              name="archivebox.fill"
+              size={24}
+              className={`transition-all duration-300 ${activeTab === 'archive' ? 'sf-glow-green' : ''}`}
+            />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
               Архив
             </span>
@@ -80,11 +88,15 @@ export function DesktopSidebar({
               onClick={() => onTabChange('media')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'media'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
-              <SFSymbol name="newspaper.fill" size={22} />
+              <SFSymbol
+                name="newspaper.fill"
+                size={24}
+                className={`transition-all duration-300 ${activeTab === 'media' ? 'sf-glow-green' : ''}`}
+              />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Медиа
               </span>
@@ -94,11 +106,15 @@ export function DesktopSidebar({
               onClick={() => onTabChange('svod')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'svod'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
-              <SFSymbol name="doc.text.fill" size={22} />
+              <SFSymbol
+                name="doc.text.fill"
+                size={24}
+                className={`transition-all duration-300 ${activeTab === 'svod' ? 'sf-glow-green' : ''}`}
+              />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Свод
               </span>
@@ -108,11 +124,15 @@ export function DesktopSidebar({
               onClick={() => onTabChange('treasury')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'treasury'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
-              <SFSymbol name="building.columns.fill" size={22} />
+              <SFSymbol
+                name="building.columns.fill"
+                size={24}
+                className={`transition-all duration-300 ${activeTab === 'treasury' ? 'sf-glow-green' : ''}`}
+              />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Казна
               </span>
@@ -122,11 +142,15 @@ export function DesktopSidebar({
               onClick={() => onTabChange('players')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'players'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
-              <SFSymbol name="person.2.fill" size={22} />
+              <SFSymbol
+                name="person.2.fill"
+                size={24}
+                className={`transition-all duration-300 ${activeTab === 'players' ? 'sf-glow-green' : ''}`}
+              />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Игроки
               </span>
@@ -141,12 +165,16 @@ export function DesktopSidebar({
           onClick={() => onTabChange('onelaunch')}
           className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
             activeTab === 'onelaunch'
-              ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+              ? 'bg-[#252c37] border border-white/15 text-[#c0ff00] shadow-md shadow-black/50 font-bold'
               : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
           }`}
           title="Скачать лаунчер OneLaunch"
         >
-          <SFSymbol name="arrow.down.circle.fill" size={22} />
+          <SFSymbol
+            name="arrow.down.circle.fill"
+            size={24}
+            className={`transition-all duration-300 ${activeTab === 'onelaunch' ? 'sf-glow-green' : ''}`}
+          />
           <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
             Скачать
           </span>
