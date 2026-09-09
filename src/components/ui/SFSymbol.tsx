@@ -215,6 +215,8 @@ export interface SFSymbolProps extends React.HTMLAttributes<HTMLSpanElement> {
   size?: number | string;
   color?: string;
   animated?: boolean;
+  effect?: 'bounce' | 'wiggle' | 'breathe' | 'rotate';
+  liquid?: boolean;
   className?: string;
   onClick?: (e: React.MouseEvent<HTMLSpanElement>) => void;
 }
@@ -224,21 +226,24 @@ export const SFSymbol = React.forwardRef<HTMLSpanElement, SFSymbolProps>(({
   size = 20,
   color,
   animated = true,
+  effect = 'bounce',
+  liquid = true,
   className = '',
   onClick,
   style,
   ...props
 }, ref) => {
-  const [bouncing, setBouncing] = useState(false);
+  const [animating, setAnimating] = useState(false);
 
   const iconData = SF_ICONS_MAP[name] || SF_ICONS_MAP['doc.text.fill'] || docTextFill;
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (animated) {
-      setBouncing(true);
-      setTimeout(() => setBouncing(false), 450);
+      setAnimating(true);
+      const duration = effect === 'rotate' ? 550 : effect === 'wiggle' ? 480 : 460;
+      setTimeout(() => setAnimating(false), duration);
 
-      // Trigger Telegram WebApp haptic vibration
+      // Trigger Telegram WebApp haptic vibration (Apple iOS style)
       try {
         const tg = (window as any).Telegram?.WebApp;
         if (tg?.HapticFeedback) {
@@ -250,12 +255,22 @@ export const SFSymbol = React.forwardRef<HTMLSpanElement, SFSymbolProps>(({
     onClick?.(e);
   };
 
+  const animationClass = animating
+    ? effect === 'wiggle'
+      ? 'animate-sf-wiggle'
+      : effect === 'rotate'
+      ? 'animate-sf-rotate'
+      : effect === 'breathe'
+      ? 'animate-sf-breathe'
+      : 'animate-sf-bounce'
+    : '';
+
   return (
     <span
       ref={ref}
       className={`inline-flex items-center justify-center shrink-0 select-none ${
-        bouncing ? 'animate-sf-bounce' : ''
-      } ${className}`}
+        liquid ? 'sf-liquid' : ''
+      } ${animationClass} ${className}`}
       onClick={handleClick}
       style={{
         width: typeof size === 'number' ? `${size}px` : size,
