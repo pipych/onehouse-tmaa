@@ -1,6 +1,6 @@
-// =========================================================================
+п»ї// =========================================================================
 
-// 1. НАСТРОЙКИ NEXT.JS И СИСТЕМНЫЕ ИМПОРТЫ
+// 1. РќРђРЎРўР РћР™РљР NEXT.JS Р РЎРРЎРўР•РњРќР«Р• РРњРџРћР РўР«
 
 // =========================================================================
 
@@ -137,9 +137,9 @@ function SeasonPlaceholder() {
 
       <Calendar size={48} className="text-gray-700" />
 
-      <p className="text-lg font-bold text-gray-600">Новый сезон ещё не начался</p>
+      <p className="text-lg font-bold text-gray-600">РќРѕРІС‹Р№ СЃРµР·РѕРЅ РµС‰С‘ РЅРµ РЅР°С‡Р°Р»СЃСЏ</p>
 
-      <p className="text-xs text-gray-700 uppercase tracking-[0.2em]">Скоро...</p>
+      <p className="text-xs text-gray-700 uppercase tracking-[0.2em]">РЎРєРѕСЂРѕ...</p>
 
     </div>
 
@@ -151,7 +151,7 @@ function SeasonPlaceholder() {
 
 // =========================================================================
 
-// 2. ГЛАВНЫЙ КОМПОНЕНТ СТРАНИЦЫ
+// 2. Р“Р›РђР’РќР«Р™ РљРћРњРџРћРќР•РќРў РЎРўР РђРќРР¦Р«
 
 // =========================================================================
 
@@ -291,17 +291,17 @@ export default function Home() {
 
   const [editingCharId, setEditingCharId] = useState<string | null>(null);
 
-  const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'Нет партии', avatar_url: '', professions: [] as string[] });
+  const [editCharData, setEditCharData] = useState({ rp_name: '', party: 'РќРµС‚ РїР°СЂС‚РёРё', avatar_url: '', professions: [] as string[] });
 
   const [isUploadingAdminAvatar, setIsUploadingAdminAvatar] = useState(false);
 
   const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
 
-  const currentSeasonName = `Сезон ${currentSeasonNum}`;
+  const currentSeasonName = `РЎРµР·РѕРЅ ${currentSeasonNum}`;
 
 
 
-  // Динамический старт сезона из БД
+  // Р”РёРЅР°РјРёС‡РµСЃРєРёР№ СЃС‚Р°СЂС‚ СЃРµР·РѕРЅР° РёР· Р‘Р”
 
   const SEASON_START = useMemo(() => {
 
@@ -333,7 +333,7 @@ export default function Home() {
 
 
 
-  // Загрузка состояния сезона
+  // Р—Р°РіСЂСѓР·РєР° СЃРѕСЃС‚РѕСЏРЅРёСЏ СЃРµР·РѕРЅР°
 
   useEffect(() => {
 
@@ -361,7 +361,7 @@ export default function Home() {
 
       setPastSeasons(all);
 
-      // Загружаем конституцию/заповеди для актуального сезона
+      // Р—Р°РіСЂСѓР¶Р°РµРј РєРѕРЅСЃС‚РёС‚СѓС†РёСЋ/Р·Р°РїРѕРІРµРґРё РґР»СЏ Р°РєС‚СѓР°Р»СЊРЅРѕРіРѕ СЃРµР·РѕРЅР°
 
       loadConstitution(seasonName(state.season_number));
 
@@ -375,7 +375,7 @@ export default function Home() {
 
   async function handleEndSeason() {
 
-    if (!confirm('Завершить текущий сезон? Вся информация будет скрыта.')) return;
+    if (!confirm('Р—Р°РІРµСЂС€РёС‚СЊ С‚РµРєСѓС‰РёР№ СЃРµР·РѕРЅ? Р’СЃСЏ РёРЅС„РѕСЂРјР°С†РёСЏ Р±СѓРґРµС‚ СЃРєСЂС‹С‚Р°.')) return;
 
     setSeasonLoading(true);
 
@@ -397,13 +397,13 @@ export default function Home() {
 
       } else {
 
-        alert('Ошибка завершения сезона. Проверь, выполнен ли SQL из supabase/season_migration.sql в Supabase.');
+        alert('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ СЃРµР·РѕРЅР°. РџСЂРѕРІРµСЂСЊ, РІС‹РїРѕР»РЅРµРЅ Р»Рё SQL РёР· supabase/season_migration.sql РІ Supabase.');
 
       }
 
     } catch (e: any) {
 
-      alert('Ошибка завершения сезона: ' + (e.message || 'неизвестно'));
+      alert('РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ СЃРµР·РѕРЅР°: ' + (e.message || 'РЅРµРёР·РІРµСЃС‚РЅРѕ'));
 
     }
 
@@ -415,7 +415,7 @@ export default function Home() {
 
   async function handleUndoEndSeason() {
 
-    if (!confirm('Отменить завершение сезона? Данные будут восстановлены.')) return;
+    if (!confirm('РћС‚РјРµРЅРёС‚СЊ Р·Р°РІРµСЂС€РµРЅРёРµ СЃРµР·РѕРЅР°? Р”Р°РЅРЅС‹Рµ Р±СѓРґСѓС‚ РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅС‹.')) return;
 
     setSeasonLoading(true);
 
@@ -429,7 +429,7 @@ export default function Home() {
 
     } else {
 
-      alert('Ошибка отмены завершения');
+      alert('РћС€РёР±РєР° РѕС‚РјРµРЅС‹ Р·Р°РІРµСЂС€РµРЅРёСЏ');
 
     }
 
@@ -463,9 +463,9 @@ export default function Home() {
 
     const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : currentSeasonNum) + 1;
 
-    const serverMsg = seasonEnded ? '' : '\nТекущий сезон будет завершён и уйдёт в архив.';
+    const serverMsg = seasonEnded ? '' : '\nРўРµРєСѓС‰РёР№ СЃРµР·РѕРЅ Р±СѓРґРµС‚ Р·Р°РІРµСЂС€С‘РЅ Рё СѓР№РґС‘С‚ РІ Р°СЂС…РёРІ.';
 
-    if (!confirm(`Начать новый сезон #${nextNum}?${serverMsg}`)) return;
+    if (!confirm(`РќР°С‡Р°С‚СЊ РЅРѕРІС‹Р№ СЃРµР·РѕРЅ #${nextNum}?${serverMsg}`)) return;
 
     setSeasonLoading(true);
 
@@ -484,7 +484,7 @@ export default function Home() {
 
     } else {
 
-      alert('Ошибка создания нового сезона');
+      alert('РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РЅРѕРІРѕРіРѕ СЃРµР·РѕРЅР°');
 
     }
 
@@ -496,7 +496,7 @@ export default function Home() {
 
   async function handleRestoreSeason(seasonId: number, seasonNum: number) {
 
-    if (!confirm(`Восстановить сезон #${seasonNum} как активный? Текущий активный сезон (если есть) будет завершён.`)) return;
+    if (!confirm(`Р’РѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ СЃРµР·РѕРЅ #${seasonNum} РєР°Рє Р°РєС‚РёРІРЅС‹Р№? РўРµРєСѓС‰РёР№ Р°РєС‚РёРІРЅС‹Р№ СЃРµР·РѕРЅ (РµСЃР»Рё РµСЃС‚СЊ) Р±СѓРґРµС‚ Р·Р°РІРµСЂС€С‘РЅ.`)) return;
 
     setSeasonLoading(true);
 
@@ -512,7 +512,7 @@ export default function Home() {
 
     } else {
 
-      alert('Ошибка восстановления сезона');
+      alert('РћС€РёР±РєР° РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ СЃРµР·РѕРЅР°');
 
     }
 
@@ -524,7 +524,7 @@ export default function Home() {
 
   async function handleDeleteSeason(seasonId: number, seasonNum: number) {
 
-    if (!confirm(`Удалить сезон #${seasonNum} навсегда? Это действие необратимо.`)) return;
+    if (!confirm(`РЈРґР°Р»РёС‚СЊ СЃРµР·РѕРЅ #${seasonNum} РЅР°РІСЃРµРіРґР°? Р­С‚Рѕ РґРµР№СЃС‚РІРёРµ РЅРµРѕР±СЂР°С‚РёРјРѕ.`)) return;
 
     setSeasonLoading(true);
 
@@ -536,7 +536,7 @@ export default function Home() {
 
     } else {
 
-      alert('Ошибка удаления сезона');
+      alert('РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ СЃРµР·РѕРЅР°');
 
     }
 
@@ -554,9 +554,9 @@ export default function Home() {
 
   const currentDocText = activeDocument === 'constitution' ? constitutionText : commandmentsText;
 
-  const isAdmin = dbUser?.roles?.some(r => ['admin', 'админ'].includes(r.toLowerCase())) || false;
+  const isAdmin = dbUser?.roles?.some(r => ['admin', 'Р°РґРјРёРЅ'].includes(r.toLowerCase())) || false;
 
-  const hasAdminAccess = dbUser?.roles?.some(r => ['admin', 'админ', 'редактор'].includes(r.toLowerCase())) || false;
+  const hasAdminAccess = dbUser?.roles?.some(r => ['admin', 'Р°РґРјРёРЅ', 'СЂРµРґР°РєС‚РѕСЂ'].includes(r.toLowerCase())) || false;
 
 
 
@@ -603,17 +603,17 @@ export default function Home() {
 
     switch(statusCode) {
 
-      case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
+      case 0: return { text: 'РћР¤Р¤Р›РђР™Рќ', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
 
-      case 1: return { text: 'ОНЛАЙН', color: 'text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
+      case 1: return { text: 'РћРќР›РђР™Рќ', color: 'text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
 
-      case 2: return { text: 'ЗАПУСКАЕТСЯ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
+      case 2: return { text: 'Р—РђРџРЈРЎРљРђР•РўРЎРЇ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
 
-      case 3: return { text: 'ОСТАНАВЛИВАЕТСЯ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
+      case 3: return { text: 'РћРЎРўРђРќРђР’Р›РР’РђР•РўРЎРЇ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
 
-      case 4: return { text: 'ПЕРЕЗАГРУЗКА...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
+      case 4: return { text: 'РџР•Р Р•Р—РђР“Р РЈР—РљРђ...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
 
-      default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
+      default: return { text: 'Р—РђР“Р РЈР—РљРђ Р”РђРќРќР«РҐ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
 
     }
 
@@ -710,11 +710,11 @@ export default function Home() {
     if (!input) return false;
 
     // If passed just an array (e.g. roles), treat it as professions array
-    if (Array.isArray(input)) return input.some((x: string) => x.toLowerCase() === 'мёртв');
+    if (Array.isArray(input)) return input.some((x: string) => x.toLowerCase() === 'РјС‘СЂС‚РІ');
 
     // Full player/character object: check professions and status
     const profs = input.professions || [];
-    return profs.some((p: string) => p.toLowerCase() === 'мёртв') || input.status === 'dead';
+    return profs.some((p: string) => p.toLowerCase() === 'РјС‘СЂС‚РІ') || input.status === 'dead';
 
   }
 
@@ -736,7 +736,7 @@ export default function Home() {
 
       const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, { contentType: 'image/webp' });
 
-      if (error) return alert(`Ошибка загрузки: ${error.message}`);
+      if (error) return alert(`РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё: ${error.message}`);
 
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
@@ -744,7 +744,7 @@ export default function Home() {
 
     } catch (e: any) {
 
-      alert(`Сбой при загрузке: ${e.message}`);
+      alert(`РЎР±РѕР№ РїСЂРё Р·Р°РіСЂСѓР·РєРµ: ${e.message}`);
 
     } finally { 
 
@@ -882,7 +882,7 @@ export default function Home() {
 
 
 
-  // =================== УМНЫЙ ПОИСК ПО ДОКУМЕНТАМ ===================
+  // =================== РЈРњРќР«Р™ РџРћРРЎРљ РџРћ Р”РћРљРЈРњР•РќРўРђРњ ===================
 
   function getHighlightedHtml(html: string, query: string): string {
 
@@ -898,19 +898,19 @@ export default function Home() {
 
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-      // Строим паттерн: точное совпадение + префиксный поиск словоформ
+      // РЎС‚СЂРѕРёРј РїР°С‚С‚РµСЂРЅ: С‚РѕС‡РЅРѕРµ СЃРѕРІРїР°РґРµРЅРёРµ + РїСЂРµС„РёРєСЃРЅС‹Р№ РїРѕРёСЃРє СЃР»РѕРІРѕС„РѕСЂРј
 
       let pattern: string;
 
       if (term.length <= 4) {
 
-        // Короткие слова: только точное совпадение
+        // РљРѕСЂРѕС‚РєРёРµ СЃР»РѕРІР°: С‚РѕР»СЊРєРѕ С‚РѕС‡РЅРѕРµ СЃРѕРІРїР°РґРµРЅРёРµ
 
         pattern = escaped;
 
       } else {
 
-        // Длинные слова: точное + корень (N-2 символов) + любые окончания
+        // Р”Р»РёРЅРЅС‹Рµ СЃР»РѕРІР°: С‚РѕС‡РЅРѕРµ + РєРѕСЂРµРЅСЊ (N-2 СЃРёРјРІРѕР»РѕРІ) + Р»СЋР±С‹Рµ РѕРєРѕРЅС‡Р°РЅРёСЏ
 
         const stemLen = Math.max(3, term.length - 2);
 
@@ -918,7 +918,7 @@ export default function Home() {
 
         const stemEscaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-        pattern = `${escaped}|\\b${stemEscaped}[а-яёa-z]*\\b`;
+        pattern = `${escaped}|\\b${stemEscaped}[Р°-СЏС‘a-z]*\\b`;
 
       }
 
@@ -1030,11 +1030,11 @@ export default function Home() {
 
       if (data.success) setTimeout(fetchServerStatus, 3000);
 
-      else alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+      else alert('РћС€РёР±РєР°: ' + (data.error || 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°'));
 
     } catch (e) {
 
-      alert('Ошибка соединения');
+      alert('РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ');
 
     } finally {
 
@@ -1078,14 +1078,14 @@ export default function Home() {
         return;
       }
 
-      // Устанавливаем tgUser как заглушку (раз мы не из Telegram)
+      // РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј tgUser РєР°Рє Р·Р°РіР»СѓС€РєСѓ (СЂР°Р· РјС‹ РЅРµ РёР· Telegram)
       setTgUser({ id: player.tg_id || 0, username: player.tg_username || player.mc_nickname });
 
       if (player.tg_id) {
-        // Игрок привязан к Telegram — используем стандартную загрузку
+        // РРіСЂРѕРє РїСЂРёРІСЏР·Р°РЅ Рє Telegram вЂ” РёСЃРїРѕР»СЊР·СѓРµРј СЃС‚Р°РЅРґР°СЂС‚РЅСѓСЋ Р·Р°РіСЂСѓР·РєСѓ
         await checkUserInDb(player.tg_id);
       } else {
-        // Игрок без Telegram — минимальный профиль
+        // РРіСЂРѕРє Р±РµР· Telegram вЂ” РјРёРЅРёРјР°Р»СЊРЅС‹Р№ РїСЂРѕС„РёР»СЊ
         setDbUser({
           id: player.id,
           player_id: player.id,
@@ -1095,7 +1095,7 @@ export default function Home() {
           rp_name: player.mc_nickname,
           avatar_url: player.avatar_url || '',
           roles: player.roles || [],
-          party: 'Нет партии',
+          party: 'РќРµС‚ РїР°СЂС‚РёРё',
           season: currentSeasonName,
           status: 'alive',
         });
@@ -1107,7 +1107,7 @@ export default function Home() {
         setLoading(false);
       }
     } catch (e: any) {
-      setError(`Ошибка БД: ${e.message}`);
+      setError(`РћС€РёР±РєР° Р‘Р”: ${e.message}`);
       setLoading(false);
     }
   }
@@ -1148,9 +1148,9 @@ export default function Home() {
 
             tg_username: tgUser?.username || 'guest',
 
-            mc_nickname: 'Гость',
+            mc_nickname: 'Р“РѕСЃС‚СЊ',
 
-            rp_name: 'Гость',
+            rp_name: 'Р“РѕСЃС‚СЊ',
 
             avatar_url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="%23c0ff00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" fill="%23c0ff0015"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>'),
 
@@ -1182,7 +1182,7 @@ export default function Home() {
 
 
 
-      // RPC: получаем персонажа для текущего сезона
+      // RPC: РїРѕР»СѓС‡Р°РµРј РїРµСЂСЃРѕРЅР°Р¶Р° РґР»СЏ С‚РµРєСѓС‰РµРіРѕ СЃРµР·РѕРЅР°
 
       const { data: charId, error: rpcError } = await supabase.rpc('get_active_character', { p_player_id: player.id });
 
@@ -1190,7 +1190,7 @@ export default function Home() {
 
       if (rpcError) {
 
-        setError(`Ошибка сервера: RPC get_active_character не существует. Выполни auth_rework_migration.sql в Supabase.`);
+        setError(`РћС€РёР±РєР° СЃРµСЂРІРµСЂР°: RPC get_active_character РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚. Р’С‹РїРѕР»РЅРё auth_rework_migration.sql РІ Supabase.`);
 
         setLoading(false);
 
@@ -1202,7 +1202,7 @@ export default function Home() {
 
       if (!charId) {
 
-        // Игрок есть, персонажа в текущем сезоне нет — проверяем роли на профиле игрока
+        // РРіСЂРѕРє РµСЃС‚СЊ, РїРµСЂСЃРѕРЅР°Р¶Р° РІ С‚РµРєСѓС‰РµРј СЃРµР·РѕРЅРµ РЅРµС‚ вЂ” РїСЂРѕРІРµСЂСЏРµРј СЂРѕР»Рё РЅР° РїСЂРѕС„РёР»Рµ РёРіСЂРѕРєР°
 
         setDbUser({
 
@@ -1222,7 +1222,7 @@ export default function Home() {
 
           roles: player.roles || [],
 
-          party: 'Нет партии',
+          party: 'РќРµС‚ РїР°СЂС‚РёРё',
 
           season: currentSeasonName,
 
@@ -1252,7 +1252,7 @@ export default function Home() {
 
 
 
-      // Загружаем персонажа (роли теперь на characters)
+      // Р—Р°РіСЂСѓР¶Р°РµРј РїРµСЂСЃРѕРЅР°Р¶Р° (СЂРѕР»Рё С‚РµРїРµСЂСЊ РЅР° characters)
 
       const { data: charData } = await supabase
 
@@ -1272,7 +1272,7 @@ export default function Home() {
 
       if (!character) {
 
-        setError(`Персонаж не найден.`);
+        setError(`РџРµСЂСЃРѕРЅР°Р¶ РЅРµ РЅР°Р№РґРµРЅ.`);
 
         setLoading(false);
 
@@ -1300,7 +1300,7 @@ export default function Home() {
 
         roles: player.roles || [],
 
-        party: character.party || 'Нет партии',
+        party: character.party || 'РќРµС‚ РїР°СЂС‚РёРё',
 
         season: character.season,
 
@@ -1330,7 +1330,7 @@ export default function Home() {
 
     } catch (e: any) {
 
-      setError(`Ошибка БД: ${e.message}`);
+      setError(`РћС€РёР±РєР° Р‘Р”: ${e.message}`);
 
       setLoading(false);
 
@@ -1502,7 +1502,7 @@ export default function Home() {
 
 
 
-    // Проверяем, есть ли уже документ для этого сезона
+    // РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё СѓР¶Рµ РґРѕРєСѓРјРµРЅС‚ РґР»СЏ СЌС‚РѕРіРѕ СЃРµР·РѕРЅР°
 
     const { data: existing } = await supabase.from('constitution').select('id').eq('id', docId).eq('season', currentSeasonName).maybeSingle();
 
@@ -1510,7 +1510,7 @@ export default function Home() {
 
     if (existing) {
 
-      // Обновляем существующий
+      // РћР±РЅРѕРІР»СЏРµРј СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№
 
       const { error } = await supabase.from('constitution').update({ content: updatedContent }).eq('id', docId).eq('season', currentSeasonName);
 
@@ -1524,15 +1524,15 @@ export default function Home() {
 
       } else {
 
-        alert(`Ошибка: ${error.message}`);
+        alert(`РћС€РёР±РєР°: ${error.message}`);
 
       }
 
     } else {
 
-      // Вставляем новый для этого сезона
+      // Р’СЃС‚Р°РІР»СЏРµРј РЅРѕРІС‹Р№ РґР»СЏ СЌС‚РѕРіРѕ СЃРµР·РѕРЅР°
 
-      const { error } = await supabase.from('constitution').insert({ id: docId, content: updatedContent, season: currentSeasonName, title: docId === 1 ? 'Конституция' : 'Заповеди' });
+      const { error } = await supabase.from('constitution').insert({ id: docId, content: updatedContent, season: currentSeasonName, title: docId === 1 ? 'РљРѕРЅСЃС‚РёС‚СѓС†РёСЏ' : 'Р—Р°РїРѕРІРµРґРё' });
 
       if (!error) {
 
@@ -1544,7 +1544,7 @@ export default function Home() {
 
       } else {
 
-        alert(`Ошибка: ${error.message}`);
+        alert(`РћС€РёР±РєР°: ${error.message}`);
 
       }
 
@@ -1574,7 +1574,7 @@ export default function Home() {
 
     } else {
 
-      alert(`Ошибка: ${error.message}`);
+      alert(`РћС€РёР±РєР°: ${error.message}`);
 
     }
 
@@ -1590,7 +1590,7 @@ export default function Home() {
 
     
 
-    // 1. Создаём или находим игрока (Minecraft-профиль)
+    // 1. РЎРѕР·РґР°С‘Рј РёР»Рё РЅР°С…РѕРґРёРј РёРіСЂРѕРєР° (Minecraft-РїСЂРѕС„РёР»СЊ)
 
     const { data: existingPlayers } = await supabase.from('players').select('id').eq('tg_id', tgIdNum).limit(1);
 
@@ -1624,7 +1624,7 @@ export default function Home() {
 
       }).select();
 
-      if (playerError) { alert(`Ошибка создания игрока: ${playerError.message}`); return; }
+      if (playerError) { alert(`РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РёРіСЂРѕРєР°: ${playerError.message}`); return; }
 
       playerId = newPlayers?.[0]?.id;
 
@@ -1632,7 +1632,7 @@ export default function Home() {
 
 
 
-    // 2. Создаём персонажа с профессиями
+    // 2. РЎРѕР·РґР°С‘Рј РїРµСЂСЃРѕРЅР°Р¶Р° СЃ РїСЂРѕС„РµСЃСЃРёСЏРјРё
 
     const { error } = await supabase.from('characters').insert({
 
@@ -1644,7 +1644,7 @@ export default function Home() {
 
       avatar_url: addAvatarUrl || '',
 
-      party: addParty || 'Нет партии',
+      party: addParty || 'РќРµС‚ РїР°СЂС‚РёРё',
 
       professions: addRoles,
 
@@ -1652,7 +1652,7 @@ export default function Home() {
 
     });
 
-    if (error) alert(`Ошибка создания персонажа: ${error.message}`);
+    if (error) alert(`РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїРµСЂСЃРѕРЅР°Р¶Р°: ${error.message}`);
 
     else { setAddTgId(''); setAddTgUsername(''); setAddMcNickname(''); setAddRpName(''); setAddAvatarUrl(''); setAddParty(''); loadPlayers(); }
 
@@ -1686,7 +1686,7 @@ export default function Home() {
 
     const updatedPlayer = { ...selectedCharacter, roles: updatedRoles };
 
-    // Роли теперь на players (Minecraft-профиль)
+    // Р РѕР»Рё С‚РµРїРµСЂСЊ РЅР° players (Minecraft-РїСЂРѕС„РёР»СЊ)
 
     const { error } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedCharacter.player_id);
 
@@ -1712,7 +1712,7 @@ export default function Home() {
 
     const updatedPlayer = { ...selectedCharacter, roles: updatedRoles };
 
-    // Роли теперь на players (Minecraft-профиль)
+    // Р РѕР»Рё С‚РµРїРµСЂСЊ РЅР° players (Minecraft-РїСЂРѕС„РёР»СЊ)
 
     const { error = null } = await supabase.from('players').update({ roles: updatedRoles }).eq('id', selectedCharacter.player_id);
 
@@ -1778,11 +1778,11 @@ export default function Home() {
 
   async function deleteCharacter(charId: string, rpName: string) {
 
-    if (!confirm(`Удалить персонажа «${rpName}» навсегда? Это нельзя отменить.`)) return;
+    if (!confirm(`РЈРґР°Р»РёС‚СЊ РїРµСЂСЃРѕРЅР°Р¶Р° В«${rpName}В» РЅР°РІСЃРµРіРґР°? Р­С‚Рѕ РЅРµР»СЊР·СЏ РѕС‚РјРµРЅРёС‚СЊ.`)) return;
 
     const { error } = await supabase.from('characters').delete().eq('id', charId);
 
-    if (error) { alert(`Ошибка: ${error.message}`); return; }
+    if (error) { alert(`РћС€РёР±РєР°: ${error.message}`); return; }
 
     setSelectedCharacter(null);
 
@@ -1835,8 +1835,8 @@ export default function Home() {
   }
 
   async function killCharacter() {
-    if (!selectedCharacter || !confirm('Убить персонажа?')) return;
-    const updatedProfs = [...(selectedCharacter.professions || []).filter(p => p !== 'мёртв'), 'мёртв'];
+    if (!selectedCharacter || !confirm('РЈР±РёС‚СЊ РїРµСЂСЃРѕРЅР°Р¶Р°?')) return;
+    const updatedProfs = [...(selectedCharacter.professions || []).filter(p => p !== 'РјС‘СЂС‚РІ'), 'РјС‘СЂС‚РІ'];
     await supabase.from('characters').update({ professions: updatedProfs, status: 'dead' }).eq('id', selectedCharacter.id);
     const updated = { ...selectedCharacter, professions: updatedProfs, status: 'dead' };
     setSelectedCharacter(updated);
@@ -1868,9 +1868,9 @@ export default function Home() {
 
       tg.ready();
 
-      // Форсируем expand с повтором — на ПК-версии Telegram бывает нужно
+      // Р¤РѕСЂСЃРёСЂСѓРµРј expand СЃ РїРѕРІС‚РѕСЂРѕРј вЂ” РЅР° РџРљ-РІРµСЂСЃРёРё Telegram Р±С‹РІР°РµС‚ РЅСѓР¶РЅРѕ
       tg.expand();
-      // Повторный expand через небольшую задержку для надёжности
+      // РџРѕРІС‚РѕСЂРЅС‹Р№ expand С‡РµСЂРµР· РЅРµР±РѕР»СЊС€СѓСЋ Р·Р°РґРµСЂР¶РєСѓ РґР»СЏ РЅР°РґС‘Р¶РЅРѕСЃС‚Рё
       setTimeout(() => {
         try { tg.expand(); } catch (e) {}
       }, 150);
@@ -1890,7 +1890,7 @@ export default function Home() {
 
 
 
-      // Deep link: обработка start_param
+      // Deep link: РѕР±СЂР°Р±РѕС‚РєР° start_param
 
       const startParam = tg.initDataUnsafe?.start_param;
 
@@ -1902,7 +1902,7 @@ export default function Home() {
 
       }
     } else {
-      // Проверяем: может это вход через OneLaunch с MC-ником
+      // РџСЂРѕРІРµСЂСЏРµРј: РјРѕР¶РµС‚ СЌС‚Рѕ РІС…РѕРґ С‡РµСЂРµР· OneLaunch СЃ MC-РЅРёРєРѕРј
       const mcSearch = window.location.search;
       const mcNickname = new URLSearchParams(mcSearch).get('nickname');
       if (mcNickname && mcNickname.trim()) {
@@ -1947,7 +1947,7 @@ export default function Home() {
 
 
 
-  // Загрузка баланса казны для виджета
+  // Р—Р°РіСЂСѓР·РєР° Р±Р°Р»Р°РЅСЃР° РєР°Р·РЅС‹ РґР»СЏ РІРёРґР¶РµС‚Р°
 
   useEffect(() => {
 
@@ -1968,7 +1968,7 @@ export default function Home() {
 
         <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
 
-        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Загрузка интерфейса...</span>
+        <span className="text-xs text-gray-500 font-mono font-bold uppercase tracking-widest animate-pulse">Р—Р°РіСЂСѓР·РєР° РёРЅС‚РµСЂС„РµР№СЃР°...</span>
 
       </div>
 
@@ -1988,7 +1988,7 @@ export default function Home() {
 
           <img src="/errorAuthIcon.webp" alt="Error" className="w-40 h-40 object-contain" />
 
-          <h1 className="text-2xl font-black text-center" style={{ color: '#ef4444' }}>Зайди в приложение через телеграм!</h1>
+          <h1 className="text-2xl font-black text-center" style={{ color: '#ef4444' }}>Р—Р°Р№РґРё РІ РїСЂРёР»РѕР¶РµРЅРёРµ С‡РµСЂРµР· С‚РµР»РµРіСЂР°Рј!</h1>
 
           <a
 
@@ -2026,7 +2026,7 @@ export default function Home() {
 
           <img src="/errorAuthIcon.webp" alt="Error" className="w-40 h-40 object-contain" />
 
-          <h1 className="text-2xl font-black text-center" style={{ color: '#ef4444' }}>Тебе сюда нельзя!</h1>
+          <h1 className="text-2xl font-black text-center" style={{ color: '#ef4444' }}>РўРµР±Рµ СЃСЋРґР° РЅРµР»СЊР·СЏ!</h1>
 
         </div>
 
@@ -2072,7 +2072,7 @@ export default function Home() {
 
 
 
-      {/* ПЛАВАЮЩИЙ ТУЛБАР ТЕКСТОВОГО РЕДАКТОРА */}
+      {/* РџР›РђР’РђР®Р©РР™ РўРЈР›Р‘РђР  РўР•РљРЎРўРћР’РћР“Рћ Р Р•Р”РђРљРўРћР Рђ */}
 
       <div className="fixed top-[96px] left-4 right-4 md:left-40 md:right-12 z-40 max-w-md md:max-w-7xl mx-auto flex items-center justify-end gap-2 pointer-events-none">
 
@@ -2118,7 +2118,7 @@ export default function Home() {
 
 
 
-      {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ */}
+      {/* РњРћР”РђР›Р¬РќРћР• РћРљРќРћ РџР РћР¤РР›РЇ */}
 
       {selectedCharacter && (
 
@@ -2137,10 +2137,10 @@ export default function Home() {
               {characterMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[160px] flex flex-col backdrop-blur-xl">
                   <button onClick={() => { setNewRpName(selectedCharacter.rp_name); setNewAvatarUrl(selectedCharacter.avatar_url || ''); setIsEditingProfile(true); setCharacterMenuOpen(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-white/5 flex items-center gap-2 text-white">
-                    <Edit2 size={12} /> Редактировать
+                    <Edit2 size={12} /> Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
                   </button>
                   <button onClick={() => { killCharacter(); setCharacterMenuOpen(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-white/5 flex items-center gap-2 text-red-400">
-                    <Skull size={12} /> Убить
+                    <Skull size={12} /> РЈР±РёС‚СЊ
                   </button>
                 </div>
               )}
@@ -2163,7 +2163,7 @@ export default function Home() {
 
               <div className="space-y-3 max-w-xs mx-auto w-full animate-fade-in">
 
-                <input type="text" placeholder="Имя профиля" value={newRpName} onChange={(e) => setNewRpName(e.target.value)} className="ui-input text-center font-bold" />
+                <input type="text" placeholder="РРјСЏ РїСЂРѕС„РёР»СЏ" value={newRpName} onChange={(e) => setNewRpName(e.target.value)} className="ui-input text-center font-bold" />
 
                 <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
 
@@ -2171,11 +2171,11 @@ export default function Home() {
 
                   <Upload size={14} className={isUploadingProfile ? "animate-bounce" : ""} />
 
-                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим...' : 'Загрузить из галереи'}</span>
+                  <span className="font-medium text-xs">{isUploadingProfile ? 'Р“СЂСѓР·РёРј...' : 'Р—Р°РіСЂСѓР·РёС‚СЊ РёР· РіР°Р»РµСЂРµРё'}</span>
 
                 </label>
 
-                <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2"><Save size={14} /><span>Сохранить всё</span></button>
+                <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2"><Save size={14} /><span>РЎРѕС…СЂР°РЅРёС‚СЊ РІСЃС‘</span></button>
 
               </div>
 
@@ -2183,13 +2183,13 @@ export default function Home() {
 
               <div className="w-full space-y-1">
 
-                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedCharacter) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedCharacter.rp_name}{isDead(selectedCharacter) && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 ml-2 align-middle inline-block">мёртв</span>}</h2>
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedCharacter) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedCharacter.rp_name}{isDead(selectedCharacter) && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 ml-2 align-middle inline-block">РјС‘СЂС‚РІ</span>}</h2>
 
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedCharacter.mc_nickname}</p>
 
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
 
-                  <span>??? Партия:</span><span className="font-bold">{selectedCharacter.party || 'Нет партии'}</span>
+                  <span>рџЏ›пёЏ РџР°СЂС‚РёСЏ:</span><span className="font-bold">{selectedCharacter.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</span>
 
                 </div>
 
@@ -2203,19 +2203,19 @@ export default function Home() {
 
           <div className="w-full h-[1px] bg-white/5 my-2" />
 
-          {/* Профессии персонажа */}
+          {/* РџСЂРѕС„РµСЃСЃРёРё РїРµСЂСЃРѕРЅР°Р¶Р° */}
 
           <div className="text-left space-y-2 w-full">
 
-            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Профессии</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">РџСЂРѕС„РµСЃСЃРёРё</div>
 
             <div className="flex flex-wrap gap-2 items-center">
 
-              {(selectedCharacter.professions || []).filter(p => p.toLowerCase() !== 'мёртв').map((p: string, idx: number) => (
+              {(selectedCharacter.professions || []).filter(p => p.toLowerCase() !== 'РјС‘СЂС‚РІ').map((p: string, idx: number) => (
 
                 <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getProfessionColor(p)}15`, color: getProfessionColor(p), borderColor: `${getProfessionColor(p)}30` }}>
 
-                  <span>• {p.toUpperCase()}</span>
+                  <span>вЂў {p.toUpperCase()}</span>
 
                   {isAdmin && <button onClick={() => handleRemoveProfessionFromChar(p)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
 
@@ -2239,7 +2239,7 @@ export default function Home() {
 
                       ))}
 
-                      {professions.filter(prof => !(selectedCharacter.professions || []).includes(prof.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Все профессии назначены</span>}
+                      {professions.filter(prof => !(selectedCharacter.professions || []).includes(prof.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Р’СЃРµ РїСЂРѕС„РµСЃСЃРёРё РЅР°Р·РЅР°С‡РµРЅС‹</span>}
 
                     </div>
 
@@ -2255,7 +2255,7 @@ export default function Home() {
 
 
 
-          {/* Персонажи игрока */}
+          {/* РџРµСЂСЃРѕРЅР°Р¶Рё РёРіСЂРѕРєР° */}
 
           {playerCharacters.length > 0 && (
 
@@ -2265,15 +2265,15 @@ export default function Home() {
 
               <div className="text-left space-y-2 w-full">
 
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">РџРµСЂСЃРѕРЅР°Р¶Рё</div>
 
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
 
                   {playerCharacters.map((pc: any) => (
 
-                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
+                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
 
-                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
+                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
 
                         {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
 
@@ -2281,17 +2281,17 @@ export default function Home() {
 
                       <div className="min-w-0 flex-1">
 
-                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
 
-                        <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
+                        <div className="text-[9px] text-gray-500">{pc.season} В· {pc.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</div>
 
                       </div>
 
                       <div className="flex gap-0.5 flex-shrink-0">
 
-                        {pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') && (
+                        {pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') && (
 
-                          <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">мёртв</span>
+                          <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">РјС‘СЂС‚РІ</span>
 
                         )}
 
@@ -2313,7 +2313,7 @@ export default function Home() {
 
       )}
 
-      {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ ИГРОКА */}
+      {/* РњРћР”РђР›Р¬РќРћР• РћРљРќРћ РџР РћР¤РР›РЇ РР“Р РћРљРђ */}
       {selectedProfile && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 bg-[#14171c]">
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
@@ -2329,15 +2329,15 @@ export default function Home() {
 
           <div className="w-full h-[1px] bg-white/5 my-2" />
           <div className="text-left space-y-2 w-full">
-            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Р РѕР»Рё</div>
             <div className="flex flex-wrap gap-2 items-center">
               {(selectedProfile.roles || []).map((role: string, idx: number) => (
                 <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
-                  <span>• {role.toUpperCase()}</span>
+                  <span>вЂў {role.toUpperCase()}</span>
                   {isAdmin && <button onClick={() => handleRemoveRoleFromProfile(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
                 </span>
               ))}
-              {(selectedProfile.roles || []).length === 0 && <span className="text-xs text-gray-500">Нет ролей</span>}
+              {(selectedProfile.roles || []).length === 0 && <span className="text-xs text-gray-500">РќРµС‚ СЂРѕР»РµР№</span>}
               {isAdmin && (
                 <div className="relative inline-block">
                   <button onClick={() => setShowPlayerRoleMenu(!showPlayerRoleMenu)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all shadow-sm"><Plus size={14} /></button>
@@ -2346,7 +2346,7 @@ export default function Home() {
                       {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).map((role, idx) => (
                         <button key={idx} onClick={() => { handleAddRoleToProfile(role.name); setShowPlayerRoleMenu(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-2" style={{color: role.color}}><span className="w-2 h-2 rounded-full" style={{backgroundColor: role.color}}/>{role.name.toUpperCase()}</button>
                       ))}
-                      {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Все роли назначены</span>}
+                      {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Р’СЃРµ СЂРѕР»Рё РЅР°Р·РЅР°С‡РµРЅС‹</span>}
                     </div>
                   )}
                 </div>
@@ -2358,19 +2358,19 @@ export default function Home() {
             <>
               <div className="w-full h-[1px] bg-white/5 my-2" />
               <div className="text-left space-y-2 w-full">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">РџРµСЂСЃРѕРЅР°Р¶Рё</div>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {playerCharacters.map((pc: any) => (
-                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
-                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
+                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
+                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
                         {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
-                        <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
+                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className="text-[9px] text-gray-500">{pc.season} В· {pc.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</div>
                       </div>
-                      {(pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв')) && (
-                        <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 flex-shrink-0">мёртв</span>
+                      {(pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'РјС‘СЂС‚РІ')) && (
+                        <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 flex-shrink-0">РјС‘СЂС‚РІ</span>
                       )}
                     </div>
                   ))}
@@ -2383,7 +2383,7 @@ export default function Home() {
 
 
 
-      {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК */}
+      {/* РћРЎРќРћР’РќРћР™ РљРћРќРўР•РќРўРќР«Р™ Р‘Р›РћРљ */}
 
       <main className="p-4 pt-36 pb-24 md:p-12 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
 
@@ -2393,7 +2393,7 @@ export default function Home() {
 
           {seasonEnded ? (
 
-            /* СЕЗОН ЗАВЕРШЁН — ГЛАВНАЯ */
+            /* РЎР•Р—РћРќ Р—РђР’Р•Р РЁРЃРќ вЂ” Р“Р›РђР’РќРђРЇ */
 
             <div className="flex flex-col items-center justify-center text-center gap-6 pt-4 pb-12 w-full select-none animate-fade-in flex-grow">
 
@@ -2403,13 +2403,13 @@ export default function Home() {
 
                 <h2 className="text-2xl md:text-3xl font-black text-white tracking-wide">
 
-                  OneHouse <span className="text-[#c0ff00]">#{lastSeason?.season_number || 2}</span> завершён
+                  OneHouse <span className="text-[#c0ff00]">#{lastSeason?.season_number || 2}</span> Р·Р°РІРµСЂС€С‘РЅ
 
                 </h2>
 
                 <p className="text-base text-gray-400 font-medium">
 
-                  Он продлился <span className="text-white font-bold">{lastSeason?.days_count || '—'}</span> дней
+                  РћРЅ РїСЂРѕРґР»РёР»СЃСЏ <span className="text-white font-bold">{lastSeason?.days_count || 'вЂ”'}</span> РґРЅРµР№
 
                 </p>
 
@@ -2425,11 +2425,11 @@ export default function Home() {
 
                 <Library size={16} />
 
-                <span className="text-sm font-bold">Архив сезонов</span>
+                <span className="text-sm font-bold">РђСЂС…РёРІ СЃРµР·РѕРЅРѕРІ</span>
 
               </button>
 
-              {/* Админ-доступ */}
+              {/* РђРґРјРёРЅ-РґРѕСЃС‚СѓРї */}
               {hasAdminAccess && (
 
                 <button
@@ -2442,13 +2442,13 @@ export default function Home() {
 
                   <ShieldAlert size={14} />
 
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Админ</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">РђРґРјРёРЅ</span>
 
                 </button>
 
               )}
 
-              <p className="text-[10px] text-gray-700 font-medium uppercase tracking-[0.2em] mt-8">Скоро...</p>
+              <p className="text-[10px] text-gray-700 font-medium uppercase tracking-[0.2em] mt-8">РЎРєРѕСЂРѕ...</p>
 
             </div>
 
@@ -2458,7 +2458,7 @@ export default function Home() {
 
             <div className="flex flex-col items-center text-center gap-3 pt-2 pb-6 w-full select-none relative">
 
-              {/* Админ-кнопка */}
+              {/* РђРґРјРёРЅ-РєРЅРѕРїРєР° */}
               {hasAdminAccess && (
 
                 <button
@@ -2467,7 +2467,7 @@ export default function Home() {
 
                   className="absolute top-2 right-0 w-10 h-10 rounded-full bg-[#14171c]/95 border border-white/10 flex items-center justify-center text-gray-400 hover:text-[#c0ff00] hover:border-[#c0ff00]/30 active:scale-90 transition-all z-10"
 
-                  title="Админ-панель"
+                  title="РђРґРјРёРЅ-РїР°РЅРµР»СЊ"
 
                 >
 
@@ -2479,7 +2479,7 @@ export default function Home() {
 
               <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
 
-              {/* Приветствие / Счётчик сезона */}
+              {/* РџСЂРёРІРµС‚СЃС‚РІРёРµ / РЎС‡С‘С‚С‡РёРє СЃРµР·РѕРЅР° */}
 
               <div className="min-h-[72px] md:min-h-[88px] flex items-center justify-center">
 
@@ -2489,11 +2489,11 @@ export default function Home() {
 
                     <span className="text-base md:text-xl font-black text-white tracking-wide leading-tight animate-welcome-glow">
 
-                      Добро пожаловать в One App
+                      Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ РІ One App
 
                     </span>
 
-                    <span className="text-[#c0ff00] text-xl md:text-3xl font-black">{dbUser?.rp_name || 'Житель'}</span>
+                    <span className="text-[#c0ff00] text-xl md:text-3xl font-black">{dbUser?.rp_name || 'Р–РёС‚РµР»СЊ'}</span>
 
                   </h3>
 
@@ -2503,7 +2503,7 @@ export default function Home() {
 
                     <span className="text-[#c0ff00] text-4xl md:text-5xl font-black tabular-nums tracking-tight">{seasonDays}</span>
 
-                    <span className="text-sm md:text-base font-bold text-gray-400 tracking-wide">дней с начала сезона</span>
+                    <span className="text-sm md:text-base font-bold text-gray-400 tracking-wide">РґРЅРµР№ СЃ РЅР°С‡Р°Р»Р° СЃРµР·РѕРЅР°</span>
 
                   </h3>
 
@@ -2517,7 +2517,7 @@ export default function Home() {
 
             <div className="grid grid-cols-4 gap-4 w-full">
 
-              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
+              {/* 1. Р’РР”Р–Р•Рў РљРћРќРЎРўРРўРЈР¦РР */}
 
               <div 
 
@@ -2533,9 +2533,9 @@ export default function Home() {
 
                 <div className="space-y-0.5 relative z-10">
 
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">РљРѕРЅСЃС‚РёС‚СѓС†РёСЏ</h3>
 
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Р Рџ Р—Р°РєРѕРЅС‹</p>
 
                 </div>
 
@@ -2543,7 +2543,7 @@ export default function Home() {
 
 
 
-              {/* 2. ВИДЖЕТ КАЗНЫ */}
+              {/* 2. Р’РР”Р–Р•Рў РљРђР—РќР« */}
 
               <div 
 
@@ -2559,7 +2559,7 @@ export default function Home() {
 
                 <div className="space-y-0.5 relative z-10">
 
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Казна</h3>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">РљР°Р·РЅР°</h3>
 
                   <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">{treasuryBalance.toLocaleString('ru-RU')} SPR</p>
 
@@ -2569,7 +2569,7 @@ export default function Home() {
 
 
 
-              {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ СЕРВЕРА */}
+              {/* 3. Р’РР”Р–Р•Рў РџРћРЎР›Р•Р”РќРРҐ РќРћР’РћРЎРўР•Р™ РЎР•Р Р’Р•Р Рђ */}
 
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
 
@@ -2579,11 +2579,11 @@ export default function Home() {
 
                     <Newspaper size={16} className="text-[#c0ff00]" />
 
-                    <div className="text-[11px] font-black uppercase text-gray-400 tracking-wider">Последние публикации</div>
+                    <div className="text-[11px] font-black uppercase text-gray-400 tracking-wider">РџРѕСЃР»РµРґРЅРёРµ РїСѓР±Р»РёРєР°С†РёРё</div>
 
                   </div>
 
-                  <button onClick={() => handleTabChange('media')} className="text-[11px] font-bold text-[#c0ff00] hover:underline">Все статьи</button>
+                  <button onClick={() => handleTabChange('media')} className="text-[11px] font-bold text-[#c0ff00] hover:underline">Р’СЃРµ СЃС‚Р°С‚СЊРё</button>
 
                 </div>
 
@@ -2601,7 +2601,7 @@ export default function Home() {
 
                       <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug pr-7">{post.title}</span>
 
-                      <span className="text-[10px] text-gray-500 font-medium truncate">{post.author?.rp_name || 'Неизвестный'}</span>
+                      <span className="text-[10px] text-gray-500 font-medium truncate">{post.author?.rp_name || 'РќРµРёР·РІРµСЃС‚РЅС‹Р№'}</span>
 
                     </div>
 
@@ -2613,7 +2613,7 @@ export default function Home() {
 
 
 
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
+              {/* 4. Р’РР”Р–Р•Рў РЎРўРђРўРЈРЎРђ РЎР•Р Р’Р•Р Рђ */}
 
               <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3">
 
@@ -2629,7 +2629,7 @@ export default function Home() {
 
                     <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
 
-                    <div className={`text-sm md:text-base font-black tracking-wider uppercase ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
+                    <div className={`text-sm md:text-base font-black tracking-wider uppercase ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'Р—РђР“Р РЈР—РљРђ...'}</div>
 
                   </div>
 
@@ -2645,7 +2645,7 @@ export default function Home() {
 
                     <div className="min-w-0 flex-1">
 
-                      <div className="text-[8px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
+                      <div className="text-[8px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP РЎР•Р Р’Р•Р Рђ</div>
 
                       <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
 
@@ -2665,7 +2665,7 @@ export default function Home() {
 
                         <div className="min-w-0">
 
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">Версия</div>
+                          <div className="text-[8px] text-gray-500 font-bold uppercase">Р’РµСЂСЃРёСЏ</div>
 
                           <div className="font-bold text-xs text-white truncate">1.20.1</div>
 
@@ -2685,9 +2685,9 @@ export default function Home() {
 
                         <div className="min-w-0">
 
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} КР.</div>
+                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} РљР .</div>
 
-                          <div className="font-mono text-[11px] text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
+                          <div className="font-mono text-[11px] text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}С‡ {Math.floor(((credits % 7) / 7) * 60)}Рј</div>
 
                         </div>
 
@@ -2703,9 +2703,9 @@ export default function Home() {
 
                 <div className="flex gap-2 relative z-10 w-full mt-1">
 
-                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-10 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Play size={12} />ВКЛЮЧИТЬ</button>
+                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-10 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Play size={12} />Р’РљР›Р®Р§РРўР¬</button>
 
-                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
+                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />Р’Р«РљР›Р®Р§РРўР¬</button>
 
                 </div>
 
@@ -2713,7 +2713,7 @@ export default function Home() {
 
 
 
-              {/* 5. АРХИВ СЕЗОНОВ */}
+              {/* 5. РђР РҐРР’ РЎР•Р—РћРќРћР’ */}
 
               <div 
 
@@ -2729,9 +2729,9 @@ export default function Home() {
 
                 <div className="space-y-0.5 relative z-10">
 
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">РђСЂС…РёРІ</h3>
 
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РџСЂРѕС€Р»С‹Рµ СЃРµР·РѕРЅС‹</p>
 
                 </div>
 
@@ -2757,13 +2757,13 @@ export default function Home() {
 
           {seasonEnded ? (
 
-            /* СВОД ПРИ ЗАВЕРШЁННОМ СЕЗОНЕ: законы скрыты, архив работает */
+            /* РЎР’РћР” РџР Р Р—РђР’Р•Р РЁРЃРќРќРћРњ РЎР•Р—РћРќР•: Р·Р°РєРѕРЅС‹ СЃРєСЂС‹С‚С‹, Р°СЂС…РёРІ СЂР°Р±РѕС‚Р°РµС‚ */
 
             <div className="space-y-4 animate-fade-in w-full">
 
               <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
 
-                <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />Свод данных</h2>
+                <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />РЎРІРѕРґ РґР°РЅРЅС‹С…</h2>
 
               </div>
 
@@ -2787,7 +2787,7 @@ export default function Home() {
 
                   <BookOpen size={16} className="inline mr-2" />
 
-                  Законы
+                  Р—Р°РєРѕРЅС‹
 
                 </button>
 
@@ -2809,7 +2809,7 @@ export default function Home() {
 
                   <Library size={16} className="inline mr-2" />
 
-                  Архив
+                  РђСЂС…РёРІ
 
                 </button>
 
@@ -2831,17 +2831,17 @@ export default function Home() {
 
           <div className="space-y-4 animate-fade-in w-full">
 
-            {/* Заголовок */}
+            {/* Р—Р°РіРѕР»РѕРІРѕРє */}
 
             <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
 
-              <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />Свод данных</h2>
+              <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />РЎРІРѕРґ РґР°РЅРЅС‹С…</h2>
 
             </div>
 
 
 
-            {/* Под-вкладки */}
+            {/* РџРѕРґ-РІРєР»Р°РґРєРё */}
 
             <div className="flex gap-3 pb-4">
 
@@ -2863,7 +2863,7 @@ export default function Home() {
 
                 <BookOpen size={16} className="inline mr-2" />
 
-                Законы
+                Р—Р°РєРѕРЅС‹
 
               </button>
 
@@ -2885,7 +2885,7 @@ export default function Home() {
 
                 <Library size={16} className="inline mr-2" />
 
-                Архив
+                РђСЂС…РёРІ
 
               </button>
 
@@ -2893,7 +2893,7 @@ export default function Home() {
 
 
 
-            {/* Контент под-вкладки */}
+            {/* РљРѕРЅС‚РµРЅС‚ РїРѕРґ-РІРєР»Р°РґРєРё */}
 
             {activeSvodTab === 'laws' ? (
 
@@ -2909,7 +2909,7 @@ export default function Home() {
 
                       <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
 
-                      <h3 className="font-black text-lg relative z-10">Конституция</h3>
+                      <h3 className="font-black text-lg relative z-10">РљРѕРЅСЃС‚РёС‚СѓС†РёСЏ</h3>
 
                     </div>
 
@@ -2917,7 +2917,7 @@ export default function Home() {
 
                       <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/zapovedi.gif')" }} />
 
-                      <h3 className="font-black text-lg relative z-10">Заповеди дома</h3>
+                      <h3 className="font-black text-lg relative z-10">Р—Р°РїРѕРІРµРґРё РґРѕРјР°</h3>
 
                     </div>
 
@@ -2927,7 +2927,7 @@ export default function Home() {
 
                     {activeDocument === 'none' ? (
 
-                      <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]"><BookOpen size={36} className="text-gray-700 mb-3" /><span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span></div>
+                      <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]"><BookOpen size={36} className="text-gray-700 mb-3" /><span>Р’Р«Р‘Р•Р РРўР• Р”РћРљРЈРњР•РќРў РР— РЎРџРРЎРљРђ РЎР›Р•Р’Рђ</span></div>
 
                     ) : (
 
@@ -2943,7 +2943,7 @@ export default function Home() {
 
                               type="text" 
 
-                              placeholder="Поиск по документу…" 
+                              placeholder="РџРѕРёСЃРє РїРѕ РґРѕРєСѓРјРµРЅС‚СѓвЂ¦" 
 
                               value={searchQuery} 
 
@@ -3031,11 +3031,11 @@ export default function Home() {
 
           <div className="space-y-6 animate-fade-in w-full">
 
-            <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2 px-1"><Users size={20} className="text-[#c0ff00]" />Игроки</h2>
+            <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2 px-1"><Users size={20} className="text-[#c0ff00]" />РРіСЂРѕРєРё</h2>
 
 
 
-            {/* Саб-табы */}
+            {/* РЎР°Р±-С‚Р°Р±С‹ */}
 
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
 
@@ -3043,9 +3043,9 @@ export default function Home() {
 
                 <button key={tab} onClick={() => setPlayersSubTab(tab)} className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${playersSubTab === tab ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30' : 'bg-white/5 text-gray-400 border border-white/5'}`}>
 
-                  {tab === 'characters' && 'Персонажи'}
+                  {tab === 'characters' && 'РџРµСЂСЃРѕРЅР°Р¶Рё'}
 
-                  {tab === 'players' && 'Игроки'}
+                  {tab === 'players' && 'РРіСЂРѕРєРё'}
 
                 </button>
 
@@ -3055,19 +3055,19 @@ export default function Home() {
 
 
 
-            {/* --- Персонажи --- */}
+            {/* --- РџРµСЂСЃРѕРЅР°Р¶Рё --- */}
 
             {playersSubTab === 'characters' && (
 
               <>
 
-                {/* Мой персонаж */}
+                {/* РњРѕР№ РїРµСЂСЃРѕРЅР°Р¶ */}
 
                 {dbUser && (
 
                   <div className="space-y-2 w-full md:max-w-sm">
 
-                    <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой персонаж</div>
+                    <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">РњРѕР№ РїРµСЂСЃРѕРЅР°Р¶</div>
 
                     <div onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
 
@@ -3079,7 +3079,7 @@ export default function Home() {
 
                         <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
 
-                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">??? {dbUser.party || 'Нет партии'}</div>
+                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">рџЏ›пёЏ {dbUser.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</div>
 
                         <div className="flex flex-wrap gap-1 mt-1.5">
 
@@ -3101,7 +3101,7 @@ export default function Home() {
 
 
 
-                {/* Живые персонажи */}
+                {/* Р–РёРІС‹Рµ РїРµСЂСЃРѕРЅР°Р¶Рё */}
 
                 {(() => {
 
@@ -3113,7 +3113,7 @@ export default function Home() {
 
                     <div className="space-y-3 w-full">
 
-                      <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Swords size={14} className="text-[#c0ff00]" />Живые ({alive.length})</div>
+                      <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Swords size={14} className="text-[#c0ff00]" />Р–РёРІС‹Рµ ({alive.length})</div>
 
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
@@ -3129,7 +3129,7 @@ export default function Home() {
 
                               <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
 
-                              <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">??? {player.party || 'Нет партии'}</div>
+                              <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">рџЏ›пёЏ {player.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</div>
 
                               <div className="flex flex-wrap gap-1 mt-1.5">
 
@@ -3157,7 +3157,7 @@ export default function Home() {
 
 
 
-                {/* Мёртвые персонажи */}
+                {/* РњС‘СЂС‚РІС‹Рµ РїРµСЂСЃРѕРЅР°Р¶Рё */}
 
                 {(() => {
 
@@ -3169,7 +3169,7 @@ export default function Home() {
 
                     <div className="space-y-3 w-full">
 
-                      <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Skull size={14} />Мёртвые ({dead.length})</div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Skull size={14} />РњС‘СЂС‚РІС‹Рµ ({dead.length})</div>
 
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
@@ -3205,13 +3205,13 @@ export default function Home() {
 
 
 
-            {/* --- Игроки (профили) --- */}
+            {/* --- РРіСЂРѕРєРё (РїСЂРѕС„РёР»Рё) --- */}
 
             {playersSubTab === 'players' && (
 
               <div className="space-y-3 w-full">
 
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Minecraft-профили</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Minecraft-РїСЂРѕС„РёР»Рё</div>
 
                 <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
@@ -3223,7 +3223,7 @@ export default function Home() {
 
                       const char = players.find(c => c.player_id === p.id);
 
-                      setSelectedProfile(char || { id: p.id, player_id: p.id, rp_name: p.mc_nickname, mc_nickname: p.mc_nickname, avatar_url: p.avatar_url || '', roles: p.roles || [], party: 'Нет партии' } as any);
+                      setSelectedProfile(char || { id: p.id, player_id: p.id, rp_name: p.mc_nickname, mc_nickname: p.mc_nickname, avatar_url: p.avatar_url || '', roles: p.roles || [], party: 'РќРµС‚ РїР°СЂС‚РёРё' } as any);
 
                     }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#14171c]/90 border-white/5 hover:border-white/20">
 
@@ -3243,7 +3243,7 @@ export default function Home() {
 
                   ))}
 
-                  {allPlayers.length === 0 && <p className="col-span-full text-xs text-gray-500 text-center py-8">Нет профилей</p>}
+                  {allPlayers.length === 0 && <p className="col-span-full text-xs text-gray-500 text-center py-8">РќРµС‚ РїСЂРѕС„РёР»РµР№</p>}
 
                 </div>
 
@@ -3266,7 +3266,7 @@ export default function Home() {
 
 
 
-      {/* ПК САЙДБАР */}
+      {/* РџРљ РЎРђР™Р”Р‘РђР  */}
 
       <aside className={`hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
 
@@ -3282,7 +3282,7 @@ export default function Home() {
 
 
 
-        {/* Pill с вкладками */}
+        {/* Pill СЃ РІРєР»Р°РґРєР°РјРё */}
 
         <nav className={`bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative transition-all duration-300 ${seasonEnded ? 'w-[72px] py-4 px-1 gap-6' : 'w-[72px] py-6 px-1'}`}>
 
@@ -3292,7 +3292,7 @@ export default function Home() {
 
             <HomeIcon size={23} />
 
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">{seasonEnded ? 'Главная' : 'Главная'}</span>
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">{seasonEnded ? 'Р“Р»Р°РІРЅР°СЏ' : 'Р“Р»Р°РІРЅР°СЏ'}</span>
 
           </button>
 
@@ -3304,7 +3304,7 @@ export default function Home() {
 
               <Library size={23} />
 
-              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
+              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">РђСЂС…РёРІ</span>
 
             </button>
 
@@ -3316,7 +3316,7 @@ export default function Home() {
 
                 <Newspaper size={23} />
 
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Медиа</span>
+                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">РњРµРґРёР°</span>
 
               </button>
 
@@ -3326,7 +3326,7 @@ export default function Home() {
 
                 <BookMarked size={23} />
 
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Свод</span>
+                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">РЎРІРѕРґ</span>
 
               </button>
 
@@ -3336,7 +3336,7 @@ export default function Home() {
 
                 <Landmark size={23} />
 
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
+                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">РљР°Р·РЅР°</span>
 
               </button>
 
@@ -3348,7 +3348,7 @@ export default function Home() {
 
 
 
-        {/* Кружок OneLaunch — под пилем, когда сезон завершён */}
+        {/* РљСЂСѓР¶РѕРє OneLaunch вЂ” РїРѕРґ РїРёР»РµРј, РєРѕРіРґР° СЃРµР·РѕРЅ Р·Р°РІРµСЂС€С‘РЅ */}
 
         {seasonEnded && (
 
@@ -3370,7 +3370,7 @@ export default function Home() {
 
           <Download size={23} />
 
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Лаунчер</span>
+          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Р›Р°СѓРЅС‡РµСЂ</span>
 
         </button>
 
@@ -3378,7 +3378,7 @@ export default function Home() {
 
 
 
-        {/* Кружок Игроки — под пилем, идеальный круг */}
+        {/* РљСЂСѓР¶РѕРє РРіСЂРѕРєРё вЂ” РїРѕРґ РїРёР»РµРј, РёРґРµР°Р»СЊРЅС‹Р№ РєСЂСѓРі */}
 
         {!seasonEnded && (
 
@@ -3400,7 +3400,7 @@ export default function Home() {
 
           <Users size={23} />
 
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
+          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">РРіСЂРѕРєРё</span>
 
         </button>
 
@@ -3410,7 +3410,7 @@ export default function Home() {
 
 
 
-      {/* МОБИЛЬНЫЙ ТАББАР */}
+      {/* РњРћР‘РР›Р¬РќР«Р™ РўРђР‘Р‘РђР  */}
 
       <div className={`md:hidden fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
 
@@ -3422,7 +3422,7 @@ export default function Home() {
 
               <HomeIcon size={22} />
 
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
+              <span className="text-[10px] font-bold mt-1 tracking-wide">Р“Р»Р°РІРЅР°СЏ</span>
 
             </button>
 
@@ -3432,7 +3432,7 @@ export default function Home() {
 
                 <Library size={22} />
 
-                <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
+                <span className="text-[10px] font-bold mt-1 tracking-wide">РђСЂС…РёРІ</span>
 
               </button>
 
@@ -3444,7 +3444,7 @@ export default function Home() {
 
                   <Newspaper size={22} />
 
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Медиа</span>
+                  <span className="text-[10px] font-bold mt-1 tracking-wide">РњРµРґРёР°</span>
 
                 </button>
 
@@ -3452,7 +3452,7 @@ export default function Home() {
 
                   <BookMarked size={22} />
 
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
+                  <span className="text-[10px] font-bold mt-1 tracking-wide">РЎРІРѕРґ</span>
 
                 </button>
 
@@ -3460,7 +3460,7 @@ export default function Home() {
 
                   <Landmark size={22} />
 
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
+                  <span className="text-[10px] font-bold mt-1 tracking-wide">РљР°Р·РЅР°</span>
 
                 </button>
 
@@ -3474,7 +3474,7 @@ export default function Home() {
 
 
 
-        {/* Кружок Игроки справа — идеальный круг как в Монобанк */}
+        {/* РљСЂСѓР¶РѕРє РРіСЂРѕРєРё СЃРїСЂР°РІР° вЂ” РёРґРµР°Р»СЊРЅС‹Р№ РєСЂСѓРі РєР°Рє РІ РњРѕРЅРѕР±Р°РЅРє */}
 
         {!seasonEnded && (
 
@@ -3496,7 +3496,7 @@ export default function Home() {
 
           <Users size={22} />
 
-          <span className="text-[10px] font-bold tracking-wide">Игроки</span>
+          <span className="text-[10px] font-bold tracking-wide">РРіСЂРѕРєРё</span>
 
         </button>
 
@@ -3504,7 +3504,7 @@ export default function Home() {
 
 
 
-        {/* Кружок Лаунчер — при завершённом сезоне, в центре с пилем */}
+        {/* РљСЂСѓР¶РѕРє Р›Р°СѓРЅС‡РµСЂ вЂ” РїСЂРё Р·Р°РІРµСЂС€С‘РЅРЅРѕРј СЃРµР·РѕРЅРµ, РІ С†РµРЅС‚СЂРµ СЃ РїРёР»РµРј */}
 
         {seasonEnded && (
 
@@ -3526,7 +3526,7 @@ export default function Home() {
 
           <Download size={22} />
 
-          <span className="text-[10px] font-bold tracking-wide">Лаунчер</span>
+          <span className="text-[10px] font-bold tracking-wide">Р›Р°СѓРЅС‡РµСЂ</span>
 
         </button>
 
@@ -3536,7 +3536,7 @@ export default function Home() {
 
 
 
-      {/* Мобильная FAB — создание статьи */}
+      {/* РњРѕР±РёР»СЊРЅР°СЏ FAB вЂ” СЃРѕР·РґР°РЅРёРµ СЃС‚Р°С‚СЊРё */}
 
       {activeTab === 'media' && !seasonEnded && dbUser && !dbUser?.roles?.includes('guest') && (
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+п»їimport { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
@@ -9,19 +9,19 @@ import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X, Sku
 export default function ArchiveCharactersPage() {
   const navigate = useNavigate();
   const { showBackButton, hideBackButton } = useTelegram();
-  const [selectedSeason, setSelectedSeason] = useState<string>('Сезон 2');
+  const [selectedSeason, setSelectedSeason] = useState<string>('РЎРµР·РѕРЅ 2');
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [characters, setCharacters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
   const [playerChars, setPlayerChars] = useState<any[]>([]);
-  const [seasons, setSeasons] = useState<string[]>(['Сезон 2']);
+  const [seasons, setSeasons] = useState<string[]>(['РЎРµР·РѕРЅ 2']);
 
   function isDead(char: any) {
     if (!char) return false;
     const profs = char.professions || [];
-    return profs.some((p: string) => p.toLowerCase() === 'мёртв') || char.status === 'dead';
+    return profs.some((p: string) => p.toLowerCase() === 'РјС‘СЂС‚РІ') || char.status === 'dead';
   }
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function ArchiveCharactersPage() {
         <div className="flex-1 min-w-0">
           <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{char.rp_name}</div>
           <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{char.mc_nickname}</div>
-          <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">??? {char.party || 'Нет партии'}</div>
+          <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">рџЏ›пёЏ {char.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</div>
         </div>
       </div>
     );
@@ -115,33 +115,33 @@ export default function ArchiveCharactersPage() {
 
         <div className="flex items-center bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-3 w-full shadow-xl">
           <Search size={16} className="text-[#c0ff00] shrink-0" />
-          <input type="text" placeholder="Поиск персонажей..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full placeholder:text-gray-600 focus:ring-0" />
+          <input type="text" placeholder="РџРѕРёСЃРє РїРµСЂСЃРѕРЅР°Р¶РµР№..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-sm font-medium text-white ml-3 w-full placeholder:text-gray-600 focus:ring-0" />
         </div>
 
         <div className="flex items-center gap-2 px-1">
           <Users size={18} className="text-[#c0ff00]" />
-          <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Персонажи ({selectedSeason})</h2>
+          <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">РџРµСЂСЃРѕРЅР°Р¶Рё ({selectedSeason})</h2>
         </div>
 
         {loading ? (
           <div className="col-span-full flex justify-center py-12"><RefreshCw className="animate-spin text-[#c0ff00]" size={24} /></div>
         ) : characters.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-[24px]">ПЕРСОНАЖЕЙ НЕ НАЙДЕНО</div>
+          <div className="col-span-full text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-[24px]">РџР•Р РЎРћРќРђР–Р•Р™ РќР• РќРђР™Р”Р•РќРћ</div>
         ) : (
           <>
-            {/* Живые */}
+            {/* Р–РёРІС‹Рµ */}
             {characters.filter(c => !isDead(c)).length > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center gap-1.5 px-1"><Swords size={14} className="text-[#c0ff00]" /><span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Живые ({characters.filter(c => !isDead(c)).length})</span></div>
+                <div className="flex items-center gap-1.5 px-1"><Swords size={14} className="text-[#c0ff00]" /><span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Р–РёРІС‹Рµ ({characters.filter(c => !isDead(c)).length})</span></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {characters.filter(c => !isDead(c)).map(char => renderChar(char))}
                 </div>
               </div>
             )}
-            {/* Мёртвые */}
+            {/* РњС‘СЂС‚РІС‹Рµ */}
             {characters.filter(c => isDead(c)).length > 0 && (
               <div className="space-y-2">
-                <div className="flex items-center gap-1.5 px-1"><Skull size={14} className="text-gray-500" /><span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Мёртвые ({characters.filter(c => isDead(c)).length})</span></div>
+                <div className="flex items-center gap-1.5 px-1"><Skull size={14} className="text-gray-500" /><span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">РњС‘СЂС‚РІС‹Рµ ({characters.filter(c => isDead(c)).length})</span></div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {characters.filter(c => isDead(c)).map(char => renderChar(char))}
                 </div>
@@ -151,7 +151,7 @@ export default function ArchiveCharactersPage() {
         )}
       </div>
 
-      {/* Модальное окно персонажа */}
+      {/* РњРѕРґР°Р»СЊРЅРѕРµ РѕРєРЅРѕ РїРµСЂСЃРѕРЅР°Р¶Р° */}
       {selectedPlayer && (
         <>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} />
@@ -167,29 +167,29 @@ export default function ArchiveCharactersPage() {
               <h2 className={`text-2xl font-black tracking-wide break-all px-6 ${isDead(selectedPlayer) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
               <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
-                <span>??? Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
+                <span>рџЏ›пёЏ РџР°СЂС‚РёСЏ:</span><span className="font-bold">{selectedPlayer.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</span>
               </div>
               <p className="text-[10px] text-gray-500">{selectedPlayer.season}</p>
             </div>
 
             <div className="w-full h-[1px] bg-white/5 my-2" />
             <div className="text-left space-y-2 w-full">
-              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Р РѕР»Рё</div>
               <div className="flex flex-wrap gap-2 items-center">
                 {selectedPlayer.roles?.map((role: string, idx: number) => (
                   <span key={idx} className="text-xs font-bold py-1 px-3 rounded-full border bg-white/5 text-gray-300 border-white/10">
-                    • {role.toUpperCase()}
+                    вЂў {role.toUpperCase()}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Все персонажи игрока */}
+            {/* Р’СЃРµ РїРµСЂСЃРѕРЅР°Р¶Рё РёРіСЂРѕРєР° */}
             {playerChars.length > 0 && (
               <>
                 <div className="w-full h-[1px] bg-white/5 my-2" />
                 <div className="text-left space-y-2 w-full">
-                  <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">РџРµСЂСЃРѕРЅР°Р¶Рё</div>
                   <div className="space-y-1.5 max-h-40 overflow-y-auto">
                     {playerChars.map((pc: any) => (
                       <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border ${isDead(pc) ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
@@ -198,7 +198,7 @@ export default function ArchiveCharactersPage() {
                         </div>
                         <div className="min-w-0 flex-1 text-left">
                           <div className={`text-xs font-bold truncate ${isDead(pc) ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
-                          <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
+                          <div className="text-[9px] text-gray-500">{pc.season} В· {pc.party || 'РќРµС‚ РїР°СЂС‚РёРё'}</div>
                         </div>
                       </div>
                     ))}
