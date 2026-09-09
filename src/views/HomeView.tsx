@@ -3380,7 +3380,7 @@ export default function Home() {
       </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
-      <div className={`md:hidden fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16' : 'opacity-100 translate-y-0'}`}>
+      <div className={`md:hidden fixed bottom-7 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16' : 'opacity-100 translate-y-0'}`}>
         <div className="w-full max-w-md pointer-events-auto">
           <MobileTabBar
             activeTab={activeTab}
@@ -3400,7 +3400,7 @@ export default function Home() {
 
           onClick={() => navigate('/media/editor')} 
 
-          className="md:hidden fixed bottom-28 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
+          className="md:hidden fixed bottom-32 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
 
         >
 

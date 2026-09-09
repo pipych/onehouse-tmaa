@@ -225,10 +225,10 @@ html, body {
   transform: scale(0.82);
 }
 
-/* Neon Green Glow for selected SF Symbols */
+/* Green active accent for selected SF Symbols without glow */
 .sf-glow-green {
   color: #c0ff00 !important;
-  filter: drop-shadow(0 0 6px rgba(192, 255, 0, 0.9)) drop-shadow(0 0 14px rgba(192, 255, 0, 0.5)) !important;
+  filter: none !important;
 }
 
 .sf-glow-green svg {
