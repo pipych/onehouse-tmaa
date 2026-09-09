@@ -1380,7 +1380,7 @@ export default function AdminPage() {
             onClick={() => setMainTab('home')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               mainTab === 'home'
-                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -1391,7 +1391,7 @@ export default function AdminPage() {
             onClick={() => setMainTab('players')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               mainTab === 'players'
-                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -1402,7 +1402,7 @@ export default function AdminPage() {
             onClick={() => setMainTab('server')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               mainTab === 'server'
-                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -1413,14 +1413,14 @@ export default function AdminPage() {
       </aside>
 
       {/* Мобильный навбар */}
-      <div className="md:hidden fixed bottom-5 left-4 right-4 z-50 flex items-center justify-center">
-        <nav className="bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full">
+      <div className="md:hidden fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none">
+        <nav className="bg-[#14171c]/95 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full pointer-events-auto">
           <div className="flex items-center w-full h-full gap-1">
             <button
               onClick={() => setMainTab('home')}
               className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
                 mainTab === 'home'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)] font-semibold'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white'
               }`}
             >
@@ -1431,7 +1431,7 @@ export default function AdminPage() {
               onClick={() => setMainTab('players')}
               className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
                 mainTab === 'players'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)] font-semibold'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white'
               }`}
             >
@@ -1442,7 +1442,7 @@ export default function AdminPage() {
               onClick={() => setMainTab('server')}
               className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
                 mainTab === 'server'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)] font-semibold'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white'
               }`}
             >

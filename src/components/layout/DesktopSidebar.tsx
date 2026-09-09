@@ -50,7 +50,7 @@ export function DesktopSidebar({
           onClick={() => onTabChange('profile')}
           className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
             activeTab === 'profile'
-              ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+              ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
               : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
           }`}
         >
@@ -65,7 +65,7 @@ export function DesktopSidebar({
             onClick={() => onTabChange('archive')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               activeTab === 'archive'
-                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -80,7 +80,7 @@ export function DesktopSidebar({
               onClick={() => onTabChange('media')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'media'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
@@ -94,7 +94,7 @@ export function DesktopSidebar({
               onClick={() => onTabChange('svod')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'svod'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
@@ -108,7 +108,7 @@ export function DesktopSidebar({
               onClick={() => onTabChange('treasury')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'treasury'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
@@ -122,7 +122,7 @@ export function DesktopSidebar({
               onClick={() => onTabChange('players')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'players'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
@@ -141,7 +141,7 @@ export function DesktopSidebar({
           onClick={() => onTabChange('onelaunch')}
           className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
             activeTab === 'onelaunch'
-              ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+              ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
               : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
           }`}
           title="Скачать лаунчер OneLaunch"

@@ -3288,8 +3288,8 @@ export default function Home() {
           <button
             onClick={() => handleTabChange('profile')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              activeTab === 'profile' && !selectedCharacter && !selectedProfile
-                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+              activeTab === 'profile'
+                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -3302,7 +3302,7 @@ export default function Home() {
               onClick={() => handleTabChange('archive')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'archive'
-                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
@@ -3315,7 +3315,7 @@ export default function Home() {
                 onClick={() => handleTabChange('media')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'media'
-                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3327,7 +3327,7 @@ export default function Home() {
                 onClick={() => handleTabChange('svod')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'svod'
-                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3339,7 +3339,7 @@ export default function Home() {
                 onClick={() => handleTabChange('treasury')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'treasury'
-                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3350,8 +3350,8 @@ export default function Home() {
               <button
                 onClick={() => handleTabChange('players')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                  activeTab === 'players' || selectedCharacter || selectedProfile
-                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  activeTab === 'players'
+                    ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3368,7 +3368,7 @@ export default function Home() {
             onClick={() => handleTabChange('onelaunch')}
             className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               activeTab === 'onelaunch'
-                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
             title="Скачать лаунчер OneLaunch"
@@ -3380,13 +3380,14 @@ export default function Home() {
       </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
-      <div className={`md:hidden fixed bottom-5 left-3 right-3 z-50 flex items-center justify-center transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-        <MobileTabBar
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          seasonEnded={seasonEnded}
-          isPlayersActive={Boolean(selectedCharacter || selectedProfile)}
-        />
+      <div className={`md:hidden fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16' : 'opacity-100 translate-y-0'}`}>
+        <div className="w-full max-w-md pointer-events-auto">
+          <MobileTabBar
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            seasonEnded={seasonEnded}
+          />
+        </div>
       </div>
 
 
