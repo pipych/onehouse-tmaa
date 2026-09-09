@@ -14,6 +14,7 @@ html, body {
   font-family: 'Wix Madefor Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
   user-select: none;
 }
 
@@ -114,4 +115,31 @@ html, body {
 
 .safe-top {
   padding-top: max(16px, env(safe-area-inset-top));
+}
+
+/* 120 FPS Mobile Hardware Acceleration & Rendering Optimizations */
+.gpu-layer {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Defer layout and rendering for offscreen list items */
+.cv-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+}
+
+.cv-media {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
+}
+
+/* Disable hover scale transforms on touch devices to prevent scroll stutter */
+@media (hover: none) and (pointer: coarse) {
+  .hover\:scale-\[1\.03\]:hover,
+  .hover\:scale-\[1\.02\]:hover {
+    transform: none !important;
+  }
 }

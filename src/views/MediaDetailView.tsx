@@ -6,7 +6,7 @@ import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, More
 
 function Av({ src, size = 36 }: { src?: string | null; size?: number }) {
   if (src && src.trim().length > 0) {
-    return <img src={src} style={{ width: size, height: size, objectFit: 'cover' }} className="rounded-full object-cover border border-white/5 shrink-0" />;
+    return <img src={src} loading="lazy" decoding="async" style={{ width: size, height: size, objectFit: 'cover' }} className="rounded-full object-cover border border-white/5 shrink-0" />;
   }
   return <div style={{ width: size, height: size }} className="rounded-full bg-[#1c2026] border border-white/5 flex items-center justify-center shrink-0"><User size={Math.max(size * 0.35, 10)} className="text-gray-600" /></div>;
 }

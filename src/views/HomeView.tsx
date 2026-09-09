@@ -1,4 +1,4 @@
-﻿// =========================================================================
+// =========================================================================
 
 // 1. НАСТРОЙКИ NEXT.JS И СИСТЕМНЫЕ ИМПОРТЫ
 
@@ -2151,7 +2151,7 @@ export default function Home() {
 
           <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${isDead(selectedCharacter) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
 
-            <img src={isEditingProfile ? newAvatarUrl : (selectedCharacter.avatar_url || '')} alt="avatar" className="w-full h-full object-cover" />
+            <img src={isEditingProfile ? newAvatarUrl : (selectedCharacter.avatar_url || '')} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" />
 
           </div>
 
@@ -2275,7 +2275,7 @@ export default function Home() {
 
                       <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
 
-                        {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
 
                       </div>
 
@@ -2320,7 +2320,7 @@ export default function Home() {
           <button onClick={() => { setSelectedProfile(null); setShowPlayerRoleMenu(false); setPlayerCharacters([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
 
           <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg">
-            {selectedProfile.avatar_url ? <img src={selectedProfile.avatar_url} alt="avatar" className="w-full h-full object-cover" /> : <User size={36} className="m-auto text-gray-600" />}
+            {selectedProfile.avatar_url ? <img src={selectedProfile.avatar_url} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={36} className="m-auto text-gray-600" />}
           </div>
 
           <div className="w-full space-y-1">
@@ -2363,7 +2363,7 @@ export default function Home() {
                   {playerCharacters.map((pc: any) => (
                     <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
                       <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
-                        {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
@@ -3071,7 +3071,7 @@ export default function Home() {
 
                     <div onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
 
-                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
+                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
 
                       <div className="flex-1 min-w-0">
 
@@ -3119,9 +3119,9 @@ export default function Home() {
 
                         {alive.map((player) => (
 
-                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#14171c]/90 border-white/5 hover:border-white/20">
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full border bg-[#14171c] border-white/5 hover:border-white/20 cv-card gpu-layer">
 
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
 
                             <div className="flex-1 min-w-0">
 
@@ -3175,9 +3175,9 @@ export default function Home() {
 
                         {dead.map((player) => (
 
-                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#050608] border-[#111316] grayscale">
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full border bg-[#050608] border-[#111316] grayscale cv-card gpu-layer">
 
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-gray-700 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-gray-700 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
 
                             <div className="flex-1 min-w-0">
 
@@ -3225,11 +3225,11 @@ export default function Home() {
 
                       setSelectedProfile(char || { id: p.id, player_id: p.id, rp_name: p.mc_nickname, mc_nickname: p.mc_nickname, avatar_url: p.avatar_url || '', roles: p.roles || [], party: 'Нет партии' } as any);
 
-                    }} className="p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-md w-full border bg-[#14171c]/90 border-white/5 hover:border-white/20">
+                    }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full border bg-[#14171c] border-white/5 hover:border-white/20 cv-card gpu-layer">
 
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0 flex items-center justify-center">
 
-                        {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <User size={20} className="text-gray-600" />}
+                        {p.avatar_url ? <img src={p.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={20} className="text-gray-600" />}
 
                       </div>
 
@@ -3274,7 +3274,7 @@ export default function Home() {
 
           <button onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
 
-            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || ''} className="w-full h-full object-cover" alt="me" /></div>
+            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || ''} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="me" /></div>
 
           </button>
 

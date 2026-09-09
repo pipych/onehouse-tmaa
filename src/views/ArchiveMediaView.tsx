@@ -110,7 +110,7 @@ export default function ArchiveMediaPage() {
               <div 
                 key={post.id} 
                 onClick={() => navigate(`/media/${post.id}`)}
-                className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 p-5 rounded-[24px] shadow-xl space-y-3 hover:border-white/10 transition-colors cursor-pointer group"
+                className="bg-[#14171c] border border-white/5 p-5 rounded-[24px] shadow-xl space-y-3 hover:border-white/10 transition-colors cursor-pointer group cv-card gpu-layer"
               >
                 <div className="flex items-center justify-between text-[10px] font-bold font-mono text-gray-500 uppercase tracking-wider">
                   <span className="flex items-center gap-1"><User size={12} className="text-[#c0ff00]" /> {post.author?.rp_name || 'Неизвестный'}</span>

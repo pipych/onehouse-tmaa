@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
@@ -77,9 +77,9 @@ export default function ArchiveCharactersPage() {
       <div 
         key={char.id}
         onClick={() => { loadPlayerChars(char.player_id); setSelectedPlayer(char); }}
-        className={`p-4 rounded-[24px] border flex items-center space-x-4 transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-md active:scale-[0.99] w-full ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c]/90 backdrop-blur-xl border-white/5 hover:border-white/20'}`}
+        className={`p-4 rounded-[24px] border flex items-center space-x-4 cursor-pointer shadow-md active:scale-[0.98] transition-transform w-full cv-card gpu-layer ${dead ? 'bg-[#0a0c0f] border-transparent opacity-60 grayscale-[50%]' : 'bg-[#14171c] border-white/5 hover:border-white/20'}`}
       >
-        <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={char.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" /></div>
+        <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={char.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
         <div className="flex-1 min-w-0">
           <div className={`text-sm font-black truncate tracking-wide ${dead ? 'text-gray-500 line-through' : 'text-white'}`}>{char.rp_name}</div>
           <div className="text-xs text-gray-400 truncate font-mono tracking-tight">{char.mc_nickname}</div>
@@ -160,7 +160,7 @@ export default function ArchiveCharactersPage() {
             <button onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white transition-all"><X size={14} /></button>
 
             <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg ${isDead(selectedPlayer) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
-              <img src={selectedPlayer.avatar_url || ''} alt="avatar" className="w-full h-full object-cover" />
+              <img src={selectedPlayer.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </div>
 
             <div className="space-y-1">
@@ -194,7 +194,7 @@ export default function ArchiveCharactersPage() {
                     {playerChars.map((pc: any) => (
                       <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border ${isDead(pc) ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
                         <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${isDead(pc) ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
-                          {pc.avatar_url ? <img src={pc.avatar_url} className="w-full h-full object-cover" /> : <Users size={14} className="m-auto text-gray-600" />}
+                          {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <Users size={14} className="m-auto text-gray-600" />}
                         </div>
                         <div className="min-w-0 flex-1 text-left">
                           <div className={`text-xs font-bold truncate ${isDead(pc) ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>

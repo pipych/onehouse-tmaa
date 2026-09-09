@@ -13,6 +13,8 @@ export default function Avatar({ src, size = 48, className = '' }: AvatarProps) 
     return (
       <img 
         src={src} 
+        loading="lazy"
+        decoding="async"
         style={{ width: `${size}px`, height: `${size}px`, objectFit: 'cover' }} 
         className={`rounded-full bg-[#1c2026] border border-white/10 flex-shrink-0 ${className}`} 
         alt="avatar"

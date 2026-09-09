@@ -38,6 +38,8 @@ function PlayerAvatar({ src, size = 32 }: { src?: string | null; size?: number }
     return (
       <img 
         src={src} 
+        loading="lazy"
+        decoding="async"
         style={{ width: size, height: size, objectFit: 'cover' }} 
         className="rounded-full object-cover border border-white/10 shrink-0" 
         alt="avatar"
@@ -175,15 +177,15 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
           <div 
             key={post.id} 
             onClick={() => navigate(`/media/${post.id}`)} 
-            className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[28px] overflow-hidden cursor-pointer hover:border-white/10 transition-all shadow-xl flex flex-col group active:scale-[0.99]"
+            className="bg-[#14171c] border border-white/5 rounded-[28px] overflow-hidden cursor-pointer hover:border-white/10 transition-colors shadow-xl flex flex-col group active:scale-[0.99] cv-media gpu-layer"
           >
             {post.youtube_url ? (
               <div className="w-full aspect-video bg-black/30 relative">
-                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="w-full h-full border-none pointer-events-none" />
+                <iframe src={getYoutubeEmbedUrl(post.youtube_url)!} className="w-full h-full border-none pointer-events-none" loading="lazy" />
               </div>
             ) : post.cover_url ? (
-              <div className="w-full aspect-video relative overflow-hidden">
-                <img src={post.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+              <div className="w-full aspect-video relative overflow-hidden bg-[#0d0f12]">
+                <img src={post.cover_url} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="" />
               </div>
             ) : null}
 
