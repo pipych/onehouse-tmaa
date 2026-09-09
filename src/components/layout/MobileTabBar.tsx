@@ -27,7 +27,7 @@ export function MobileTabBar({
               activeTab === 'profile' ? 'text-[#c0ff00]' : 'text-gray-500'
             }`}
           >
-            <SFSymbol name={activeTab === 'profile' ? 'house.fill' : 'house'} size={20} />
+            <SFSymbol name="house.fill" size={20} />
             <span className="text-[9px] font-bold tracking-tight mt-0.5">Главная</span>
           </button>
 
@@ -38,7 +38,7 @@ export function MobileTabBar({
                 activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'
               }`}
             >
-              <SFSymbol name={activeTab === 'archive' ? 'archivebox.fill' : 'archivebox'} size={20} />
+              <SFSymbol name="archivebox.fill" size={20} />
               <span className="text-[9px] font-bold tracking-tight mt-0.5">Архив</span>
             </button>
           ) : (
@@ -49,7 +49,7 @@ export function MobileTabBar({
                   activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'
                 }`}
               >
-                <SFSymbol name={activeTab === 'media' ? 'newspaper.fill' : 'newspaper'} size={20} />
+                <SFSymbol name="newspaper.fill" size={20} />
                 <span className="text-[9px] font-bold tracking-tight mt-0.5">Медиа</span>
               </button>
 
@@ -59,7 +59,7 @@ export function MobileTabBar({
                   activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'
                 }`}
               >
-                <SFSymbol name={activeTab === 'svod' ? 'doc.text.fill' : 'doc.text'} size={20} />
+                <SFSymbol name="doc.text.fill" size={20} />
                 <span className="text-[9px] font-bold tracking-tight mt-0.5">Свод</span>
               </button>
 
@@ -69,7 +69,7 @@ export function MobileTabBar({
                   activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'
                 }`}
               >
-                <SFSymbol name={activeTab === 'treasury' ? 'building.columns.fill' : 'building.columns'} size={20} />
+                <SFSymbol name="building.columns.fill" size={20} />
                 <span className="text-[9px] font-bold tracking-tight mt-0.5">Казна</span>
               </button>
 
@@ -79,7 +79,7 @@ export function MobileTabBar({
                   activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'
                 }`}
               >
-                <SFSymbol name={activeTab === 'archive' ? 'archivebox.fill' : 'archivebox'} size={20} />
+                <SFSymbol name="archivebox.fill" size={20} />
                 <span className="text-[9px] font-bold tracking-tight mt-0.5">Архив</span>
               </button>
             </>
@@ -91,7 +91,7 @@ export function MobileTabBar({
               activeTab === 'onelaunch' ? 'text-[#c0ff00]' : 'text-gray-500'
             }`}
           >
-            <SFSymbol name={activeTab === 'onelaunch' ? 'arrow.down.circle.fill' : 'arrow.down.circle'} size={20} />
+            <SFSymbol name="arrow.down.circle.fill" size={20} />
             <span className="text-[9px] font-bold tracking-tight mt-0.5">Лаунчер</span>
           </button>
         </div>
