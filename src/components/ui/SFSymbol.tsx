@@ -216,7 +216,6 @@ export interface SFSymbolProps extends React.HTMLAttributes<HTMLSpanElement> {
   color?: string;
   animated?: boolean;
   effect?: 'bounce' | 'wiggle' | 'breathe' | 'rotate';
-  liquid?: boolean;
   className?: string;
   onClick?: (e: React.MouseEvent<HTMLSpanElement>) => void;
 }
@@ -227,7 +226,6 @@ export const SFSymbol = React.forwardRef<HTMLSpanElement, SFSymbolProps>(({
   color,
   animated = true,
   effect = 'bounce',
-  liquid = true,
   className = '',
   onClick,
   style,
@@ -268,9 +266,7 @@ export const SFSymbol = React.forwardRef<HTMLSpanElement, SFSymbolProps>(({
   return (
     <span
       ref={ref}
-      className={`inline-flex items-center justify-center shrink-0 select-none ${
-        liquid ? 'sf-liquid' : ''
-      } ${animationClass} ${className}`}
+      className={`inline-flex items-center justify-center shrink-0 select-none ${animationClass} ${className}`}
       onClick={handleClick}
       style={{
         width: typeof size === 'number' ? `${size}px` : size,
