@@ -20,6 +20,7 @@ import OneLaunchContent from '../components/OneLaunch';
 import Treasury from '../components/Treasury';
 
 import Avatar from '../components/Avatar';
+import { MobileTabBar } from '../components/layout/MobileTabBar';
 
 import { getBalance } from '../lib/treasury';
 
@@ -3282,256 +3283,110 @@ export default function Home() {
 
 
 
-        {/* Pill с вкладками */}
-
-        <nav className={`bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative transition-all duration-300 ${seasonEnded ? 'w-[72px] py-4 px-1 gap-6' : 'w-[72px] py-6 px-1'}`}>
-
-          
-
-          <button onClick={() => handleTabChange('profile')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'profile' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-
-            <HomeIcon size={23} />
-
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">{seasonEnded ? 'Главная' : 'Главная'}</span>
-
+        {/* Pill с вкладками (ПК) */}
+        <nav className="bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl flex flex-col items-center gap-3 relative transition-all duration-300 w-[68px] p-2">
+          <button
+            onClick={() => handleTabChange('profile')}
+            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+              activeTab === 'profile' && !selectedCharacter && !selectedProfile
+                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <HomeIcon size={22} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
           </button>
 
-
-
           {seasonEnded ? (
-
-            <button onClick={() => handleTabChange('archive')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-
-              <Library size={23} />
-
+            <button
+              onClick={() => handleTabChange('archive')}
+              className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+                activeTab === 'archive'
+                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                  : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Library size={22} />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
-
             </button>
-
           ) : (
-
             <>
-
-              <button onClick={() => handleTabChange('media')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-
-                <Newspaper size={23} />
-
+              <button
+                onClick={() => handleTabChange('media')}
+                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+                  activeTab === 'media'
+                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Newspaper size={22} />
                 <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Медиа</span>
-
               </button>
 
-
-
-              <button onClick={() => handleTabChange('svod')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-
-                <BookMarked size={23} />
-
+              <button
+                onClick={() => handleTabChange('svod')}
+                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+                  activeTab === 'svod'
+                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <BookMarked size={22} />
                 <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Свод</span>
-
               </button>
 
-
-
-              <button onClick={() => handleTabChange('treasury')} className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}>
-
-                <Landmark size={23} />
-
+              <button
+                onClick={() => handleTabChange('treasury')}
+                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+                  activeTab === 'treasury'
+                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Landmark size={22} />
                 <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
-
               </button>
 
+              <button
+                onClick={() => handleTabChange('players')}
+                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+                  activeTab === 'players' || selectedCharacter || selectedProfile
+                    ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Users size={22} />
+                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
+              </button>
             </>
-
           )}
-
         </nav>
 
-
-
-        {/* Кружок OneLaunch — под пилем, когда сезон завершён */}
-
-        {seasonEnded && (
-
-        <button
-
-          onClick={() => handleTabChange('onelaunch')}
-
-          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 ${
-
-            activeTab === 'onelaunch'
-
-              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-
-              : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
-
-          }`}
-
-        >
-
-          <Download size={23} />
-
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Лаунчер</span>
-
-        </button>
-
-        )}
-
-
-
-        {/* Кружок Игроки — под пилем, идеальный круг */}
-
-        {!seasonEnded && (
-
-        <button
-
-          onClick={() => handleTabChange('players')}
-
-          className={`group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 ${
-
-            activeTab === 'players' || selectedCharacter || selectedProfile
-
-              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-
-              : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
-
-          }`}
-
-        >
-
-          <Users size={23} />
-
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
-
-        </button>
-
-        )}
-
+        {/* Кружок Скачать лаунчер (ПК) — единая структура */}
+        <div className="w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-2 rounded-full shadow-2xl flex items-center justify-center relative">
+          <button
+            onClick={() => handleTabChange('onelaunch')}
+            className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+              activeTab === 'onelaunch'
+                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+            }`}
+            title="Скачать лаунчер OneLaunch"
+          >
+            <Download size={22} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Скачать</span>
+          </button>
+        </div>
       </aside>
 
-
-
       {/* МОБИЛЬНЫЙ ТАББАР */}
-
-      <div className={`md:hidden fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center gap-3 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-
-        <nav className={`bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl transition-all duration-300 ${seasonEnded ? 'px-10' : 'flex-1'}`}>
-
-          <div className={`flex items-center px-2 ${seasonEnded ? 'gap-10' : 'w-full justify-around'}`}>
-
-            <button onClick={() => handleTabChange('profile')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'profile' && !selectedCharacter ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-
-              <HomeIcon size={22} />
-
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
-
-            </button>
-
-            {seasonEnded ? (
-
-              <button onClick={() => handleTabChange('archive')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'archive' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-
-                <Library size={22} />
-
-                <span className="text-[10px] font-bold mt-1 tracking-wide">Архив</span>
-
-              </button>
-
-            ) : (
-
-              <>
-
-                <button onClick={() => handleTabChange('media')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'media' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-
-                  <Newspaper size={22} />
-
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Медиа</span>
-
-                </button>
-
-                <button onClick={() => handleTabChange('svod')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'svod' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-
-                  <BookMarked size={22} />
-
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Свод</span>
-
-                </button>
-
-                <button onClick={() => handleTabChange('treasury')} className={`flex flex-col items-center justify-center transition-all duration-300 ${activeTab === 'treasury' ? 'text-[#c0ff00]' : 'text-gray-500'}`}>
-
-                  <Landmark size={22} />
-
-                  <span className="text-[10px] font-bold mt-1 tracking-wide">Казна</span>
-
-                </button>
-
-              </>
-
-            )}
-
-          </div>
-
-        </nav>
-
-
-
-        {/* Кружок Игроки справа — идеальный круг как в Монобанк */}
-
-        {!seasonEnded && (
-
-        <button
-
-          onClick={() => handleTabChange('players')}
-
-          className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
-
-            activeTab === 'players' || selectedCharacter || selectedProfile
-
-              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-
-              : 'border-white/10 text-gray-500'
-
-          }`}
-
-        >
-
-          <Users size={22} />
-
-          <span className="text-[10px] font-bold tracking-wide">Игроки</span>
-
-        </button>
-
-        )}
-
-
-
-        {/* Кружок Лаунчер — при завершённом сезоне, в центре с пилем */}
-
-        {seasonEnded && (
-
-        <button
-
-          onClick={() => handleTabChange('onelaunch')}
-
-          className={`shrink-0 w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-xl border rounded-full flex flex-col items-center justify-center gap-1 shadow-2xl transition-all active:scale-90 ${
-
-            activeTab === 'onelaunch'
-
-              ? 'border-[#c0ff00]/40 text-[#c0ff00]'
-
-              : 'border-white/10 text-gray-500'
-
-          }`}
-
-        >
-
-          <Download size={22} />
-
-          <span className="text-[10px] font-bold tracking-wide">Лаунчер</span>
-
-        </button>
-
-        )}
-
+      <div className={`md:hidden fixed bottom-5 left-3 right-3 z-50 flex items-center justify-center transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <MobileTabBar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          seasonEnded={seasonEnded}
+          isPlayersActive={Boolean(selectedCharacter || selectedProfile)}
+        />
       </div>
 
 

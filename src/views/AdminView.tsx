@@ -1375,55 +1375,79 @@ export default function AdminPage() {
 
       {/* ПК САЙДБАР */}
       <aside className="hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50">
-        <nav className="bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-[36px] shadow-2xl flex flex-col items-center gap-8 relative transition-all duration-300 w-[72px] py-6 px-1">
+        <nav className="bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl flex flex-col items-center gap-3 relative transition-all duration-300 w-[68px] p-2">
           <button
             onClick={() => setMainTab('home')}
-            className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${mainTab === 'home' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}
+            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+              mainTab === 'home'
+                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+            }`}
           >
-            <ShieldAlert size={23} />
+            <ShieldAlert size={22} />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
           </button>
           <button
             onClick={() => setMainTab('players')}
-            className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${mainTab === 'players' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}
+            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+              mainTab === 'players'
+                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+            }`}
           >
-            <Users size={23} />
+            <Users size={22} />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
           </button>
           <button
             onClick={() => setMainTab('server')}
-            className={`group relative flex flex-col items-center justify-center w-full transition-all duration-300 ${mainTab === 'server' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'}`}
+            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+              mainTab === 'server'
+                ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)]'
+                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+            }`}
           >
-            <Folder size={23} />
+            <Folder size={22} />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Сервер</span>
           </button>
         </nav>
       </aside>
 
       {/* Мобильный навбар */}
-      <div className="md:hidden fixed bottom-6 left-8 right-8 z-50 flex items-center justify-center">
-        <nav className="bg-[#14171c]/90 backdrop-blur-xl border border-white/10 py-4 rounded-full shadow-2xl flex-1">
-          <div className="flex items-center w-full justify-around px-2">
+      <div className="md:hidden fixed bottom-5 left-4 right-4 z-50 flex items-center justify-center">
+        <nav className="bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full">
+          <div className="flex items-center w-full h-full gap-1">
             <button
               onClick={() => setMainTab('home')}
-              className={`flex flex-col items-center justify-center transition-all duration-300 ${mainTab === 'home' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
+              className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
+                mainTab === 'home'
+                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)] font-semibold'
+                  : 'text-[#8e8e93] hover:text-white'
+              }`}
             >
-              <ShieldAlert size={22} />
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Главная</span>
+              <ShieldAlert size={20} className={mainTab === 'home' ? 'text-white' : 'text-[#8e8e93]'} />
+              <span className="text-[9px] font-bold tracking-tight mt-0.5">Главная</span>
             </button>
             <button
               onClick={() => setMainTab('players')}
-              className={`flex flex-col items-center justify-center transition-all duration-300 ${mainTab === 'players' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
+              className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
+                mainTab === 'players'
+                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)] font-semibold'
+                  : 'text-[#8e8e93] hover:text-white'
+              }`}
             >
-              <Users size={22} />
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Игроки</span>
+              <Users size={20} className={mainTab === 'players' ? 'text-white' : 'text-[#8e8e93]'} />
+              <span className="text-[9px] font-bold tracking-tight mt-0.5">Игроки</span>
             </button>
             <button
               onClick={() => setMainTab('server')}
-              className={`flex flex-col items-center justify-center transition-all duration-300 ${mainTab === 'server' ? 'text-[#c0ff00]' : 'text-gray-500'}`}
+              className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
+                mainTab === 'server'
+                  ? 'bg-[#007aff] text-white shadow-[0_2px_14px_rgba(0,122,255,0.45)] font-semibold'
+                  : 'text-[#8e8e93] hover:text-white'
+              }`}
             >
-              <Folder size={22} />
-              <span className="text-[10px] font-bold mt-1 tracking-wide">Сервер</span>
+              <Folder size={20} className={mainTab === 'server' ? 'text-white' : 'text-[#8e8e93]'} />
+              <span className="text-[9px] font-bold tracking-tight mt-0.5">Сервер</span>
             </button>
           </div>
         </nav>
