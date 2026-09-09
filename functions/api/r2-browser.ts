@@ -7,20 +7,7 @@ import {
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET = process.env.R2_BUCKET_NAME || 'onelaunch-mods';
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-});
+import { getR2Client } from '../_shared/r2';
 
 interface R2Item {
   key: string;
@@ -31,15 +18,18 @@ interface R2Item {
   url?: string;
 }
 
-export async function onRequestGet(context: any) { const request = context.request;
+export async function onRequestGet(context: any) {
+  const { request, env } = context;
   const { searchParams } = new URL(request.url);
   const prefix = searchParams.get('prefix') || '';
   const download = searchParams.get('download');
 
   try {
+    const { s3, bucket } = getR2Client(env);
+
     if (download) {
       const command = new GetObjectCommand({
-        Bucket: R2_BUCKET,
+        Bucket: bucket,
         Key: download,
       });
       const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
@@ -47,7 +37,7 @@ export async function onRequestGet(context: any) { const request = context.reque
     }
 
     const command = new ListObjectsV2Command({
-      Bucket: R2_BUCKET,
+      Bucket: bucket,
       Prefix: prefix,
       Delimiter: '/',
     });
@@ -98,8 +88,10 @@ export async function onRequestGet(context: any) { const request = context.reque
 }
 
 // Create folder
-export async function onRequestPost(context: any) { const request = context.request;
+export async function onRequestPost(context: any) {
+  const { request, env } = context;
   try {
+    const { s3, bucket } = getR2Client(env);
     const { folderName, prefix } = await request.json();
     if (!folderName) {
       return Response.json({ error: 'folderName is required' }, { status: 400 });
@@ -108,7 +100,7 @@ export async function onRequestPost(context: any) { const request = context.requ
     const key = basePrefix ? `${basePrefix}/${folderName}/` : `${folderName}/`;
 
     const command = new PutObjectCommand({
-      Bucket: R2_BUCKET,
+      Bucket: bucket,
       Key: key,
       Body: '',
     });
@@ -124,7 +116,8 @@ export async function onRequestPost(context: any) { const request = context.requ
 }
 
 // Delete file or folder
-export async function onRequestDelete(context: any) { const request = context.request;
+export async function onRequestDelete(context: any) {
+  const { request, env } = context;
   const { searchParams } = new URL(request.url);
   const key = searchParams.get('key');
   const type = searchParams.get('type'); // 'file' or 'folder'
@@ -134,34 +127,35 @@ export async function onRequestDelete(context: any) { const request = context.re
   }
 
   try {
+    const { s3, bucket } = getR2Client(env);
     let deletedKeys: string[] = [];
 
     if (type === 'folder') {
       const prefix = key.endsWith('/') ? key : `${key}/`;
       const listCommand = new ListObjectsV2Command({
-        Bucket: R2_BUCKET,
+        Bucket: bucket,
         Prefix: prefix,
       });
       const listed = await s3.send(listCommand);
       const objects = listed.Contents || [];
 
       if (objects.length === 0) {
-        await s3.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: prefix }));
+        await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: prefix }));
         deletedKeys = [prefix];
       } else {
         deletedKeys = objects.map(obj => obj.Key!);
         await s3.send(new DeleteObjectsCommand({
-          Bucket: R2_BUCKET,
+          Bucket: bucket,
           Delete: { Objects: objects.map(obj => ({ Key: obj.Key! })), Quiet: true },
         }));
       }
     } else {
       deletedKeys = [key];
-      await s3.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+      await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     }
 
     // Update manifest if deleting from modpack folder
-    await syncManifestAfterDelete(deletedKeys);
+    await syncManifestAfterDelete(s3, bucket, deletedKeys);
 
     return Response.json({ success: true, deleted: deletedKeys.length });
   } catch (error: any) {
@@ -173,7 +167,7 @@ export async function onRequestDelete(context: any) { const request = context.re
   }
 }
 
-async function syncManifestAfterDelete(deletedKeys: string[]) {
+async function syncManifestAfterDelete(s3: S3Client, bucket: string, deletedKeys: string[]) {
   // Find which prefixes have a manifest.json
   const affectedPrefixes = new Set<string>();
   for (const k of deletedKeys) {
@@ -187,7 +181,7 @@ async function syncManifestAfterDelete(deletedKeys: string[]) {
   for (const prefix of Array.from(affectedPrefixes)) {
     try {
       const manifestKey = prefix + 'manifest.json';
-      const cmd = new GetObjectCommand({ Bucket: R2_BUCKET, Key: manifestKey });
+      const cmd = new GetObjectCommand({ Bucket: bucket, Key: manifestKey });
       const data = await s3.send(cmd);
       if (data.Body) {
         const body = await data.Body.transformToString();
@@ -203,7 +197,7 @@ async function syncManifestAfterDelete(deletedKeys: string[]) {
           }
           if (changed) {
             await s3.send(new PutObjectCommand({
-              Bucket: R2_BUCKET,
+              Bucket: bucket,
               Key: manifestKey,
               Body: JSON.stringify(manifest, null, 2),
               ContentType: 'application/json',
@@ -216,3 +210,4 @@ async function syncManifestAfterDelete(deletedKeys: string[]) {
     }
   }
 }
+

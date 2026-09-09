@@ -7,20 +7,8 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import AdmZip from 'adm-zip';
-
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET = process.env.R2_BUCKET_NAME || 'onelaunch-mods';
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-});
+import crypto from 'crypto';
+import { getR2Client } from '../_shared/r2';
 
 async function readStream(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
   const reader = stream.getReader();
@@ -33,21 +21,21 @@ async function readStream(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-async function uploadToR2(key: string, body: Buffer | string, contentType?: string) {
+async function uploadToR2(s3: S3Client, bucket: string, key: string, body: Buffer | string, contentType?: string) {
   await s3.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: bucket,
     Key: key,
     Body: body,
     ContentType: contentType,
   }));
 }
 
-async function deleteFolder(prefix: string): Promise<number> {
+async function deleteFolder(s3: S3Client, bucket: string, prefix: string): Promise<number> {
   let deleted = 0;
   let continuationToken: string | undefined;
   do {
     const listCmd = new ListObjectsV2Command({
-      Bucket: R2_BUCKET,
+      Bucket: bucket,
       Prefix: prefix,
       ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
     });
@@ -55,7 +43,7 @@ async function deleteFolder(prefix: string): Promise<number> {
     const objects = listed.Contents || [];
     if (objects.length > 0) {
       await s3.send(new DeleteObjectsCommand({
-        Bucket: R2_BUCKET,
+        Bucket: bucket,
         Delete: { Objects: objects.map(obj => ({ Key: obj.Key! })), Quiet: true },
       }));
       deleted += objects.length;
@@ -65,10 +53,10 @@ async function deleteFolder(prefix: string): Promise<number> {
   return deleted;
 }
 
-async function readManifest(prefix: string): Promise<any> {
+async function readManifest(s3: S3Client, bucket: string, prefix: string): Promise<any> {
   const manifestKey = prefix + 'manifest.json';
   try {
-    const cmd = new GetObjectCommand({ Bucket: R2_BUCKET, Key: manifestKey });
+    const cmd = new GetObjectCommand({ Bucket: bucket, Key: manifestKey });
     const data = await s3.send(cmd);
     if (data.Body) {
       const body = await data.Body.transformToString();
@@ -80,18 +68,19 @@ async function readManifest(prefix: string): Promise<any> {
   return { files: {} };
 }
 
-async function writeManifest(prefix: string, manifest: any) {
+async function writeManifest(s3: S3Client, bucket: string, prefix: string, manifest: any) {
   const manifestKey = prefix + 'manifest.json';
-  await uploadToR2(manifestKey, JSON.stringify(manifest, null, 2), 'application/json');
+  await uploadToR2(s3, bucket, manifestKey, JSON.stringify(manifest, null, 2), 'application/json');
 }
 
 function getFileHash(buffer: Buffer): string {
-  const crypto = require('crypto');
   return crypto.createHash('sha256').update(buffer).digest('hex').substring(0, 12);
 }
 
-export async function onRequestPost(context: any) { const request = context.request;
+export async function onRequestPost(context: any) {
+  const { request, env } = context;
   try {
+    const { s3, bucket } = getR2Client(env);
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const mode = formData.get('mode') as string; // 'merge' | 'replace'
@@ -112,7 +101,7 @@ export async function onRequestPost(context: any) { const request = context.requ
 
     // Full replace: delete everything first
     if (mode === 'replace' && isZip) {
-      deletedCount = await deleteFolder(normalizedPrefix);
+      deletedCount = await deleteFolder(s3, bucket, normalizedPrefix);
     }
 
     if (isZip) {
@@ -123,7 +112,7 @@ export async function onRequestPost(context: any) { const request = context.requ
       // If not full replace, read existing manifest to merge
       let existingManifest: any = { files: {} };
       if (mode === 'merge') {
-        existingManifest = await readManifest(normalizedPrefix);
+        existingManifest = await readManifest(s3, bucket, normalizedPrefix);
       }
 
       for (const entry of entries) {
@@ -131,7 +120,7 @@ export async function onRequestPost(context: any) { const request = context.requ
         const entryName = entry.entryName;
         const entryBuffer = entry.getData();
         const targetKey = normalizedPrefix + entryName;
-        await uploadToR2(targetKey, entryBuffer);
+        await uploadToR2(s3, bucket, targetKey, entryBuffer);
         const hash = getFileHash(entryBuffer);
         newManifestFiles[entryName] = {
           name: entryName,
@@ -150,22 +139,22 @@ export async function onRequestPost(context: any) { const request = context.requ
       if (!finalManifest.files['manifest.json']) {
         // manifest.json might have been deleted by replace, re-add it
       }
-      await writeManifest(normalizedPrefix, finalManifest);
+      await writeManifest(s3, bucket, normalizedPrefix, finalManifest);
 
     } else {
       // Single file upload
       const targetKey = normalizedPrefix + fileName;
-      await uploadToR2(targetKey, buffer);
+      await uploadToR2(s3, bucket, targetKey, buffer);
 
       // Update manifest
-      const manifest = await readManifest(normalizedPrefix);
+      const manifest = await readManifest(s3, bucket, normalizedPrefix);
       const hash = getFileHash(buffer);
       manifest.files[fileName] = {
         name: fileName,
         size: buffer.length,
         hash,
       };
-      await writeManifest(normalizedPrefix, manifest);
+      await writeManifest(s3, bucket, normalizedPrefix, manifest);
       uploadedCount = 1;
     }
 

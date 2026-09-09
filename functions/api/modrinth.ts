@@ -5,24 +5,7 @@ import {
 } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 
-// --- R2 config ---
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET = process.env.R2_BUCKET_NAME || 'onelaunch-mods';
-
-if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
-  console.warn('[modrinth] R2 env vars missing: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY');
-}
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-});
+import { getR2Client } from '../_shared/r2';
 
 // --- Modrinth config ---
 const MODRINTH_API = 'https://api.modrinth.com/v2';
@@ -102,9 +85,9 @@ interface ModrinthVersion {
 }
 
 // --- Helpers ---
-async function readManifest(): Promise<any> {
+async function readManifest(s3: S3Client, bucket: string): Promise<any> {
   try {
-    const cmd = new GetObjectCommand({ Bucket: R2_BUCKET, Key: MANIFEST_KEY });
+    const cmd = new GetObjectCommand({ Bucket: bucket, Key: MANIFEST_KEY });
     const data = await s3.send(cmd);
     if (data.Body) {
       const body = await data.Body.transformToString();
@@ -128,11 +111,11 @@ async function readManifest(): Promise<any> {
   };
 }
 
-async function writeManifest(manifest: any) {
+async function writeManifest(s3: S3Client, bucket: string, manifest: any) {
   // Increment version
   manifest.version = (manifest.version || 0) + 1;
   await s3.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: bucket,
     Key: MANIFEST_KEY,
     Body: JSON.stringify(manifest, null, 2),
     ContentType: 'application/json',
@@ -163,6 +146,8 @@ async function findCompatibleVersion(projectId: string): Promise<ModrinthVersion
 }
 
 async function downloadAndUploadMod(
+  s3: S3Client,
+  bucket: string,
   version: ModrinthVersion,
   manifest: any,
   visited: Set<string>
@@ -184,7 +169,7 @@ async function downloadAndUploadMod(
       try {
         const depVersion = await findCompatibleVersion(dep.project_id);
         if (depVersion) {
-          const depResults = await downloadAndUploadMod(depVersion, manifest, visited);
+          const depResults = await downloadAndUploadMod(s3, bucket, depVersion, manifest, visited);
           results.push(...depResults);
         }
       } catch (e) {
@@ -214,7 +199,7 @@ async function downloadAndUploadMod(
   const sha256 = getFileHash(fileBuffer);
 
   await s3.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: bucket,
     Key: r2Key,
     Body: fileBuffer,
   }));
@@ -297,8 +282,10 @@ export async function onRequestGet(context: any) { const request = context.reque
 // ===================================================================
 // POST — Install mod + dependencies to R2
 // ===================================================================
-export async function onRequestPost(context: any) { const request = context.request;
+export async function onRequestPost(context: any) {
+  const { request, env } = context;
   try {
+    const { s3, bucket } = getR2Client(env);
     const { slug, projectId: pid } = await request.json();
     const projectId = pid || slug;
     if (!projectId) {
@@ -332,14 +319,14 @@ export async function onRequestPost(context: any) { const request = context.requ
     }
 
     // Read existing manifest
-    const manifest = await readManifest();
+    const manifest = await readManifest(s3, bucket);
 
     // Download and upload mod + dependencies
     const visited = new Set<string>();
-    const results = await downloadAndUploadMod(version, manifest, visited);
+    const results = await downloadAndUploadMod(s3, bucket, version, manifest, visited);
 
     // Write updated manifest
-    await writeManifest(manifest);
+    await writeManifest(s3, bucket, manifest);
 
     return Response.json({
       success: true,

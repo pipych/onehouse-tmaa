@@ -9,20 +9,7 @@ import {
 import AdmZip from 'adm-zip';
 import crypto from 'crypto';
 
-// --- R2 config ---
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET = process.env.R2_BUCKET_NAME || 'onelaunch-mods';
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-});
+import { getR2Client } from '../_shared/r2';
 
 // --- Modpack config ---
 const MODPACK_PREFIX = 'onehouse-pack-v1/';
@@ -48,9 +35,9 @@ interface ModpackManifest {
 }
 
 // --- Helpers ---
-async function readManifest(): Promise<ModpackManifest> {
+async function readManifest(s3: S3Client, bucket: string): Promise<ModpackManifest> {
   try {
-    const cmd = new GetObjectCommand({ Bucket: R2_BUCKET, Key: MANIFEST_KEY });
+    const cmd = new GetObjectCommand({ Bucket: bucket, Key: MANIFEST_KEY });
     const data = await s3.send(cmd);
     if (data.Body) {
       const body = await data.Body.transformToString();
@@ -71,10 +58,10 @@ async function readManifest(): Promise<ModpackManifest> {
   };
 }
 
-async function writeManifest(manifest: ModpackManifest) {
+async function writeManifest(s3: S3Client, bucket: string, manifest: ModpackManifest) {
   manifest.version = (manifest.version || 0) + 1;
   await s3.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: bucket,
     Key: MANIFEST_KEY,
     Body: JSON.stringify(manifest, null, 2),
     ContentType: 'application/json',
@@ -85,12 +72,12 @@ function getFileHash(buffer: Buffer): string {
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
-async function deleteFolder(prefix: string): Promise<number> {
+async function deleteFolder(s3: S3Client, bucket: string, prefix: string): Promise<number> {
   let deleted = 0;
   let continuationToken: string | undefined;
   do {
     const listCmd = new ListObjectsV2Command({
-      Bucket: R2_BUCKET,
+      Bucket: bucket,
       Prefix: prefix,
       ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
     });
@@ -98,7 +85,7 @@ async function deleteFolder(prefix: string): Promise<number> {
     const objects = listed.Contents || [];
     if (objects.length > 0) {
       await s3.send(new DeleteObjectsCommand({
-        Bucket: R2_BUCKET,
+        Bucket: bucket,
         Delete: { Objects: objects.map(obj => ({ Key: obj.Key! })), Quiet: true },
       }));
       deleted += objects.length;
@@ -111,9 +98,11 @@ async function deleteFolder(prefix: string): Promise<number> {
 // ===================================================================
 // GET — List modpack files from manifest
 // ===================================================================
-export async function onRequestGet(context: any) { const request = context.request;
+export async function onRequestGet(context: any) {
+  const { env } = context;
   try {
-    const manifest = await readManifest();
+    const { s3, bucket } = getR2Client(env);
+    const manifest = await readManifest(s3, bucket);
     return Response.json({
       success: true,
       manifest: {
@@ -139,8 +128,10 @@ export async function onRequestGet(context: any) { const request = context.reque
 // ===================================================================
 // POST — Upload modpack files (ZIP extraction or single file)
 // ===================================================================
-export async function onRequestPost(context: any) { const request = context.request;
+export async function onRequestPost(context: any) {
+  const { request, env } = context;
   try {
+    const { s3, bucket } = getR2Client(env);
     const contentType = request.headers.get('content-type') || '';
 
     // --- FormData upload (ZIP or single file) ---
@@ -153,7 +144,7 @@ export async function onRequestPost(context: any) { const request = context.requ
         return Response.json({ error: 'Файл не выбран' }, { status: 400 });
       }
 
-      const manifest = await readManifest();
+      const manifest = await readManifest(s3, bucket);
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileName = file.name;
       const isZip = fileName.toLowerCase().endsWith('.zip');
@@ -161,7 +152,7 @@ export async function onRequestPost(context: any) { const request = context.requ
 
       // Full replace: wipe existing modpack files
       if (mode === 'replace') {
-        await deleteFolder(MODPACK_PATH);
+        await deleteFolder(s3, bucket, MODPACK_PATH);
         manifest.files = [];
       }
 
@@ -179,7 +170,7 @@ export async function onRequestPost(context: any) { const request = context.requ
           const sha256 = getFileHash(entryBuffer);
 
           await s3.send(new PutObjectCommand({
-            Bucket: R2_BUCKET,
+            Bucket: bucket,
             Key: r2Key,
             Body: entryBuffer,
           }));
@@ -207,7 +198,7 @@ export async function onRequestPost(context: any) { const request = context.requ
         const sha256 = getFileHash(buffer);
 
         await s3.send(new PutObjectCommand({
-          Bucket: R2_BUCKET,
+          Bucket: bucket,
           Key: r2Key,
           Body: buffer,
         }));
@@ -228,7 +219,7 @@ export async function onRequestPost(context: any) { const request = context.requ
         resultFiles.push(newFile);
       }
 
-      await writeManifest(manifest);
+      await writeManifest(s3, bucket, manifest);
 
       return Response.json({
         success: true,
@@ -251,17 +242,19 @@ export async function onRequestPost(context: any) { const request = context.requ
 // ===================================================================
 // DELETE — Remove files from modpack + R2
 // ===================================================================
-export async function onRequestDelete(context: any) { const request = context.request;
+export async function onRequestDelete(context: any) {
+  const { request, env } = context;
   try {
+    const { s3, bucket } = getR2Client(env);
     const { paths, all } = await request.json().catch(() => ({}));
 
-    const manifest = await readManifest();
+    const manifest = await readManifest(s3, bucket);
 
     if (all) {
       // Delete all modpack files
-      await deleteFolder(MODPACK_PATH);
+      await deleteFolder(s3, bucket, MODPACK_PATH);
       manifest.files = [];
-      await writeManifest(manifest);
+      await writeManifest(s3, bucket, manifest);
 
       return Response.json({
         success: true,
@@ -286,14 +279,14 @@ export async function onRequestDelete(context: any) { const request = context.re
 
     if (toDelete.length > 0) {
       await s3.send(new DeleteObjectsCommand({
-        Bucket: R2_BUCKET,
+        Bucket: bucket,
         Delete: { Objects: toDelete.map(key => ({ Key: key })), Quiet: true },
       }));
     }
 
     // Update manifest
     manifest.files = manifest.files.filter(f => !paths.includes(f.path));
-    await writeManifest(manifest);
+    await writeManifest(s3, bucket, manifest);
 
     return Response.json({
       success: true,
