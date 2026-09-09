@@ -52,12 +52,14 @@ export function AppLayout({
 
       {/* Мобильный нижний таббар */}
       {!hideNavigation && (
-        <div className="md:hidden fixed bottom-5 left-4 right-4 z-50 transition-all duration-300">
-          <MobileTabBar
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            seasonEnded={seasonEnded}
-          />
+        <div className="md:hidden fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none transition-all duration-300">
+          <div className="w-full max-w-md pointer-events-auto">
+            <MobileTabBar
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+              seasonEnded={seasonEnded}
+            />
+          </div>
         </div>
       )}
     </div>
