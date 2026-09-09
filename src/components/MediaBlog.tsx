@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical, User } from 'lucide-react';
+import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical, User } from './ui/SFSymbol';
 
 interface Player {
   id: string;

@@ -1,4 +1,4 @@
-import { User } from 'lucide-react';
+import { User } from './ui/SFSymbol';
 
 interface AvatarProps {
   src?: string | null;

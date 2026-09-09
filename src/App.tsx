@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw } from './components/ui/SFSymbol';
 
 // Главный экран загружается сразу
 import HomeView from './views/HomeView';

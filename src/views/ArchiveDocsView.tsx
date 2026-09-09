@@ -7,7 +7,7 @@ import {
   ArrowLeft, FolderArchive, ChevronDown, FileText, Plus, Save, 
   RefreshCw, Trash2, Edit2, X, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, BookOpen
-} from 'lucide-react';
+} from '../components/ui/SFSymbol';
 
 export default function ArchiveDocsPage() {
   const navigate = useNavigate();

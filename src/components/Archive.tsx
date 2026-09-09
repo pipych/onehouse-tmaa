@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Library, Calendar, Newspaper, Users, Map, FileText, ArrowUpRight } from 'lucide-react';
+import { Library, Calendar, Newspaper, Users, Map, FileText, ArrowUpRight } from './ui/SFSymbol';
 
 interface Player {
   id: string;

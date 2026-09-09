@@ -4,7 +4,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
 import { getSeasonState, getAllPastSeasons, seasonName } from '../lib/season';
 import Avatar from '../components/Avatar';
-import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X, Skull, Swords } from 'lucide-react';
+import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X, Skull, Swords } from '../components/ui/SFSymbol';
 
 export default function ArchiveCharactersPage() {
   const navigate = useNavigate();

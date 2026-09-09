@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Check, Shield } from 'lucide-react';
+import { Download, Check, Shield } from './ui/SFSymbol';
 
 export default function OneLaunchContent() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle');

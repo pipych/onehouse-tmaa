@@ -41,7 +41,7 @@ import {
 
   Swords, Skull, Trash2, Send
 
-} from 'lucide-react';
+} from '../components/ui/SFSymbol';
 
 
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home as HomeIcon, Newspaper, BookMarked, Landmark, Library, Download, Users, ShieldAlert } from 'lucide-react';
+import { SFSymbol } from '../ui/SFSymbol';
 
 interface DesktopSidebarProps {
   activeTab: string;
@@ -52,7 +52,7 @@ export function DesktopSidebar({
             activeTab === 'profile' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
           }`}
         >
-          <HomeIcon size={22} />
+          <SFSymbol name={activeTab === 'profile' ? 'house.fill' : 'house'} size={22} />
           <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
             Главная
           </span>
@@ -65,7 +65,7 @@ export function DesktopSidebar({
               activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
             }`}
           >
-            <Library size={22} />
+            <SFSymbol name={activeTab === 'archive' ? 'archivebox.fill' : 'archivebox'} size={22} />
             <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
               Архив
             </span>
@@ -78,7 +78,7 @@ export function DesktopSidebar({
                 activeTab === 'media' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
               }`}
             >
-              <Newspaper size={22} />
+              <SFSymbol name={activeTab === 'media' ? 'newspaper.fill' : 'newspaper'} size={22} />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Медиа
               </span>
@@ -90,7 +90,7 @@ export function DesktopSidebar({
                 activeTab === 'svod' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
               }`}
             >
-              <BookMarked size={22} />
+              <SFSymbol name={activeTab === 'svod' ? 'doc.text.fill' : 'doc.text'} size={22} />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Свод
               </span>
@@ -102,7 +102,7 @@ export function DesktopSidebar({
                 activeTab === 'treasury' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
               }`}
             >
-              <Landmark size={22} />
+              <SFSymbol name={activeTab === 'treasury' ? 'building.columns.fill' : 'building.columns'} size={22} />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Казна
               </span>
@@ -114,7 +114,7 @@ export function DesktopSidebar({
                 activeTab === 'archive' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
               }`}
             >
-              <Library size={22} />
+              <SFSymbol name={activeTab === 'archive' ? 'archivebox.fill' : 'archivebox'} size={22} />
               <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
                 Архив
               </span>
@@ -128,7 +128,7 @@ export function DesktopSidebar({
             activeTab === 'onelaunch' ? 'text-[#c0ff00] scale-110' : 'text-gray-500 hover:text-white'
           }`}
         >
-          <Download size={22} />
+          <SFSymbol name={activeTab === 'onelaunch' ? 'arrow.down.circle.fill' : 'arrow.down.circle'} size={22} />
           <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
             Лаунчер
           </span>
@@ -145,7 +145,7 @@ export function DesktopSidebar({
               : 'border-white/10 text-gray-500 hover:text-white hover:border-white/20'
           }`}
         >
-          <Users size={22} />
+          <SFSymbol name={activeTab === 'players' ? 'person.2.fill' : 'person.2'} size={22} />
           <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
             Игроки
           </span>
@@ -159,7 +159,7 @@ export function DesktopSidebar({
           className="group relative w-[64px] h-[64px] bg-[#14171c]/80 backdrop-blur-xl border border-red-500/20 text-red-400 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 hover:border-red-500/40 hover:text-red-300"
           title="Панель администратора"
         >
-          <ShieldAlert size={22} />
+          <SFSymbol name="shield.alert" size={22} />
           <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-red-500/20 rounded-full text-[11px] font-bold text-red-400 shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
             Админ-панель
           </span>

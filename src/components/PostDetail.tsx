@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { 
   ArrowLeft, MoreVertical, Clock, Heart, MessageCircle, Send, 
   CornerDownRight, ChevronUp, ChevronDown, User 
-} from 'lucide-react';
+} from './ui/SFSymbol';
 
 function Av({ src, size = 36 }: { src?: string | null; size?: number }) {
   if (src && src.trim().length > 0) {

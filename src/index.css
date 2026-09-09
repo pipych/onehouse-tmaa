@@ -143,3 +143,41 @@ html, body {
     transform: none !important;
   }
 }
+
+/* Apple SF Symbols 6 Interactive Bounce Effect */
+@keyframes sf-bounce {
+  0% {
+    transform: scale(1);
+  }
+  28% {
+    transform: scale(0.74);
+  }
+  62% {
+    transform: scale(1.18);
+  }
+  82% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-sf-bounce {
+  animation: sf-bounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center;
+}
+
+/* Active tap feel for interactive icon buttons */
+.sf-tap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sf-tap:active {
+  transform: scale(0.82);
+}
+

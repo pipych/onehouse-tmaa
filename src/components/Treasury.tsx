@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Landmark, Plus, Minus, ArrowUpRight, ArrowDownLeft, Clock, X, Coins, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Landmark, Plus, Minus, ArrowUpRight, ArrowDownLeft, Clock, X, Coins, MoreHorizontal, Trash2 } from './ui/SFSymbol';
 import { supabase } from '../lib/supabase';
 import { getBalance, getTransactions, addTransaction, deleteTransaction, TreasuryTransaction } from '../lib/treasury';
 

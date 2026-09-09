@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
-import { ArrowLeft, FolderArchive, ChevronDown, Map, Eye, Download } from 'lucide-react';
+import { ArrowLeft, FolderArchive, ChevronDown, Map, Eye, Download } from '../components/ui/SFSymbol';
 
 export default function ArchiveMapPage() {
   const navigate = useNavigate();

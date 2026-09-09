@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useTelegram } from '../hooks/useTelegram';
-import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical, X, Maximize, User } from 'lucide-react';
+import { ArrowLeft, Send, Clock, RefreshCw, CornerDownRight, MessageCircle, MoreVertical, X, Maximize, User } from '../components/ui/SFSymbol';
 
 function Av({ src, size = 36 }: { src?: string | null; size?: number }) {
   if (src && src.trim().length > 0) {

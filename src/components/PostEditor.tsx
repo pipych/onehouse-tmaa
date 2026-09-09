@@ -6,7 +6,7 @@ import {
   ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, 
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, 
   AlignCenter, RefreshCw 
-} from 'lucide-react';
+} from './ui/SFSymbol';
 
 interface Player {
   id: string;

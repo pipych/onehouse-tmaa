@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
 import { getAllPastSeasons, getSeasonState, seasonName } from '../lib/season';
-import { ArrowLeft, FolderArchive, ChevronDown, Newspaper, Clock, User, RefreshCw } from 'lucide-react';
+import { ArrowLeft, FolderArchive, ChevronDown, Newspaper, Clock, User, RefreshCw } from '../components/ui/SFSymbol';
 
 interface ArchivedPost {
   id: string;
