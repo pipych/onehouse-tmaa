@@ -3289,7 +3289,7 @@ export default function Home() {
             onClick={() => handleTabChange('profile')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               activeTab === 'profile'
-                ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -3302,7 +3302,7 @@ export default function Home() {
               onClick={() => handleTabChange('archive')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'archive'
-                  ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                   : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
               }`}
             >
@@ -3315,7 +3315,7 @@ export default function Home() {
                 onClick={() => handleTabChange('media')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'media'
-                    ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                    ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3327,7 +3327,7 @@ export default function Home() {
                 onClick={() => handleTabChange('svod')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'svod'
-                    ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                    ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3339,7 +3339,7 @@ export default function Home() {
                 onClick={() => handleTabChange('treasury')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'treasury'
-                    ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                    ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3351,7 +3351,7 @@ export default function Home() {
                 onClick={() => handleTabChange('players')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'players'
-                    ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                    ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                     : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -3368,7 +3368,7 @@ export default function Home() {
             onClick={() => handleTabChange('onelaunch')}
             className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               activeTab === 'onelaunch'
-                ? 'bg-[#252c37] text-[#c0ff00] shadow-md shadow-black/50 font-bold'
+                ? 'bg-[#252c37] text-[#c0ff00] sf-pill-glow font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
             title="Скачать лаунчер OneLaunch"

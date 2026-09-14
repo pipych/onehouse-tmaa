@@ -101,7 +101,7 @@ export function MobileTabBar({
               width: `${pillRect.width}px`,
             }}
           >
-            <div className="w-full h-full rounded-full bg-[#252c37] shadow-md shadow-black/50" />
+            <div className="w-full h-full rounded-full bg-[#252c37] sf-pill-glow" />
           </div>
 
           {/* Основные вкладки */}
