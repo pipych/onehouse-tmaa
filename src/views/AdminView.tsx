@@ -1380,7 +1380,7 @@ export default function AdminPage() {
             onClick={() => setMainTab('home')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               mainTab === 'home'
-                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -1391,7 +1391,7 @@ export default function AdminPage() {
             onClick={() => setMainTab('players')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               mainTab === 'players'
-                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -1402,7 +1402,7 @@ export default function AdminPage() {
             onClick={() => setMainTab('server')}
             className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
               mainTab === 'server'
-                ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
                 : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
             }`}
           >
@@ -1420,7 +1420,7 @@ export default function AdminPage() {
               onClick={() => setMainTab('home')}
               className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
                 mainTab === 'home'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white'
               }`}
             >
@@ -1431,7 +1431,7 @@ export default function AdminPage() {
               onClick={() => setMainTab('players')}
               className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
                 mainTab === 'players'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white'
               }`}
             >
@@ -1442,7 +1442,7 @@ export default function AdminPage() {
               onClick={() => setMainTab('server')}
               className={`flex-1 h-full rounded-full flex flex-col items-center justify-center transition-all duration-300 active:scale-95 sf-tap ${
                 mainTab === 'server'
-                  ? 'bg-[#252c37] border border-white/15 text-white shadow-md shadow-black/50 font-bold'
+                  ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
                   : 'text-[#8e8e93] hover:text-white'
               }`}
             >
