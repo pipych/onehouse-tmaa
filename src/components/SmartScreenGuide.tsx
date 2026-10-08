@@ -60,26 +60,26 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
             троянов.
           </p>
 
-          {/* Кнопки действий в ряд (pill / rounded-full) */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          {/* Кнопки действий в ряд (pill / rounded-full, на одном уровне) */}
+          <div className="flex items-center gap-3 pt-2 flex-wrap sm:flex-nowrap">
             {/* Кнопка 1 (VirusTotal) */}
             <a
               href={VIRUSTOTAL_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs md:text-sm font-bold border transition-all duration-200 bg-[#14171c]/90 border-white/10 text-gray-300 hover:text-white hover:border-[#c0ff00]/40 hover:bg-[#1c2026] active:scale-95 shadow-lg"
+              className="inline-flex items-center justify-center gap-2 h-11 md:h-12 px-5 md:px-6 rounded-full text-xs md:text-sm font-bold border transition-all duration-200 bg-[#14171c]/90 border-white/10 text-gray-300 hover:text-white hover:border-[#c0ff00]/40 hover:bg-[#1c2026] active:scale-95 shadow-lg whitespace-nowrap"
               title="Открыть отчет VirusTotal в новом окне"
             >
-              <Shield size={16} className="text-[#38bdf8]" />
+              <Shield size={18} className="text-[#38bdf8] flex-shrink-0" />
               <span>Проверить на VirusTotal</span>
             </a>
 
             {/* Кнопка 2 (Инфо) */}
             <button
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs md:text-sm font-bold border transition-all duration-200 bg-white/5 border-white/10 text-gray-300 hover:text-white hover:border-white/25 hover:bg-white/10 active:scale-95 shadow-lg cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 h-11 md:h-12 px-5 md:px-6 rounded-full text-xs md:text-sm font-bold border transition-all duration-200 bg-white/5 border-white/10 text-gray-300 hover:text-white hover:border-white/25 hover:bg-white/10 active:scale-95 shadow-lg cursor-pointer whitespace-nowrap"
             >
-              <Info size={16} className="text-gray-400" />
+              <Info size={18} className="text-gray-400 flex-shrink-0" />
               <span>Подробнее</span>
             </button>
           </div>
@@ -103,8 +103,8 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Текст слева */}
           <div className="flex flex-col gap-4 text-left">
-            <div className="flex items-center gap-3">
-              <span className="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-[#c0ff00]/10 border border-[#c0ff00]/30 flex items-center justify-center text-sm md:text-base font-black text-[#c0ff00] shadow-md shadow-[#c0ff00]/10 flex-shrink-0">
+            <div className="flex items-center gap-3.5">
+              <span className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#c0ff00]/10 border-2 border-[#c0ff00]/40 flex items-center justify-center text-xl md:text-2xl font-black text-[#c0ff00] shadow-lg shadow-[#c0ff00]/15 flex-shrink-0">
                 1
               </span>
               <span className="text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400">
@@ -143,8 +143,8 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Текст слева */}
           <div className="flex flex-col gap-4 text-left">
-            <div className="flex items-center gap-3">
-              <span className="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-[#c0ff00]/10 border border-[#c0ff00]/30 flex items-center justify-center text-sm md:text-base font-black text-[#c0ff00] shadow-md shadow-[#c0ff00]/10 flex-shrink-0">
+            <div className="flex items-center gap-3.5">
+              <span className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#c0ff00]/10 border-2 border-[#c0ff00]/40 flex items-center justify-center text-xl md:text-2xl font-black text-[#c0ff00] shadow-lg shadow-[#c0ff00]/15 flex-shrink-0">
                 2
               </span>
               <span className="text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400">
