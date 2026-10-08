@@ -55,8 +55,6 @@ export default function OneLaunchContent() {
             {status === 'done' && 'Готово!'}
           </span>
         </button>
-
-        <p className="text-[10px] text-gray-600 font-mono">Для Кабана</p>
       </div>
 
       {/* Компонент предупреждения безопасности и инструкции по установке (строго под кнопкой Скачать) */}

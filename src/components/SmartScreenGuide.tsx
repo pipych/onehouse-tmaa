@@ -24,7 +24,7 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
   }, [isModalOpen]);
 
   return (
-    <section className="w-full max-w-4xl mx-auto flex flex-col gap-16 md:gap-24 pt-6 pb-12 animate-fade-in select-none">
+    <section className="w-full max-w-4xl mx-auto flex flex-col gap-16 md:gap-24 pt-4 pb-12 animate-fade-in select-none">
       {/* ========================================================================= */}
       {/* 1. БЛОК ПРЕДУПРЕЖДЕНИЯ (ALERT) */}
       {/* ========================================================================= */}
@@ -95,116 +95,84 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
             Инструкция по первому запуску
           </h3>
           <p className="text-xs md:text-sm text-gray-500 max-w-lg">
-            Выберите удобный для вас вариант запуска установщика OneLaunch на вашем компьютере.
+            Всего два простых шага для запуска OneLaunch на вашем компьютере.
           </p>
         </div>
 
-        {/* Пункт 1: Способ 1. Через окно SmartScreen (в 2 клика) */}
+        {/* 1 Пункт инструкции: Нажмите «Подробнее» */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Текст слева */}
           <div className="flex flex-col gap-4 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#c0ff00]/10 border border-[#c0ff00]/20 w-fit">
-              <span className="text-[11px] font-black uppercase tracking-wider text-[#c0ff00]">
-                Рекомендуемый вариант
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-[#c0ff00]/10 border border-[#c0ff00]/30 flex items-center justify-center text-sm md:text-base font-black text-[#c0ff00] shadow-md shadow-[#c0ff00]/10 flex-shrink-0">
+                1
+              </span>
+              <span className="text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400">
+                Шаг первый
               </span>
             </div>
 
-            <h4 className="text-xl md:text-2xl font-black text-white leading-snug">
-              Способ 1. Через окно SmartScreen (в 2 клика)
+            <h4 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
+              Нажмите «Подробнее»
             </h4>
 
-            <div className="flex flex-col gap-3.5 pt-1">
-              <div className="flex items-start gap-3.5">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-xs font-black text-[#c0ff00]">
-                  1
-                </span>
-                <p className="text-sm md:text-base text-gray-300 leading-relaxed pt-0.5">
-                  В синем окне нажмите на текстовую ссылку{' '}
-                  <span className="text-white font-bold underline decoration-[#c0ff00] underline-offset-4">
-                    «Подробнее»
-                  </span>{' '}
-                  под описанием.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-3.5">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-xs font-black text-[#c0ff00]">
-                  2
-                </span>
-                <p className="text-sm md:text-base text-gray-300 leading-relaxed pt-0.5">
-                  В правом нижнем углу нажмите кнопку{' '}
-                  <span className="text-white font-bold bg-white/10 px-2 py-0.5 rounded-md">
-                    «Выполнить в любом случае»
-                  </span>
-                  .
-                </p>
-              </div>
-            </div>
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 font-normal leading-relaxed">
+              В синем окне SmartScreen нажмите на текстовую ссылку{' '}
+              <span className="text-white font-bold underline decoration-[#c0ff00] underline-offset-4">
+                «Подробнее»
+              </span>{' '}
+              под описанием.
+            </p>
           </div>
 
-          {/* Справа: Изображение 2 (SmartScreen с кнопкой «Подробнее») */}
+          {/* Справа: Первый скриншот */}
           <div className="flex justify-center items-center p-2">
-            <div className="relative group perspective-1000 max-w-md w-full">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#38bdf8]/20 to-[#c0ff00]/20 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition duration-500" />
+            <div className="relative group max-w-md w-full">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#38bdf8]/20 to-[#c0ff00]/20 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition duration-500 pointer-events-none" />
               <img
                 src="/onelaunch-step1.webp"
                 alt="Окно SmartScreen - кликните Подробнее"
-                className="w-full h-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/80 transform -rotate-2 md:-rotate-3 group-hover:rotate-0 group-hover:scale-[1.02] transition-all duration-300 ease-out"
+                className="w-full h-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/80 transform-none md:[transform:perspective(1000px)_rotateZ(-2.5deg)] md:hover:[transform:perspective(1000px)_rotateZ(0deg)] md:hover:scale-[1.02] transition-all duration-300 ease-out"
                 loading="lazy"
               />
             </div>
           </div>
         </div>
 
-        {/* Пункт 2: Способ 2. Через свойства файла (если кнопки нет) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center pt-4">
+        {/* 2 Пункт инструкции: Нажмите «Выполнить в любом случае» */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           {/* Текст слева */}
           <div className="flex flex-col gap-4 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 w-fit">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                Альтернативный вариант
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 md:w-11 md:h-11 rounded-2xl bg-[#c0ff00]/10 border border-[#c0ff00]/30 flex items-center justify-center text-sm md:text-base font-black text-[#c0ff00] shadow-md shadow-[#c0ff00]/10 flex-shrink-0">
+                2
+              </span>
+              <span className="text-xs md:text-sm font-bold uppercase tracking-wider text-gray-400">
+                Шаг второй
               </span>
             </div>
 
-            <h4 className="text-xl md:text-2xl font-black text-white leading-snug">
-              Способ 2. Через свойства файла (если кнопки нет)
+            <h4 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
+              Нажмите «Выполнить в любом случае»
             </h4>
 
-            <div className="flex flex-col gap-3.5 pt-1">
-              <div className="flex items-start gap-3.5">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-xs font-black text-white">
-                  1
-                </span>
-                <p className="text-sm md:text-base text-gray-300 leading-relaxed pt-0.5">
-                  Нажмите правой кнопкой мыши по скачанному <span className="font-mono text-xs bg-white/10 px-1.5 py-0.5 rounded text-[#c0ff00]">.exe</span> файлу и откройте{' '}
-                  <span className="text-white font-bold">«Свойства»</span>.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-3.5">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-xs font-black text-white">
-                  2
-                </span>
-                <p className="text-sm md:text-base text-gray-300 leading-relaxed pt-0.5">
-                  Во вкладке <span className="text-white font-bold">«Общие»</span> в блоке{' '}
-                  <span className="text-white font-bold">«Безопасность»</span> поставьте галочку{' '}
-                  <span className="text-white font-bold underline decoration-[#c0ff00] underline-offset-4">
-                    «Разблокировать»
-                  </span>{' '}
-                  и нажмите <span className="text-white font-bold">«Применить»</span>.
-                </p>
-              </div>
-            </div>
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 font-normal leading-relaxed">
+              В правом нижнем углу окна нажмите кнопку{' '}
+              <span className="text-white font-bold bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10">
+                «Выполнить в любом случае»
+              </span>
+              .
+            </p>
           </div>
 
-          {/* Справа: Изображение 3 (SmartScreen с кнопкой «Выполнить в любом случае») */}
+          {/* Справа: Второй скриншот */}
           <div className="flex justify-center items-center p-2">
-            <div className="relative group perspective-1000 max-w-md w-full">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#c0ff00]/20 to-[#38bdf8]/20 rounded-2xl blur-xl opacity-30 group-hover:opacity-60 transition duration-500" />
+            <div className="relative group max-w-md w-full">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#c0ff00]/20 to-[#38bdf8]/20 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition duration-500 pointer-events-none" />
               <img
                 src="/onelaunch-step2.webp"
                 alt="Окно SmartScreen - Выполнить в любом случае"
-                className="w-full h-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/80 transform -rotate-2 md:-rotate-3 group-hover:rotate-0 group-hover:scale-[1.02] transition-all duration-300 ease-out"
+                className="w-full h-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/80 transform-none md:[transform:perspective(1000px)_rotateZ(-2.5deg)] md:hover:[transform:perspective(1000px)_rotateZ(0deg)] md:hover:scale-[1.02] transition-all duration-300 ease-out"
                 loading="lazy"
               />
             </div>
@@ -215,7 +183,7 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
       {/* ========================================================================= */}
       {/* 3. ФИНАЛЬНЫЙ CTA (ДУБЛИРУЕТСЯ АКЦЕНТНАЯ КНОПКА СКАЧИВАНИЯ) */}
       {/* ========================================================================= */}
-      <div className="flex flex-col items-center justify-center gap-4 pt-6 text-center">
+      <div className="flex flex-col items-center justify-center gap-4 pt-4 text-center">
         <p className="text-xs md:text-sm font-bold text-gray-400">
           Готовы начать игру на сервере?
         </p>
