@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import MediaBlog from '../components/MediaBlog';
 
 import Archive from '../components/Archive';
+import OneLaunchContent from '../components/OneLaunch';
 
 import Avatar from '../components/Avatar';
 import { MobileTabBar } from '../components/layout/MobileTabBar';
@@ -27,7 +28,7 @@ import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSe
 import { 
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-  Copy, Play, RefreshCw, Library, ArrowLeft, Home as HomeIcon, Newspaper,
+  Copy, Play, RefreshCw, Library, ArrowLeft, Home as HomeIcon, Newspaper, Download,
   Map as MapIcon, Search, ChevronUp, ChevronDown, BookMarked, Flag, RotateCcw, Calendar,
   Swords, Skull, Trash2, Send, Construction, MoreVertical
 } from '../components/ui/SFSymbol';
@@ -126,7 +127,7 @@ export default function Home() {
 
   
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'svod'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'svod' | 'onelaunch'>('profile');
 
   const [activeSvodTab, setActiveSvodTab] = useState<'laws' | 'archive'>('laws');
 
@@ -507,7 +508,7 @@ export default function Home() {
 
 
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'svod') {
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'svod' | 'onelaunch') {
 
     setSelectedCharacter(null); 
     setSelectedProfile(null); 
@@ -2698,6 +2699,8 @@ export default function Home() {
 
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
 
+        {activeTab === 'onelaunch' && <OneLaunchContent />}
+
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedCharacter} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} seasonName={currentSeasonName} /></div>}
 
 
@@ -3031,6 +3034,22 @@ export default function Home() {
             </>
           )}
         </nav>
+
+        {/* Кружок Скачать лаунчер (ПК) — единая структура */}
+        <div className="w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-2 rounded-full shadow-2xl flex items-center justify-center relative">
+          <button
+            onClick={() => handleTabChange('onelaunch')}
+            className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
+              activeTab === 'onelaunch'
+                ? 'bg-[#252c37] text-[#c0ff00] font-bold'
+                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
+            }`}
+            title="Скачать лаунчер OneLaunch"
+          >
+            <Download size={24} className={`transition-all duration-300 ${activeTab === 'onelaunch' ? 'sf-glow-green' : ''}`} />
+            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Скачать</span>
+          </button>
+        </div>
       </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
