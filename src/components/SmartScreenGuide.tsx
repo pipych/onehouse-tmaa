@@ -42,8 +42,8 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
 
         {/* Справа: Текстовый блок + кнопки действий */}
         <div className="flex flex-col gap-4 md:gap-5 text-left order-1 md:order-2">
-          {/* Плашка «Безопасность Windows» с маленьким светящимся щитом */}
-          <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit shadow-md">
+          {/* Плашка «Безопасность Windows» с маленьким светящимся щитом (только на телефонах, скрыта на ПК) */}
+          <div className="inline-flex md:hidden items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit shadow-md">
             <div className="relative flex items-center justify-center w-5 h-5 flex-shrink-0">
               <div className="absolute inset-0 bg-[#38bdf8] rounded-full blur-sm opacity-80 animate-pulse" />
               <img
