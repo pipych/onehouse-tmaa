@@ -21,15 +21,19 @@ export default function OneLaunchContent() {
   return (
     <div className="w-full flex flex-col items-center justify-center gap-10 md:gap-14 px-4 py-8 md:py-12 animate-fade-in">
       {/* Главный заголовок и логотип лаунчера */}
-      <div className="flex items-center gap-6 md:gap-8 pt-4">
+      <div className="flex items-center gap-5 sm:gap-7 md:gap-10 pt-2 md:pt-4">
         <img
           src="/OneLaunch_icon.webp"
           alt="OneLaunch"
-          className="w-20 h-20 md:w-28 md:h-28 object-contain flex-shrink-0 drop-shadow-[0_10px_25px_rgba(0,0,0,0.5)]"
+          className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-44 lg:h-44 object-contain flex-shrink-0 drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)] transition-transform duration-300 hover:scale-105"
         />
-        <div className="text-left">
-          <h1 className="text-3xl md:text-5xl font-black text-white tracking-wide">OneLaunch</h1>
-          <p className="text-sm md:text-base text-gray-400 font-medium mt-1">Фирменный лаунчер OneHouse</p>
+        <div className="text-left flex flex-col justify-center">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-none">
+            OneLaunch
+          </h1>
+          <p className="text-sm sm:text-base md:text-xl text-gray-400 font-medium mt-1.5 sm:mt-2.5">
+            Фирменный лаунчер OneHouse
+          </p>
         </div>
       </div>
 
