@@ -138,9 +138,9 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
             <div className="relative group max-w-md w-full [transform-style:preserve-3d]">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#38bdf8]/20 to-[#c0ff00]/20 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition duration-500 pointer-events-none" />
               <img
-                src="/onelaunch-step1.webp"
+                src="/onelaunch-step1.webp?v=3"
                 alt="Окно SmartScreen - кликните Подробнее"
-                className="w-full h-auto rounded-2xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform-none md:[transform:perspective(1200px)_rotateX(8deg)_rotateY(-12deg)_rotateZ(-2deg)] md:hover:[transform:perspective(1200px)_rotateX(0deg)_rotateY(0deg)_rotateZ(0deg)] md:hover:scale-[1.03] transition-all duration-300 ease-out"
+                className="w-full h-auto rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform-none md:[transform:perspective(1200px)_rotateX(8deg)_rotateY(-12deg)_rotateZ(-2deg)] md:hover:[transform:perspective(1200px)_rotateX(0deg)_rotateY(0deg)_rotateZ(0deg)] md:hover:scale-[1.03] transition-all duration-300 ease-out"
                 loading="lazy"
               />
             </div>
@@ -178,9 +178,9 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
             <div className="relative group max-w-md w-full [transform-style:preserve-3d]">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#c0ff00]/20 to-[#38bdf8]/20 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition duration-500 pointer-events-none" />
               <img
-                src="/onelaunch-step2.webp"
+                src="/onelaunch-step2.webp?v=3"
                 alt="Окно SmartScreen - Выполнить в любом случае"
-                className="w-full h-auto rounded-2xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform-none md:[transform:perspective(1200px)_rotateX(8deg)_rotateY(-12deg)_rotateZ(-2deg)] md:hover:[transform:perspective(1200px)_rotateX(0deg)_rotateY(0deg)_rotateZ(0deg)] md:hover:scale-[1.03] transition-all duration-300 ease-out"
+                className="w-full h-auto rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform-none md:[transform:perspective(1200px)_rotateX(8deg)_rotateY(-12deg)_rotateZ(-2deg)] md:hover:[transform:perspective(1200px)_rotateX(0deg)_rotateY(0deg)_rotateZ(0deg)] md:hover:scale-[1.03] transition-all duration-300 ease-out"
                 loading="lazy"
               />
             </div>
