@@ -29,8 +29,8 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
       {/* 1. БЛОК ПРЕДУПРЕЖДЕНИЯ (ALERT) */}
       {/* ========================================================================= */}
       <div className="w-full bg-transparent grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-        {/* Слева: 3D щит SmartScreen с прозрачным фоном */}
-        <div className="flex justify-center items-center relative order-2 md:order-1">
+        {/* Слева: 3D щит SmartScreen с прозрачным фоном (скрыт на телефонах, отображается только на ПК) */}
+        <div className="hidden md:flex justify-center items-center relative order-1">
           <div className="absolute inset-0 max-w-[280px] max-h-[280px] m-auto bg-[#38bdf8]/10 rounded-full blur-3xl pointer-events-none" />
           <img
             src="/onelaunch-shield.webp"
@@ -42,9 +42,17 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
 
         {/* Справа: Текстовый блок + кнопки действий */}
         <div className="flex flex-col gap-4 md:gap-5 text-left order-1 md:order-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 w-fit">
-            <span className="w-2 h-2 rounded-full bg-[#38bdf8] animate-pulse" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">
+          {/* Плашка «Безопасность Windows» с маленьким светящимся щитом */}
+          <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-fit shadow-md">
+            <div className="relative flex items-center justify-center w-5 h-5 flex-shrink-0">
+              <div className="absolute inset-0 bg-[#38bdf8] rounded-full blur-sm opacity-80 animate-pulse" />
+              <img
+                src="/onelaunch-shield.webp"
+                alt="Shield icon"
+                className="w-5 h-5 object-contain relative z-10 drop-shadow-[0_0_8px_rgba(56,189,248,0.9)]"
+              />
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-200">
               Безопасность Windows
             </span>
           </div>
@@ -126,13 +134,13 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
           </div>
 
           {/* Справа: Первый скриншот */}
-          <div className="flex justify-center items-center p-2">
-            <div className="relative group max-w-md w-full">
+          <div className="flex justify-center items-center p-2 [perspective:1200px]">
+            <div className="relative group max-w-md w-full [transform-style:preserve-3d]">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#38bdf8]/20 to-[#c0ff00]/20 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition duration-500 pointer-events-none" />
               <img
                 src="/onelaunch-step1.webp"
                 alt="Окно SmartScreen - кликните Подробнее"
-                className="w-full h-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/80 transform-none md:[transform:perspective(1000px)_rotateZ(-2.5deg)] md:hover:[transform:perspective(1000px)_rotateZ(0deg)] md:hover:scale-[1.02] transition-all duration-300 ease-out"
+                className="w-full h-auto rounded-2xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform-none md:[transform:perspective(1200px)_rotateX(8deg)_rotateY(-12deg)_rotateZ(-2deg)] md:hover:[transform:perspective(1200px)_rotateX(0deg)_rotateY(0deg)_rotateZ(0deg)] md:hover:scale-[1.03] transition-all duration-300 ease-out"
                 loading="lazy"
               />
             </div>
@@ -166,13 +174,13 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
           </div>
 
           {/* Справа: Второй скриншот */}
-          <div className="flex justify-center items-center p-2">
-            <div className="relative group max-w-md w-full">
+          <div className="flex justify-center items-center p-2 [perspective:1200px]">
+            <div className="relative group max-w-md w-full [transform-style:preserve-3d]">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#c0ff00]/20 to-[#38bdf8]/20 rounded-2xl blur-xl opacity-20 group-hover:opacity-50 transition duration-500 pointer-events-none" />
               <img
                 src="/onelaunch-step2.webp"
                 alt="Окно SmartScreen - Выполнить в любом случае"
-                className="w-full h-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/80 transform-none md:[transform:perspective(1000px)_rotateZ(-2.5deg)] md:hover:[transform:perspective(1000px)_rotateZ(0deg)] md:hover:scale-[1.02] transition-all duration-300 ease-out"
+                className="w-full h-auto rounded-2xl border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] transform-none md:[transform:perspective(1200px)_rotateX(8deg)_rotateY(-12deg)_rotateZ(-2deg)] md:hover:[transform:perspective(1200px)_rotateX(0deg)_rotateY(0deg)_rotateZ(0deg)] md:hover:scale-[1.03] transition-all duration-300 ease-out"
                 loading="lazy"
               />
             </div>
