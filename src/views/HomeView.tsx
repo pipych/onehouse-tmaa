@@ -40,30 +40,12 @@ import {
 
   Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar,
 
-  Swords, Skull, Trash2, Send
+  Swords, Skull, Trash2, Send, Construction, MoreVertical
 
 } from '../components/ui/SFSymbol';
 
-
-
-const AnvilIcon = ({ size = 18, className = "" }) => (
-
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-
-    <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
-
-    <path d="M7 5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1" />
-
-    <path d="M17 10h1a4 4 0 0 0 4-4 1 1 0 0 0-1-1h-4" />
-
-    <path d="M9 12v5" />
-
-    <path d="M15 12v5" />
-
-    <path d="M5 20a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z" />
-
-  </svg>
-
+const AnvilIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
+  <Construction size={size} className={className} />
 );
 
 
@@ -1153,7 +1135,7 @@ export default function Home() {
 
             rp_name: 'Гость',
 
-            avatar_url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="%23c0ff00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" fill="%23c0ff0015"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>'),
+            avatar_url: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="%23c0ff00"><path d="M12 12q-1.65 0-2.825-1.175T8 8t1.175-2.825T12 4t2.825 1.175T16 8t-1.175 2.825T12 12m-8 8v-2.8q0-.85.438-1.562T5.6 14.55q1.55-.775 3.15-1.162T12 13t3.25.388t3.15 1.162q.725.375 1.163 1.088T20 17.2V20z"/></svg>'),
 
             roles: ['guest'],
 
@@ -2133,7 +2115,7 @@ export default function Home() {
           {isAdmin && !isEditingProfile && (
             <div className="absolute top-4 right-12 z-20">
               <button onClick={() => setCharacterMenuOpen(!characterMenuOpen)} className="p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                <MoreVertical size={14} />
               </button>
               {characterMenuOpen && (
                 <div className="absolute top-full right-0 mt-1 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[160px] flex flex-col backdrop-blur-xl">
