@@ -15,14 +15,8 @@ import MediaBlog from '../components/MediaBlog';
 
 import Archive from '../components/Archive';
 
-import OneLaunchContent from '../components/OneLaunch';
-
-import Treasury from '../components/Treasury';
-
 import Avatar from '../components/Avatar';
 import { MobileTabBar } from '../components/layout/MobileTabBar';
-
-import { getBalance } from '../lib/treasury';
 
 import { isGuest } from '../lib/guests';
 
@@ -31,40 +25,16 @@ import { getSeasonState, endSeason, undoEndSeason, startNewSeason, restorePastSe
 
 
 import { 
-
   User, BookOpen, Users, Edit2, Check, X, ShieldAlert, UserPlus, ShieldCheck, Palette, Save,
-
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, Plus, Upload,
-
-  Copy, Play, Square, Server, RefreshCw, Coins, Download, Library, ArrowLeft, Home as HomeIcon, Newspaper,
-
-  Map as MapIcon, Search, ChevronUp, ChevronDown, Landmark, BookMarked, Flag, RotateCcw, Calendar,
-
+  Copy, Play, RefreshCw, Library, ArrowLeft, Home as HomeIcon, Newspaper,
+  Map as MapIcon, Search, ChevronUp, ChevronDown, BookMarked, Flag, RotateCcw, Calendar,
   Swords, Skull, Trash2, Send, Construction, MoreVertical
-
 } from '../components/ui/SFSymbol';
 
 const AnvilIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
   <Construction size={size} className={className} />
 );
-
-
-
-function getBankSuffix(balance: number): string {
-
-  if (balance >= 10000) return '10000';
-
-  if (balance >= 5000) return '5000';
-
-  if (balance >= 1000) return '1000';
-
-  if (balance >= 300) return '300';
-
-  if (balance >= 50) return '50';
-
-  return '0';
-
-}
 
 
 
@@ -156,11 +126,9 @@ export default function Home() {
 
   
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'treasury' | 'svod' | 'onelaunch'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'svod'>('profile');
 
   const [activeSvodTab, setActiveSvodTab] = useState<'laws' | 'archive'>('laws');
-
-  const [treasuryBalance, setTreasuryBalance] = useState<number>(0);
 
   const [players, setPlayers] = useState<Player[]>([]); 
 
@@ -202,19 +170,7 @@ export default function Home() {
 
   const [isUploadingProfile, setLoadingProfile] = useState(false);
 
-  const [serverInfo, setServerInfo] = useState<any>(null);
-
-  const [credits, setCredits] = useState<number | null>(null);
-
-  const [isServerLoading, setIsServerLoading] = useState(false);
-
-  const [serverActionLoading, setServerActionLoading] = useState(false);
-
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
-
-  
-
-  const staticIp = "onehouse2.exaroton.me:15879"; 
 
 
 
@@ -261,8 +217,6 @@ export default function Home() {
   const [currentSeasonNum, setCurrentSeasonNum] = useState(2);
 
   const [seasonStartDate, setSeasonStartDate] = useState('2026-05-17');
-
-  const [exarotonServerId, setExarotonServerId] = useState<string>('');
 
   const [playersSubTab, setPlayersSubTab] = useState<'characters' | 'players'>('characters');
 
@@ -327,8 +281,6 @@ export default function Home() {
       setCurrentSeasonNum(state.season_number);
 
       setSeasonStartDate(state.season_start_date);
-
-      setExarotonServerId(state.exaroton_server_id || '');
 
       if (!state.is_active) {
 
@@ -430,8 +382,6 @@ export default function Home() {
 
     setSeasonStartDate(state.season_start_date);
 
-    setExarotonServerId(state.exaroton_server_id || '');
-
     const all = await getAllPastSeasons();
 
     setPastSeasons(all);
@@ -442,7 +392,7 @@ export default function Home() {
 
 
 
-  async function handleStartNewSeason(serverId?: string) {
+  async function handleStartNewSeason() {
 
     const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : currentSeasonNum) + 1;
 
@@ -452,7 +402,7 @@ export default function Home() {
 
     setSeasonLoading(true);
 
-    const ok = await startNewSeason(serverId || undefined);
+    const ok = await startNewSeason();
 
     if (ok) {
 
@@ -557,7 +507,7 @@ export default function Home() {
 
 
 
-  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'treasury' | 'svod' | 'onelaunch') {
+  function handleTabChange(tab: 'profile' | 'constitution' | 'players' | 'map' | 'media' | 'archive' | 'svod') {
 
     setSelectedCharacter(null); 
     setSelectedProfile(null); 
@@ -577,28 +527,6 @@ export default function Home() {
     if (tab === 'profile') loadLatestPosts();
 
     if (tab === 'players') { loadAllPlayers(); loadPlayers(); }
-
-  }
-
-
-
-  function getServerStatusText(statusCode: number) {
-
-    switch(statusCode) {
-
-      case 0: return { text: 'ОФФЛАЙН', color: 'text-red-500', bg: 'bg-red-500', border: 'border-red-500/20' };
-
-      case 1: return { text: 'ОНЛАЙН', color: 'text-[#c0ff00]', bg: 'bg-[#c0ff00]', border: 'border-[#c0ff00]/30' };
-
-      case 2: return { text: 'ЗАПУСКАЕТСЯ...', color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400/20' };
-
-      case 3: return { text: 'ОСТАНАВЛИВАЕТСЯ...', color: 'text-orange-400', bg: 'bg-orange-400', border: 'border-orange-400/20' };
-
-      case 4: return { text: 'ПЕРЕЗАГРУЗКА...', color: 'text-blue-400', bg: 'bg-blue-400', border: 'border-blue-400/20' };
-
-      default: return { text: 'ЗАГРУЗКА ДАННЫХ', color: 'text-gray-400', bg: 'bg-gray-400', border: 'border-gray-500/20' };
-
-    }
 
   }
 
@@ -732,40 +660,6 @@ export default function Home() {
     } finally { 
 
       setLoadingState(false); 
-
-    }
-
-  }
-
-
-
-  async function fetchServerStatus() {
-
-    setIsServerLoading(true);
-
-    try {
-
-      const url = exarotonServerId ? `/api/exaroton?serverId=${exarotonServerId}` : '/api/exaroton';
-
-      const res = await fetch(url);
-
-      const data = await res.json();
-
-      if (data.success) {
-
-        setServerInfo(data.data.server || data.data);
-
-        setCredits(data.data.credits ?? null);
-
-      }
-
-    } catch (e) {
-
-      console.error(e);
-
-    } finally {
-
-      setIsServerLoading(false);
 
     }
 
@@ -988,44 +882,6 @@ export default function Home() {
     return () => clearTimeout(t);
 
   }, [highlightedHtml]);
-
-
-
-  async function handleServerAction(action: 'start' | 'stop') {
-
-    setServerActionLoading(true);
-
-    try {
-
-      const url = exarotonServerId ? `/api/exaroton?serverId=${exarotonServerId}` : '/api/exaroton';
-
-      const res = await fetch(url, {
-
-        method: 'POST',
-
-        headers: { 'Content-Type': 'application/json' },
-
-        body: JSON.stringify({ action })
-
-      });
-
-      const data = await res.json();
-
-      if (data.success) setTimeout(fetchServerStatus, 3000);
-
-      else alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-
-    } catch (e) {
-
-      alert('Ошибка соединения');
-
-    } finally {
-
-      setServerActionLoading(false);
-
-    }
-
-  }
 
 
 
@@ -1904,22 +1760,6 @@ export default function Home() {
 
   useEffect(() => {
 
-    if (activeTab === 'profile') {
-
-      fetchServerStatus();
-
-      const intervalId = setInterval(() => fetchServerStatus(), 360000); 
-
-      return () => clearInterval(intervalId);
-
-    }
-
-  }, [activeTab, exarotonServerId]);
-
-
-
-  useEffect(() => {
-
     if (isEditing && editorRef.current) {
 
       editorRef.current.innerHTML = activeDocument === 'constitution' ? constitutionText : commandmentsText;
@@ -1927,16 +1767,6 @@ export default function Home() {
     }
 
   }, [isEditing, activeDocument]);
-
-
-
-  // Загрузка баланса казны для виджета
-
-  useEffect(() => {
-
-    getBalance(currentSeasonName).then(b => setTreasuryBalance(isNaN(b) ? 0 : b));
-
-  }, [currentSeasonName]);
 
 
 
@@ -2526,25 +2356,25 @@ export default function Home() {
 
 
 
-              {/* 2. ВИДЖЕТ КАЗНЫ */}
+              {/* 2. АРХИВ СЕЗОНОВ */}
 
               <div 
 
-                onClick={() => handleTabChange('treasury')}
+                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
 
                 className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
 
               >
 
-                <div className="absolute inset-0 z-0 opacity-20 group-hover:opacity-30 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:120px] md:bg-[length:200px]" style={{ backgroundImage: `url('/bank-${getBankSuffix(treasuryBalance)}.webp')` }} />
+                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
 
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Landmark size={20} /></div>
+                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Library size={20} /></div>
 
                 <div className="space-y-0.5 relative z-10">
 
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Казна</h3>
+                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
 
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">{treasuryBalance.toLocaleString('ru-RU')} SPR</p>
+                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
 
                 </div>
 
@@ -2589,132 +2419,6 @@ export default function Home() {
                     </div>
 
                   ))}
-
-                </div>
-
-              </div>
-
-
-
-              {/* 4. ВИДЖЕТ СТАТУСА СЕРВЕРА */}
-
-              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3">
-
-                <button onClick={fetchServerStatus} className={`absolute top-4 right-4 p-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all active:scale-90 z-20 ${isServerLoading ? 'animate-spin' : ''}`}><RefreshCw size={14}/></button>
-
-                {serverInfo && <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 rounded-full pointer-events-none transition-colors duration-700 ${getServerStatusText(serverInfo.status).bg}`} />}
-
-                
-
-                <div className="relative z-10 flex items-center justify-between w-full">
-
-                  <div className="flex items-center gap-2">
-
-                    <Server size={20} className={getServerStatusText(serverInfo?.status || 0).color} />
-
-                    <div className={`text-sm md:text-base font-black tracking-wider uppercase ${serverInfo ? getServerStatusText(serverInfo.status).color : 'text-gray-400'}`}>{serverInfo ? getServerStatusText(serverInfo.status).text : 'ЗАГРУЗКА...'}</div>
-
-                  </div>
-
-                  {serverInfo?.status === 1 && <div className="bg-black/30 border border-white/5 px-2 py-0.5 rounded-lg text-[10px] font-bold text-gray-400">Online: <span className="text-[#c0ff00] font-mono">{serverInfo.players.count}/{serverInfo.players.max}</span></div>}
-
-                </div>
-
-
-
-                <div className="space-y-2 w-full relative z-10">
-
-                  <div className="bg-black/20 border border-white/5 p-2.5 rounded-xl flex items-center justify-between group">
-
-                    <div className="min-w-0 flex-1">
-
-                      <div className="text-[8px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">IP СЕРВЕРА</div>
-
-                      <div className="font-mono text-sm text-gray-200 truncate">{staticIp}</div>
-
-                    </div>
-
-                    <button onClick={() => copyToClipboard(staticIp)} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-[#c0ff00] transition-colors shrink-0 ml-2"><Copy size={14}/></button>
-
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-
-                    <div className="bg-black/20 border border-white/5 p-2 rounded-xl flex items-center justify-between group">
-
-                      <div className="flex items-center gap-2 min-w-0">
-
-                        <div className="p-1 bg-white/5 rounded-md text-gray-400"><AnvilIcon size={14} /></div>
-
-                        <div className="min-w-0">
-
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">Версия</div>
-
-                          <div className="font-bold text-xs text-white truncate">1.20.1</div>
-
-                        </div>
-
-                      </div>
-
-                      <a href="https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.20/forge-1.20.1-47.4.20-installer.jar" target="_blank" rel="noopener noreferrer" className="w-6 h-6 bg-white/5 hover:bg-[#c0ff00] text-gray-400 hover:text-black rounded-lg flex items-center justify-center transition-all shrink-0"><Download size={12} /></a>
-
-                    </div>
-
-                    {credits !== null && (
-
-                      <div className="bg-black/20 border border-white/5 p-2 rounded-xl flex items-center gap-2 group">
-
-                        <div className="p-1 bg-[#c0ff00]/10 rounded-md text-[#c0ff00]"><Coins size={14} /></div>
-
-                        <div className="min-w-0">
-
-                          <div className="text-[8px] text-gray-500 font-bold uppercase">{credits.toFixed(0)} КР.</div>
-
-                          <div className="font-mono text-[11px] text-[#c0ff00] truncate font-bold">{Math.floor(credits / 7)}ч {Math.floor(((credits % 7) / 7) * 60)}м</div>
-
-                        </div>
-
-                      </div>
-
-                    )}
-
-                  </div>
-
-                </div>
-
-
-
-                <div className="flex gap-2 relative z-10 w-full mt-1">
-
-                  <button onClick={() => handleServerAction('start')} disabled={serverActionLoading || (serverInfo && serverInfo.status !== 0)} className="flex-1 h-10 rounded-xl bg-[#c0ff00]/10 border border-[#c0ff00]/20 hover:border-[#c0ff00]/40 text-[#c0ff00] text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Play size={12} />ВКЛЮЧИТЬ</button>
-
-                  <button onClick={() => handleServerAction('stop')} disabled={serverActionLoading || (serverInfo && serverInfo.status === 0)} className="flex-1 h-10 rounded-xl bg-red-500/10 border border-red-500/20 hover:border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-20"><Square size={12} />ВЫКЛЮЧИТЬ</button>
-
-                </div>
-
-              </div>
-
-
-
-              {/* 5. АРХИВ СЕЗОНОВ */}
-
-              <div 
-
-                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
-
-                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
-
-              >
-
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
-
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Library size={20} /></div>
-
-                <div className="space-y-0.5 relative z-10">
-
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
-
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
 
                 </div>
 
@@ -2993,10 +2697,6 @@ export default function Home() {
 
 
         {activeTab === 'archive' && <Archive currentUser={dbUser} />}
-
-        {activeTab === 'treasury' && (seasonEnded ? <SeasonPlaceholder /> : <Treasury currentUser={dbUser} />)}
-
-        {activeTab === 'onelaunch' && <OneLaunchContent />}
 
         {activeTab === 'media' && <div className="w-full space-y-6"><MediaBlog currentUser={dbUser} onProfileClick={setSelectedCharacter} isCreatingPost={isCreatingPost} setIsCreatingPost={setIsCreatingPost} seasonName={currentSeasonName} /></div>}
 
@@ -3318,18 +3018,6 @@ export default function Home() {
               </button>
 
               <button
-                onClick={() => handleTabChange('treasury')}
-                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                  activeTab === 'treasury'
-                    ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Landmark size={24} className={`transition-all duration-300 ${activeTab === 'treasury' ? 'sf-glow-green' : ''}`} />
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Казна</span>
-              </button>
-
-              <button
                 onClick={() => handleTabChange('players')}
                 className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                   activeTab === 'players'
@@ -3343,22 +3031,6 @@ export default function Home() {
             </>
           )}
         </nav>
-
-        {/* Кружок Скачать лаунчер (ПК) — единая структура */}
-        <div className="w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-2 rounded-full shadow-2xl flex items-center justify-center relative">
-          <button
-            onClick={() => handleTabChange('onelaunch')}
-            className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              activeTab === 'onelaunch'
-                ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-            }`}
-            title="Скачать лаунчер OneLaunch"
-          >
-            <Download size={24} className={`transition-all duration-300 ${activeTab === 'onelaunch' ? 'sf-glow-green' : ''}`} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Скачать</span>
-          </button>
-        </div>
       </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}

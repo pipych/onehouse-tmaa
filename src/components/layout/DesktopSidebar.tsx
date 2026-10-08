@@ -121,24 +121,6 @@ export function DesktopSidebar({
             </button>
 
             <button
-              onClick={() => onTabChange('treasury')}
-              className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                activeTab === 'treasury'
-                  ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                  : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <SFSymbol
-                name="building.columns.fill"
-                size={24}
-                className={`transition-all duration-300 ${activeTab === 'treasury' ? 'sf-glow-green' : ''}`}
-              />
-              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
-                Казна
-              </span>
-            </button>
-
-            <button
               onClick={() => onTabChange('players')}
               className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
                 activeTab === 'players'
@@ -158,28 +140,6 @@ export function DesktopSidebar({
           </>
         )}
       </nav>
-
-      {/* Кружок Скачать лаунчер */}
-      <div className="w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-2 rounded-full shadow-2xl flex items-center justify-center relative">
-        <button
-          onClick={() => onTabChange('onelaunch')}
-          className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-            activeTab === 'onelaunch'
-              ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-              : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-          }`}
-          title="Скачать лаунчер OneLaunch"
-        >
-          <SFSymbol
-            name="arrow.down.circle.fill"
-            size={24}
-            className={`transition-all duration-300 ${activeTab === 'onelaunch' ? 'sf-glow-green' : ''}`}
-          />
-          <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">
-            Скачать
-          </span>
-        </button>
-      </div>
 
       {/* Админка */}
       {isAdmin && onAdminClick && (

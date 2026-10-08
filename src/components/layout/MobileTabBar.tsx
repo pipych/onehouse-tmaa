@@ -31,12 +31,10 @@ export function MobileTabBar({
         { id: 'profile', label: 'Главная', icon: 'house.fill' },
         { id: 'media', label: 'Медиа', icon: 'newspaper.fill' },
         { id: 'svod', label: 'Свод', icon: 'doc.text.fill' },
-        { id: 'treasury', label: 'Казна', icon: 'building.columns.fill' },
         { id: 'players', label: 'Игроки', icon: 'person.2.fill' },
       ];
 
   const currentActiveTab = isPlayersActive && activeTab !== 'profile' ? 'players' : activeTab;
-  const isDownloadActive = activeTab === 'onelaunch';
 
   const navRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
@@ -84,10 +82,10 @@ export function MobileTabBar({
 
   return (
     <div className={`flex items-center justify-center w-full select-none ${className}`}>
-      {/* Главный плавающий пилл (Dock с табами и разделом Скачать) */}
+      {/* Главный плавающий пилл */}
       <nav
         className={`bg-[#14171c]/95 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-2xl relative flex items-center h-[70px] transition-all duration-300 w-full ${
-          seasonEnded ? 'max-w-[340px]' : 'max-w-md'
+          seasonEnded ? 'max-w-[280px]' : 'max-w-[360px]'
         }`}
       >
         <div ref={navRef} className="relative flex items-center w-full h-full">
@@ -136,38 +134,6 @@ export function MobileTabBar({
                 </button>
               );
             })}
-          </div>
-
-          {/* Тонкий вертикальный разделитель */}
-          <div className="w-px h-6 bg-white/10 mx-1 shrink-0 pointer-events-none z-10" />
-
-          {/* Раздел Скачать — форма широкого пила, шейп переезжает сюда плавно */}
-          <div className="shrink-0 h-full w-[86px] flex items-center justify-center">
-            <button
-              ref={(el) => {
-                tabRefs.current['onelaunch'] = el;
-              }}
-              onClick={() => onTabChange('onelaunch')}
-              className={`relative z-10 w-full h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-95 sf-tap ${
-                isDownloadActive ? 'text-[#c0ff00] font-bold' : 'text-[#8e8e93] hover:text-white'
-              }`}
-              title="Скачать лаунчер OneLaunch"
-            >
-              <SFSymbol
-                name="arrow.down.circle.fill"
-                size={26}
-                className={`transition-all duration-300 ${
-                  isDownloadActive ? 'sf-glow-green' : 'text-[#8e8e93]'
-                }`}
-              />
-              <span
-                className={`text-[10px] font-bold tracking-tight mt-1 whitespace-nowrap transition-colors duration-200 ${
-                  isDownloadActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
-                }`}
-              >
-                Скачать
-              </span>
-            </button>
           </div>
         </div>
       </nav>

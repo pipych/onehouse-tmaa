@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
 import { addGuest, removeGuest, getGuests } from '../lib/guests';
 import {
-  ArrowLeft, ShieldAlert, Users, Folder, Calendar, Package,
+  ArrowLeft, ShieldAlert, Users, Folder, Calendar,
   User, UserPlus, ShieldCheck, Edit2, Save, X, Plus, Upload,
-  Check, Play, Flag, RotateCcw, Library, Server as ServerIcon, Trash2,
-  Home, ChevronRight, FolderOpen, File, Download, RefreshCw,
-  MoreVertical, FolderPlus, UploadCloud, Construction
+  Check, Play, Flag, RotateCcw, Library, Trash2, Construction
 } from '../components/ui/SFSymbol';
 
 const AnvilIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
@@ -60,7 +58,6 @@ async function uploadFile(event: React.ChangeEvent<HTMLInputElement>, setUrl: (u
 // --- Types ---
 type MainTab = 'home' | 'players' | 'server';
 type PlayersSubTab = 'profiles' | 'characters' | 'professions' | 'roles' | 'guests';
-type ServerSubTab = 'seasons' | 'modpack' | 'mods';
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -69,7 +66,6 @@ export default function AdminPage() {
   // --- Tabs ---
   const [mainTab, setMainTab] = useState<MainTab>('home');
   const [playersSubTab, setPlayersSubTab] = useState<PlayersSubTab>('profiles');
-  const [serverSubTab, setServerSubTab] = useState<ServerSubTab>('seasons');
 
   // --- Season state ---
   const [seasonEnded, setSeasonEnded] = useState(false);
@@ -113,36 +109,6 @@ export default function AdminPage() {
   // --- Form: Guests ---
   const [guestTgId, setGuestTgId] = useState('');
   const [guestLoading, setGuestLoading] = useState(false);
-
-  // --- Form: Seasons ---
-  const [newSeasonServerId, setNewSeasonServerId] = useState('');
-
-  // --- R2 Modpack browser ---
-  const [r2Path, setR2Path] = useState('');
-  const [r2Items, setR2Items] = useState<{key:string;name:string;type:'folder'|'file';size?:number;lastModified?:string}[]>([]);
-  const [r2Loading, setR2Loading] = useState(false);
-  const [r2Error, setR2Error] = useState('');
-  const [r2MenuOpen, setR2MenuOpen] = useState<string | null>(null);
-  const [r2NewFolderName, setR2NewFolderName] = useState('');
-  const [r2ShowNewFolder, setR2ShowNewFolder] = useState(false);
-
-  // --- Modrinth mod search ---
-  const [modSearch, setModSearch] = useState('');
-  const [modResults, setModResults] = useState<any[]>([]);
-  const [modLoading, setModLoading] = useState(false);
-  const [modError, setModError] = useState('');
-  const [modTotalHits, setModTotalHits] = useState(0);
-  const [installing, setInstalling] = useState<string | null>(null);
-  const [installMsg, setInstallMsg] = useState('');
-
-  // --- Upload overlay ---
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'merge' | 'replace'>('merge');
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadProcessing, setUploadProcessing] = useState(false);
-  const [uploadFileName, setUploadFileName] = useState('');
-  const [uploadDragOver, setUploadDragOver] = useState(false);
-  const uploadFileRef = useRef<HTMLInputElement>(null);
 
   // --- Helpers ---
   const getProfessionColor = (name: string) => {
@@ -226,12 +192,12 @@ export default function AdminPage() {
     setSeasonLoading(false);
   };
 
-  const handleStartNewSeason = async (serverId?: string) => {
+  const handleStartNewSeason = async () => {
     const nextNum = (pastSeasons.length > 0 ? Math.max(...pastSeasons.map(s => s.season_number)) : currentSeasonNum) + 1;
     if (!confirm('Начать новый сезон #' + nextNum + '?')) return;
     setSeasonLoading(true);
     const { startNewSeason } = await import('../lib/season');
-    const ok = await startNewSeason(serverId || undefined);
+    const ok = await startNewSeason();
     if (ok) { setSeasonEnded(false); loadSeasonState(); loadPlayersData(); }
     else alert('Ошибка создания нового сезона');
     setSeasonLoading(false);
@@ -282,207 +248,6 @@ export default function AdminPage() {
     const ok = await removeGuest(tgId);
     if (ok) loadGuestsData();
     else alert('Ошибка удаления гостя');
-  };
-
-  // --- R2 modpack browser ---
-  const loadR2Items = async (prefix?: string) => {
-    const path = prefix !== undefined ? prefix : r2Path;
-    setR2Loading(true);
-    setR2Error('');
-    try {
-      const res = await fetch('/api/r2-browser?prefix=' + encodeURIComponent(path));
-      const data = await res.json();
-      if (data.error) { setR2Error(data.error); setR2Items([]); }
-      else setR2Items(data.items || []);
-    } catch (e: any) {
-      setR2Error(e.message || 'Ошибка загрузки');
-    }
-    setR2Loading(false);
-  };
-
-  useEffect(() => {
-    if (serverSubTab === 'modpack') {
-      const initialPath = 'onehouse-pack-v1/';
-      setR2Path(initialPath);
-      loadR2Items(initialPath);
-    }
-  }, [serverSubTab]);
-
-  const navigateR2 = (folder: string) => {
-    const newPath = r2Path + folder + '/';
-    setR2Path(newPath);
-    loadR2Items(newPath);
-  };
-
-  const navigateR2Up = () => {
-    if (!r2Path) return;
-    const parts = r2Path.split('/').filter(Boolean);
-    parts.pop();
-    const newPath = parts.length > 0 ? parts.join('/') + '/' : '';
-    setR2Path(newPath);
-    loadR2Items(newPath);
-  };
-
-  const formatSize = (bytes?: number) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
-  const handleDeleteR2 = async (key: string, type: 'file' | 'folder') => {
-    const label = type === 'folder' ? 'папку' : 'файл';
-    if (!confirm('Удалить ' + label + '?')) return;
-    try {
-      const res = await fetch('/api/r2-browser?key=' + encodeURIComponent(key) + '&type=' + type, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setR2MenuOpen(null);
-        loadR2Items();
-      } else {
-        alert('Ошибка: ' + (data.error || 'неизвестно'));
-      }
-    } catch (e: any) {
-      alert('Ошибка: ' + e.message);
-    }
-  };
-
-  const handleCreateFolder = async () => {
-    const name = r2NewFolderName.trim();
-    if (!name) return;
-    try {
-      const res = await fetch('/api/r2-browser', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderName: name, prefix: r2Path }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setR2NewFolderName('');
-        setR2ShowNewFolder(false);
-        loadR2Items();
-      } else {
-        alert('Ошибка: ' + (data.error || 'неизвестно'));
-      }
-    } catch (e: any) {
-      alert('Ошибка: ' + e.message);
-    }
-  };
-
-  // --- Upload handler (presigned POST → direct R2 → extract) ---
-  const handleUploadSubmit = async () => {
-    const input = uploadFileRef.current;
-    if (!input?.files?.length) return;
-    const file = input.files[0];
-    setUploadProcessing(true);
-    setUploadProgress(0);
-
-    try {
-      // Step 1: Get presigned POST
-      const zipKey = r2Path + file.name;
-      const presignRes = await fetch('/api/r2-presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: zipKey }),
-      });
-      const presignData = await presignRes.json();
-      if (!presignData.url) throw new Error(presignData.error || 'Failed to get upload URL');
-
-      // Step 2: Upload directly to R2 via presigned POST (multipart = no CORS preflight)
-      setUploadProgress(5);
-      const formData = new FormData();
-      Object.entries(presignData.fields).forEach(([k, v]) => formData.append(k, v as string));
-      formData.append('file', file);
-
-      const uploadRes = await fetch(presignData.url, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!uploadRes.ok) throw new Error('Upload failed: ' + uploadRes.status);
-      setUploadProgress(50);
-
-      // Step 3: Extract ZIP on server
-      const extractRes = await fetch('/api/r2-extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zipKey, prefix: r2Path, mode: uploadMode }),
-      });
-      const extractData = await extractRes.json();
-      if (!extractData.success) throw new Error(extractData.error || 'Extract failed');
-      setUploadProgress(90);
-
-      setUploadProgress(100);
-      setTimeout(() => {
-        setUploadOpen(false);
-        setUploadProgress(0);
-        setUploadProcessing(false);
-        setUploadFileName('');
-        if (input) input.value = '';
-        loadR2Items();
-      }, 500);
-    } catch (e: any) {
-      alert('Ошибка: ' + (e.message || 'неизвестно'));
-      setUploadProcessing(false);
-      setUploadProgress(0);
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) setUploadFileName(f.name);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setUploadDragOver(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f && uploadFileRef.current) {
-      const dt = new DataTransfer();
-      dt.items.add(f);
-      uploadFileRef.current.files = dt.files;
-      setUploadFileName(f.name);
-    }
-  };
-
-  // --- Modrinth handlers ---
-  const handleModSearch = async (query?: string) => {
-    const q = (query !== undefined ? query : modSearch).trim();
-    if (!q) return;
-    setModLoading(true);
-    setModError('');
-    try {
-      const res = await fetch('/api/modrinth?query=' + encodeURIComponent(q));
-      const data = await res.json();
-      if (data.error) { setModError(data.error); setModResults([]); }
-      else {
-        setModResults(data.hits || []);
-        setModTotalHits(data.total || 0);
-      }
-    } catch (e: any) {
-      setModError(e.message || 'Ошибка поиска');
-    }
-    setModLoading(false);
-  };
-
-  const handleModInstall = async (item: any) => {
-    setInstalling(item.project_id || item.slug);
-    setInstallMsg('');
-    try {
-      const res = await fetch('/api/modrinth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: item.slug, projectId: item.project_id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setInstallMsg('✅ ' + data.message + ' (' + data.installed.map((f: any) => f.fileName).join(', ') + ')');
-      } else {
-        setInstallMsg('❌ ' + (data.error || 'Ошибка установки'));
-      }
-    } catch (e: any) {
-      setInstallMsg('❌ ' + e.message);
-    }
-    setInstalling(null);
   };
 
   // ===================================================================
@@ -871,500 +636,60 @@ export default function AdminPage() {
 
         {/* ==================== СЕРВЕР ==================== */}
         {mainTab === 'server' && (
-          <>
-            {/* Sub-tabs */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {([
-                { key: 'seasons' as const, label: 'Сезоны', icon: <Calendar size={13} /> },
-                { key: 'modpack' as const, label: 'Модпак', icon: <Package size={13} /> },
-                { key: 'mods' as const, label: 'Моды', icon: <Package size={13} /> },
-              ]).map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setServerSubTab(tab.key)}
-                  className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                    serverSubTab === tab.key
-                      ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30'
-                      : 'bg-white/5 text-gray-400 border border-white/5'
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
+          <div className="space-y-4">
+            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+              <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
+                <Calendar size={16} /><span>Управление сезонами</span>
+              </div>
+              <div className="text-sm text-gray-400">
+                Текущий: <span className="text-[#c0ff00] font-bold">{currentSeasonName}</span>
+                {seasonEnded
+                  ? <span className="text-red-400 font-bold ml-2">• Завершён</span>
+                  : <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>
+                }
+              </div>
+              {!seasonEnded && (
+                <button onClick={handleEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30">
+                  <Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span>
                 </button>
-              ))}
+              )}
+              {seasonEnded && (
+                <>
+                  <button onClick={handleUndoEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30">
+                    <RotateCcw size={14} /><span className="text-[11px] font-bold">Восстановить сезон</span>
+                  </button>
+                  <button onClick={() => handleStartNewSeason()} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold disabled:opacity-30">
+                    <Play size={14} /><span>Начать новый сезон</span>
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* --- Сезоны --- */}
-            {serverSubTab === 'seasons' && (
-              <div className="space-y-4">
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
-                    <Calendar size={16} /><span>Управление сезонами</span>
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Текущий: <span className="text-[#c0ff00] font-bold">{currentSeasonName}</span>
-                    {seasonEnded
-                      ? <span className="text-red-400 font-bold ml-2">• Завершён</span>
-                      : <span className="text-[#c0ff00] font-bold ml-2">• Активен</span>
-                    }
-                  </div>
-                  {!seasonEnded && (
-                    <button onClick={handleEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-red-500/20 !border-red-500/30 !text-red-400 hover:!bg-red-500/30 disabled:opacity-30">
-                      <Flag size={14} /><span className="text-[11px] font-bold">Завершить сезон</span>
-                    </button>
-                  )}
-                  {seasonEnded && (
-                    <>
-                      <button onClick={handleUndoEndSeason} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00]/20 !border-[#c0ff00]/30 !text-[#c0ff00] hover:!bg-[#c0ff00]/30 disabled:opacity-30">
-                        <RotateCcw size={14} /><span className="text-[11px] font-bold">Восстановить сезон</span>
-                      </button>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                          <ServerIcon size={12} className="text-[#c0ff00]" /><span>Exaroton Server ID</span>
-                        </div>
-                        <input type="text" placeholder="e.g. abc123def456" value={newSeasonServerId} onChange={e => setNewSeasonServerId(e.target.value)} className="ui-input text-xs"/>
-                        <button onClick={() => handleStartNewSeason(newSeasonServerId)} disabled={seasonLoading} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold disabled:opacity-30">
-                          <Play size={14} /><span>Начать новый сезон</span>
-                        </button>
-                      </div>
-                    </>
-                  )}
+            {pastSeasons.length > 0 && (
+              <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
+                  <Library size={16} /><span>Архив сезонов</span>
                 </div>
-
-                {pastSeasons.length > 0 && (
-                  <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
-                    <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
-                      <Library size={16} /><span>Архив сезонов</span>
+                <div className="space-y-2">
+                  {pastSeasons.map(s => (
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
+                      <div className="text-sm">
+                        <span className="text-white font-bold">Сезон #{s.season_number}</span>
+                        <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
+                        <span className="text-gray-600 ml-2 text-[11px]">{new Date(s.end_date).toLocaleDateString('ru-RU')}</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => handleRestoreSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-[#c0ff00]/10 !border-[#c0ff00]/20 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 px-3 py-1.5"><RotateCcw size={12} /></button>
+                        <button onClick={() => handleDeleteSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-red-500/10 !border-red-500/20 !text-red-400 hover:!bg-red-500/20 disabled:opacity-30 px-3 py-1.5"><X size={12} /></button>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      {pastSeasons.map(s => (
-                        <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
-                          <div className="text-sm">
-                            <span className="text-white font-bold">Сезон #{s.season_number}</span>
-                            <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
-                            <span className="text-gray-600 ml-2 text-[11px]">{new Date(s.end_date).toLocaleDateString('ru-RU')}</span>
-                          </div>
-                          <div className="flex gap-1.5">
-                            <button onClick={() => handleRestoreSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-[#c0ff00]/10 !border-[#c0ff00]/20 !text-[#c0ff00] hover:!bg-[#c0ff00]/20 disabled:opacity-30 px-3 py-1.5"><RotateCcw size={12} /></button>
-                            <button onClick={() => handleDeleteSeason(s.id, s.season_number)} disabled={seasonLoading} className="ui-pill-btn !bg-red-500/10 !border-red-500/20 !text-red-400 hover:!bg-red-500/20 disabled:opacity-30 px-3 py-1.5"><X size={12} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* --- Модпак --- */}
-            {serverSubTab === 'modpack' && (
-              <div className="space-y-4 animate-fade-in">
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-1.5 text-xs text-gray-400 flex-wrap">
-                  <button onClick={() => { setR2Path(''); loadR2Items(''); }} className="flex items-center gap-1 hover:text-[#c0ff00] transition-colors">
-                    <Home size={14} />
-                  </button>
-                  {r2Path.split('/').filter(Boolean).map((part, i, arr) => (
-                    <span key={i} className="flex items-center gap-1.5">
-                      <ChevronRight size={12} className="text-gray-600" />
-                      <button
-                        onClick={() => {
-                          const newPath = arr.slice(0, i + 1).join('/') + '/';
-                          setR2Path(newPath);
-                          loadR2Items(newPath);
-                        }}
-                        className="hover:text-[#c0ff00] transition-colors truncate max-w-[120px]"
-                      >
-                        {part}
-                      </button>
-                    </span>
                   ))}
                 </div>
-
-                {/* Create folder */}
-                {r2ShowNewFolder ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Название папки"
-                      value={r2NewFolderName}
-                      onChange={e => setR2NewFolderName(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') { setR2ShowNewFolder(false); setR2NewFolderName(''); } }}
-                      className="ui-input flex-1"
-                      autoFocus
-                    />
-                    <button onClick={handleCreateFolder} className="ui-pill-btn !bg-[#c0ff00] !text-black shrink-0"><Plus size={14} /> Создать</button>
-                    <button onClick={() => { setR2ShowNewFolder(false); setR2NewFolderName(''); }} className="ui-pill-btn shrink-0"><X size={14} /></button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setR2ShowNewFolder(true)}
-                      className="ui-pill-btn flex-1 justify-center"
-                    >
-                      <FolderPlus size={14} />
-                      <span>Создать папку</span>
-                    </button>
-                    <button
-                      onClick={() => setUploadOpen(true)}
-                      className="ui-pill-btn flex-1 justify-center"
-                    >
-                      <UploadCloud size={14} />
-                      <span>Загрузить</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Content */}
-                <div className="bg-[#14171c]/90 backdrop-blur-xl rounded-[28px] border border-white/5 shadow-xl overflow-hidden">
-                  {r2Loading ? (
-                    <div className="flex justify-center py-12">
-                      <RefreshCw className="animate-spin text-[#c0ff00]" size={24} />
-                    </div>
-                  ) : r2Error ? (
-                    <div className="text-center py-12 text-xs text-red-400">{r2Error}</div>
-                  ) : r2Items.length === 0 ? (
-                    <div className="text-center py-12 text-xs text-gray-500">Папка пуста</div>
-                  ) : (
-                    <div className="divide-y divide-white/5">
-                      {r2Path && (
-                        <button
-                          onClick={navigateR2Up}
-                          className="w-full flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
-                        >
-                          <FolderOpen size={18} className="text-[#c0ff00] shrink-0" />
-                          <span className="text-sm font-medium text-gray-400">..</span>
-                        </button>
-                      )}
-                      {r2Items.map((item) => (
-                        <div key={item.key} className="relative">
-                          {item.type === 'folder' ? (
-                            <div className="flex items-center group">
-                              <button
-                                onClick={() => navigateR2(item.name)}
-                                className="flex-1 flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
-                              >
-                                <FolderOpen size={18} className="text-[#c0ff00] shrink-0" />
-                                <span className="text-sm font-medium text-white truncate">{item.name}</span>
-                              </button>
-                              <div className="relative shrink-0 pr-3">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setR2MenuOpen(r2MenuOpen === item.key ? null : item.key); }}
-                                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400"
-                                >
-                                  <MoreVertical size={14} />
-                                </button>
-                                {r2MenuOpen === item.key && (
-                                  <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setR2MenuOpen(null)} />
-                                    <div className="absolute right-0 top-full mt-1 z-20 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[140px] backdrop-blur-xl">
-                                      <button
-                                        onClick={() => { handleDeleteR2(item.key, 'folder'); }}
-                                        className="w-full text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-red-500/10 text-red-400 flex items-center gap-2"
-                                      >
-                                        <Trash2 size={12} /> Удалить
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center group">
-                              <a
-                                href={`/api/r2-browser?download=${encodeURIComponent(item.key)}`}
-                                className="flex-1 flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors text-left"
-                              >
-                                <File size={18} className="text-gray-500 shrink-0" />
-                                <span className="text-sm text-gray-300 truncate">{item.name}</span>
-                                <span className="text-[10px] text-gray-600 shrink-0 ml-auto mr-3">{formatSize(item.size)}</span>
-                              </a>
-                              <div className="relative shrink-0 pr-3">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); setR2MenuOpen(r2MenuOpen === item.key ? null : item.key); }}
-                                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-gray-400"
-                                >
-                                  <MoreVertical size={14} />
-                                </button>
-                                {r2MenuOpen === item.key && (
-                                  <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setR2MenuOpen(null)} />
-                                    <div className="absolute right-0 top-full mt-1 z-20 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[140px] backdrop-blur-xl">
-                                      <a
-                                        href={`/api/r2-browser?download=${encodeURIComponent(item.key)}`}
-                                        className="w-full text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-white/5 text-white flex items-center gap-2 no-underline"
-                                      >
-                                        <Download size={12} /> Скачать
-                                      </a>
-                                      <button
-                                        onClick={() => { handleDeleteR2(item.key, 'file'); }}
-                                        className="w-full text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-red-500/10 text-red-400 flex items-center gap-2"
-                                      >
-                                        <Trash2 size={12} /> Удалить
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
-
-            {/* --- Моды (Modrinth) --- */}
-            {serverSubTab === 'mods' && (
-              <div className="space-y-4 animate-fade-in">
-                {/* Search */}
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-3 shadow-xl">
-                  <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
-                    <Package size={16} /><span>Поиск модов на Modrinth</span>
-                  </div>
-                  <div className="text-[10px] text-gray-500">
-                    Фильтр: <span className="text-[#c0ff00]">1.20.1</span> · <span className="text-[#c0ff00]">Forge / NeoForge</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Название мода..."
-                      value={modSearch}
-                      onChange={e => setModSearch(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleModSearch(); }}
-                      className="ui-input flex-1"
-                    />
-                    <button
-                      onClick={() => handleModSearch()}
-                      disabled={modLoading || !modSearch.trim()}
-                      className="ui-pill-btn shrink-0 disabled:opacity-30"
-                    >
-                      {modLoading ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
-                      <span>Найти</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Install message */}
-                {installMsg && (
-                  <div className={`p-3 rounded-xl text-xs font-bold border ${installMsg.startsWith('✅') ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                    {installMsg}
-                  </div>
-                )}
-
-                {/* Error */}
-                {modError && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-bold">{modError}</div>
-                )}
-
-                {/* Results */}
-                {modResults.length > 0 && (
-                  <>
-                    <div className="text-xs text-gray-500">Найдено: {modTotalHits}</div>
-                    <div className="space-y-3">
-                      {modResults.map((mod: any) => (
-                        <div key={mod.project_id} className="bg-[#14171c]/90 backdrop-blur-xl p-4 rounded-[20px] border border-white/5 shadow-xl flex gap-3">
-                          {/* Icon */}
-                          {mod.icon_url ? (
-                            <img
-                              src={mod.icon_url}
-                              alt={mod.title}
-                              className="w-12 h-12 rounded-xl object-cover bg-[#1c2026] border border-white/10 flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-xl bg-[#1c2026] border border-white/10 flex items-center justify-center flex-shrink-0">
-                              <Package size={18} className="text-gray-600" />
-                            </div>
-                          )}
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div
-                              className="text-sm font-bold text-white truncate cursor-pointer hover:text-[#c0ff00] transition-colors"
-                              onClick={() => window.open(`https://modrinth.com/mod/${mod.slug}`, '_blank')}
-                              title="Открыть на Modrinth"
-                            >
-                              {mod.title}
-                            </div>
-                            <div className="text-[10px] text-gray-500 mt-0.5">{mod.author}</div>
-                            <div className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
-                              {mod.description || 'Нет описания'}
-                            </div>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {mod.categories?.slice(0, 3).map((cat: string, i: number) => (
-                                <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/10">
-                                  {cat}
-                                </span>
-                              ))}
-                              <span className="text-[8px] text-gray-600 px-1.5 py-0.5">
-                                {mod.downloads?.toLocaleString() || 0} загрузок
-                              </span>
-                            </div>
-                          </div>
-                          {/* Actions */}
-                          <div className="flex flex-col gap-1.5 flex-shrink-0 items-end">
-                            <button
-                              onClick={() => window.open(`https://modrinth.com/mod/${mod.slug}`, '_blank')}
-                              className="text-[10px] text-gray-500 hover:text-[#c0ff00] transition-colors px-2 py-1"
-                              title="Открыть на Modrinth"
-                            >
-                              Modrinth ↗
-                            </button>
-                            <button
-                              onClick={() => handleModInstall(mod)}
-                              disabled={installing === mod.project_id}
-                              className="ui-pill-btn !bg-[#c0ff00] !text-black text-[10px] font-bold px-3 py-1.5 disabled:opacity-50"
-                            >
-                              {installing === mod.project_id ? (
-                                <><RefreshCw size={11} className="animate-spin" /> Установка...</>
-                              ) : (
-                                <><Download size={11} /> Установить</>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Empty state */}
-                {!modLoading && !modError && modResults.length === 0 && (
-                  <div className="text-center py-12 text-xs text-gray-500">
-                    {modSearch ? 'Ничего не найдено' : 'Введите название мода для поиска'}
-                  </div>
-                )}
-
-                {/* Loading state */}
-                {modLoading && (
-                  <div className="flex justify-center py-12">
-                    <RefreshCw className="animate-spin text-[#c0ff00]" size={24} />
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
-
-      {/* Upload overlay modal */}
-      {uploadOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => { if (!uploadProcessing) setUploadOpen(false); }} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md bg-[#14171c] border border-white/10 rounded-[32px] p-6 shadow-2xl">
-            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/5 to-transparent pointer-events-none rounded-t-[32px]" />
-
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-black text-white flex items-center gap-2">
-                <UploadCloud size={18} className="text-[#c0ff00]" />
-                Загрузить файлы
-              </h3>
-              <button onClick={() => { if (!uploadProcessing) setUploadOpen(false); }} className="p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all">
-                <X size={14} />
-              </button>
-            </div>
-
-            {/* Drag & drop zone */}
-            <label
-              className={`block border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all mb-4 ${
-                uploadDragOver
-                  ? 'border-[#c0ff00] bg-[#c0ff00]/5'
-                  : uploadFileName
-                    ? 'border-[#c0ff00]/40 bg-[#c0ff00]/5'
-                    : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-              }`}
-              onDragOver={(e) => { e.preventDefault(); setUploadDragOver(true); }}
-              onDragLeave={() => setUploadDragOver(false)}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={uploadFileRef}
-                type="file"
-                className="hidden"
-                onChange={handleFileSelect}
-                accept=".jar,.zip"
-              />
-              <UploadCloud size={32} className={`mx-auto mb-3 ${uploadFileName ? 'text-[#c0ff00]' : 'text-gray-600'}`} />
-              {uploadFileName ? (
-                <>
-                  <p className="text-sm font-bold text-[#c0ff00] truncate">{uploadFileName}</p>
-                  <p className="text-[10px] text-gray-500 mt-1">Нажмите чтобы заменить</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-medium text-gray-400">Перетащите файл сюда</p>
-                  <p className="text-[10px] text-gray-600 mt-1">или нажмите чтобы выбрать</p>
-                  <p className="text-[10px] text-gray-700 mt-2">.jar / .zip</p>
-                </>
-              )}
-            </label>
-
-            {/* Mode selector */}
-            <div className="space-y-2 mb-1">
-              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Режим замены для ZIP-архива</div>
-              <div className="flex gap-2">
-                <label className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold ${
-                  uploadMode === 'merge'
-                    ? 'border-[#c0ff00]/30 bg-[#c0ff00]/10 text-[#c0ff00]'
-                    : 'border-white/5 bg-white/5 text-gray-400'
-                }`}>
-                  <input type="radio" name="uploadMode" value="merge" checked={uploadMode === 'merge'} onChange={() => setUploadMode('merge')} className="hidden" />
-                  Замена и дополнение
-                </label>
-                <label className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-bold ${
-                  uploadMode === 'replace'
-                    ? 'border-red-500/30 bg-red-500/10 text-red-400'
-                    : 'border-white/5 bg-white/5 text-gray-400'
-                }`}>
-                  <input type="radio" name="uploadMode" value="replace" checked={uploadMode === 'replace'} onChange={() => setUploadMode('replace')} className="hidden" />
-                  Пересборка
-                </label>
-              </div>
-              <p className="text-[10px] text-gray-600 leading-relaxed">
-                {uploadMode === 'merge'
-                  ? 'Заменит совпадающие и добавит новые файлы, остальные не тронет'
-                  : 'Удалит всё в этой папке и загрузит только новые файлы из архива'
-                }
-              </p>
-            </div>
-
-            {/* Progress bar */}
-            {uploadProcessing && (
-              <div className="mt-4 space-y-2">
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#c0ff00] rounded-full transition-all duration-300"
-                    style={{ width: uploadProgress + '%' }}
-                  />
-                </div>
-                <p className="text-[10px] text-gray-500 text-center">
-                  {uploadProgress < 50 ? 'Загрузка в R2... ' + uploadProgress + '%' : uploadProgress < 100 ? 'Распаковка... ' + uploadProgress + '%' : 'Готово!'}
-                </p>
-              </div>
-            )}
-
-            {/* Upload button */}
-            <button
-              onClick={handleUploadSubmit}
-              disabled={uploadProcessing || !uploadFileName}
-              className="ui-pill-btn w-full justify-center mt-4 !bg-[#c0ff00] !text-black font-bold disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {uploadProcessing ? (
-                <>
-                  <RefreshCw className="animate-spin" size={14} />
-                  <span>{uploadProgress < 50 ? 'Загрузка...' : 'Распаковка...'}</span>
-                </>
-              ) : (
-                <>
-                  <Upload size={14} />
-                  <span>Загрузить</span>
-                </>
-              )}
-            </button>
-          </div>
-        </>
-      )}
 
       {/* ПК САЙДБАР */}
       <aside className="hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50">
