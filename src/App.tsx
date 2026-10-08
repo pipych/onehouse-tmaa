@@ -47,7 +47,8 @@ export default function App() {
             <Route path="/archive/characters" element={<ArchiveCharactersView />} />
             <Route path="/archive/media" element={<ArchiveMediaView />} />
             <Route path="/archive/map" element={<ArchiveMapView />} />
-            <Route path="/onelaunch" element={<OneLaunchView />} />
+            <Route path="/download" element={<OneLaunchView />} />
+            <Route path="/onelaunch" element={<Navigate to="/download" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
