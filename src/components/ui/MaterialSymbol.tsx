@@ -77,9 +77,13 @@ import flagRounded from '@iconify-icons/material-symbols/flag-rounded';
 import skullRounded from '@iconify-icons/material-symbols/skull-rounded';
 import swordsRounded from '@iconify-icons/material-symbols/swords-rounded';
 import constructionRounded from '@iconify-icons/material-symbols/construction-rounded';
+import infoRounded from '@iconify-icons/material-symbols/info-rounded';
 
 export const MATERIAL_SYMBOLS_MAP: Record<string, any> = {
   // Navigation & Core Sections (Google Material Symbols Rounded Filled)
+  'info': infoRounded,
+  'info.circle': infoRounded,
+  'info.circle.fill': infoRounded,
   'home': homeRounded,
   'home.fill': homeRounded,
   'house.fill': homeRounded,
@@ -490,5 +494,6 @@ export const Package = createMaterialSymbolIcon('inventory_2');
 export const Skull = createMaterialSymbolIcon('skull');
 export const Swords = createMaterialSymbolIcon('swords');
 export const Construction = createMaterialSymbolIcon('construction');
+export const Info = createMaterialSymbolIcon('info');
 
 export default MaterialSymbol;
