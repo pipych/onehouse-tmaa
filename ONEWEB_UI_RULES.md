@@ -31,8 +31,8 @@
 1. **MobileNavbar** (`z-[100]`): **Абсолютный приоритет по слоям**. Навбар всегда находится строго поверх абсолютно всех слоев, включая оверлеи, модалки, шторки и бэкдропы. Ни один элемент страницы или оверлей не может перекрывать навбар.
 2. **MobileActionBtn (FAB)** (`z-[90]`): Плавает над контентом и модалками, но строго ниже навбара.
 3. **Overlays / Drawers / Modal / Backdrops** (`z-50` и `z-40`): Затемнение экрана и шторки.
-4. **Gradient Vignettes** (`z-30`): Градиентные маски для скроллящегося контента.
-5. **Page Content / Cards / Badges** (`z-0` / `z-10`): Обычный поток контента.
+4. **Gradient Vignettes** (`z-10`): Градиентные маски для скроллящегося контента, строго под навбаром и кнопками.
+5. **Page Content / Cards / Badges** (`z-0`): Обычный поток контента.
 
 ---
 
@@ -51,11 +51,11 @@
 Для плавного и дорогого «растворения» контента при скролле под верхнюю и нижнюю кромки экрана используются фиксированные градиенты:
 - **Верхняя виньетка**:
   ```tsx
-  <div className="fixed top-0 left-0 right-0 h-12 md:h-16 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/80 to-transparent pointer-events-none z-30" />
+  <div className="fixed top-0 left-0 right-0 h-12 md:h-16 bg-gradient-to-b from-[#090b0e] via-[#090b0e]/80 to-transparent pointer-events-none z-10" />
   ```
 - **Нижняя виньетка**:
   ```tsx
-  <div className="fixed bottom-0 left-0 right-0 h-24 md:h-28 bg-gradient-to-t from-[#090b0e] via-[#090b0e]/90 to-transparent pointer-events-none z-30" />
+  <div className="fixed bottom-0 left-0 right-0 h-24 md:h-28 bg-gradient-to-t from-[#090b0e] via-[#090b0e]/90 to-transparent pointer-events-none z-10" />
   ```
 - Все виньетки имеют `pointer-events-none`, чтобы не блокировать клики и жесты пользователя.
 

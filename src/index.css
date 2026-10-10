@@ -112,7 +112,7 @@
     transparent 100%
   );
   pointer-events: none;
-  z-index: 30;
+  z-index: 10;
 }
 
 .vignette-bottom {
@@ -131,7 +131,7 @@
     transparent 100%
   );
   pointer-events: none;
-  z-index: 30;
+  z-index: 10;
 }
 
 @media (min-width: 768px) {

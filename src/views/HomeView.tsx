@@ -1864,7 +1864,7 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
+    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative flex flex-col">
       {/* Десктопная верхняя панель навигации */}
       <DesktopNavbar
         activeTab={activeTab}
