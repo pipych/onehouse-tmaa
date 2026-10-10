@@ -61,17 +61,17 @@
 
   /*
     Adaptive top padding on mobile:
-    - Minimum safe floor of 76px guarantees native Telegram buttons (close X, menu ...)
+    - Minimum safe floor of 96px guarantees native Telegram buttons (close X, menu ...)
       never obscure header buttons even on devices/clients that don't report insets.
     - If Telegram reports a larger safe area inset (e.g. 94px on iPhone with Dynamic Island in fullscreen),
-      it adds a comfortable +16px buffer (110px).
+      it adds a generous +28px buffer (122px).
   */
-  --tma-top-padding: max(calc(var(--tma-raw-top-inset) + 16px), 76px);
+  --tma-top-padding: max(calc(var(--tma-raw-top-inset) + 28px), 96px);
 }
 
 @media (min-width: 768px) {
   :root {
-    --tma-top-padding: 32px;
+    --tma-top-padding: 36px;
   }
 }
 
