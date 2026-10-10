@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Newspaper, Plus, Clock, Heart, MessageCircle, MoreVertical, User } from './ui/SFSymbol';
+import { OneIcon } from './ui/SFSymbol';
+import { ActionMenu } from '../ui/overlays/ActionMenu';
 
 interface Player {
   id: string;
@@ -41,7 +42,7 @@ function PlayerAvatar({ src, size = 32 }: { src?: string | null; size?: number }
         loading="lazy"
         decoding="async"
         style={{ width: size, height: size, objectFit: 'cover' }} 
-        className="rounded-full object-cover border border-white/10 shrink-0" 
+        className="rounded-full object-cover border-none bg-[#181c23] shrink-0" 
         alt="avatar"
         onError={(e) => {
           (e.target as HTMLElement).style.display = 'none';
@@ -52,9 +53,9 @@ function PlayerAvatar({ src, size = 32 }: { src?: string | null; size?: number }
   return (
     <div 
       style={{ width: size, height: size }} 
-      className="rounded-full bg-[#1c2026] border border-white/10 flex items-center justify-center shrink-0"
+      className="rounded-full bg-[#181c23] border-none flex items-center justify-center shrink-0"
     >
-      <User size={Math.max(size * 0.35, 10)} className="text-gray-600" />
+      <OneIcon name="person" size={Math.max(size * 0.45, 14)} className="text-[#8e8e93]" />
     </div>
   );
 }
@@ -64,7 +65,6 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
   const navigate = useNavigate();
   
   const [posts, setPosts] = useState<Post[]>([]);
-  const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [postLikes, setPostLikes] = useState<Record<string, { count: number; liked: boolean }>>({});
@@ -98,35 +98,44 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
       if (seasonName) query = query.eq('season', seasonName);
 
       const { data, count, error } = await query;
+      if (error) return;
+      if (count !== null) setTotalCount(count);
 
-      if (data && !error) {
-        setPosts(prev => append ? [...prev, ...data] : data);
-        if (count !== null) setTotalCount(count);
-        
-        const ids = data.map((p: any) => p.id);
-        if (ids.length > 0) {
-          // ОПТИМИЗИРОВАНО: Запрашиваем комменты и лайки только для отображаемых постов!
-          const [{ data: cData }, { data: lData }] = await Promise.all([
-            supabase.from('comments').select('post_id').in('post_id', ids),
-            supabase.from('post_likes').select('post_id, user_id').in('post_id', ids)
-          ]);
-          
-          const cMap: Record<string, number> = {};
-          const lMap: Record<string, { count: number; liked: boolean }> = {};
-          
-          ids.forEach((id: string) => {
-            cMap[id] = cData?.filter((c: any) => c.post_id === id).length || 0;
-            const postL = lData?.filter((l: any) => l.post_id === id) || [];
-            lMap[id] = {
-              count: postL.length,
-              liked: currentUser ? postL.some((l: any) => l.user_id === currentUser.id) : false
-            };
+      if (data) {
+        setPosts(data as any);
+
+        const postIds = data.map((p: any) => p.id);
+        if (postIds.length > 0) {
+          const { data: likesData } = await supabase
+            .from('post_likes')
+            .select('post_id, user_id')
+            .in('post_id', postIds);
+
+          const { data: commentsData } = await supabase
+            .from('comments')
+            .select('post_id')
+            .in('post_id', postIds);
+
+          const likesMap: Record<string, { count: number; liked: boolean }> = {};
+          postIds.forEach(id => { likesMap[id] = { count: 0, liked: false }; });
+          likesData?.forEach((like: any) => {
+            if (likesMap[like.post_id]) {
+              likesMap[like.post_id].count++;
+              if (currentUser && like.user_id === currentUser.id) {
+                likesMap[like.post_id].liked = true;
+              }
+            }
           });
-          setPostCommentCounts((p: Record<string, number>) => ({ ...p, ...cMap }));
-          setPostLikes((p: Record<string, { count: number; liked: boolean }>) => ({ ...p, ...lMap }));
+          setPostLikes(likesMap);
+
+          const commentsMap: Record<string, number> = {};
+          commentsData?.forEach((comment: any) => {
+            commentsMap[comment.post_id] = (commentsMap[comment.post_id] || 0) + 1;
+          });
+          setPostCommentCounts(commentsMap);
         }
       }
-    } catch (e) {}
+    } catch (err) {}
   }
 
   async function handlePostLike(e: React.MouseEvent, postId: string) {
@@ -149,24 +158,19 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
   }
 
   useEffect(() => { fetchPosts(1, false); }, [seasonName]);
-  useEffect(() => {
-    const handleClick = () => setActiveMenuPostId(null);
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
 
   return (
-    <div className="w-full space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in select-none">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-black text-white flex items-center gap-2">
-          <Newspaper size={20} className="text-[#c0ff00]" /> Медиа
+          <OneIcon name="newspaper" size={20} className="text-[#c0ff00]" /> Медиа
         </h2>
         {currentUser && !currentUser.roles?.includes('guest') && (
           <button 
             onClick={() => navigate('/media/editor')} 
-            className="flex items-center gap-2 px-4 py-2 bg-[#c0ff00] text-black rounded-full text-sm font-bold active:scale-95 transition-transform"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#c0ff00] text-[#090b0e] rounded-full text-xs font-bold active:scale-95 hover:bg-[#aee600] transition-all border-none sf-tap"
           >
-            <Plus size={16} />
+            <OneIcon name="add" size={16} />
             <span>Статья</span>
           </button>
         )}
@@ -177,7 +181,7 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
           <div 
             key={post.id} 
             onClick={() => navigate(`/media/${post.id}`)} 
-            className="bg-[#14171c] border border-white/5 rounded-[28px] overflow-hidden cursor-pointer hover:border-white/10 transition-colors shadow-xl flex flex-col group active:scale-[0.99] cv-media gpu-layer"
+            className="bg-[#14171c] rounded-[28px] overflow-hidden cursor-pointer hover:bg-[#181c23] transition-all duration-200 shadow-xl flex flex-col group active:scale-[0.99] cv-media gpu-layer border-none"
           >
             {post.youtube_url ? (
               <div className="w-full aspect-video bg-black/30 relative">
@@ -195,44 +199,49 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
                   <PlayerAvatar src={post.author?.avatar_url} size={32} />
                   <div>
                     <span className="text-xs font-bold text-white">{post.author?.rp_name}</span>
-                    {post.author?.mc_nickname && <span className="text-[10px] text-gray-500 ml-1.5 font-mono">{post.author.mc_nickname}</span>}
+                    {post.author?.mc_nickname && <span className="text-[10px] text-[#8e8e93] ml-1.5 font-mono">{post.author.mc_nickname}</span>}
                   </div>
                 </div>
-                <div className="relative" onClick={e => e.stopPropagation()}>
-                  {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
-                    <button onClick={() => setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id)} className="p-1 text-gray-500 hover:text-white">
-                      <MoreVertical size={16} />
-                    </button>
-                  )}
-                  {activeMenuPostId === post.id && (
-                    <div className="absolute right-0 mt-1 bg-[#1a1e24] border border-white/10 rounded-xl p-1 z-50 shadow-xl flex flex-col gap-0.5 min-w-[120px]">
-                      <button onClick={() => navigate(`/media/editor?edit=${post.id}`)} className="text-left px-3 py-1.5 hover:bg-white/5 rounded-lg text-xs font-bold text-gray-200">
-                        Редактировать
-                      </button>
-                      <button onClick={() => handleDeletePost(post.id)} className="text-left px-3 py-1.5 hover:bg-red-500/10 rounded-lg text-xs font-bold text-red-400">
-                        Удалить
-                      </button>
-                    </div>
-                  )}
-                </div>
+
+                {/* Adaptive ActionMenu: dropdown on desktop, bottom sheet on mobile */}
+                {currentUser && (post.author_id === currentUser.id || currentUser.roles?.includes('admin')) && (
+                  <div onClick={e => e.stopPropagation()}>
+                    <ActionMenu
+                      title="Управление статьей"
+                      items={[
+                        {
+                          label: 'Редактировать',
+                          icon: 'edit',
+                          onClick: () => navigate(`/media/editor?edit=${post.id}`),
+                        },
+                        {
+                          label: 'Удалить',
+                          icon: 'delete',
+                          danger: true,
+                          onClick: () => handleDeletePost(post.id),
+                        },
+                      ]}
+                    />
+                  </div>
+                )}
               </div>
 
-              <h3 className="text-lg font-black text-white leading-tight group-hover:text-[#c0ff00] transition-colors">{post.title}</h3>
-              <p className="text-sm text-gray-400 line-clamp-3 leading-relaxed">{stripHtml(post.content)}</p>
+              <h3 className="text-base sm:text-lg font-black text-white leading-tight group-hover:text-[#c0ff00] transition-colors">{post.title}</h3>
+              <p className="text-xs sm:text-sm text-[#8e8e93] line-clamp-3 leading-relaxed">{stripHtml(post.content)}</p>
 
-              <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
-                <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                  <Clock size={10} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}
+              <div className="flex items-center justify-between mt-auto pt-3">
+                <span className="text-[11px] text-[#8e8e93] flex items-center gap-1 font-medium">
+                  <OneIcon name="schedule" size={14} /> {new Date(post.created_at).toLocaleDateString('ru-RU')}
                 </span>
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={(e) => handlePostLike(e, post.id)} 
-                    className={`flex items-center gap-1 text-[10px] font-bold ${postLikes[post.id]?.liked ? 'text-red-400' : 'text-gray-500'}`}
+                    className={`flex items-center gap-1 text-xs font-bold transition-all ${postLikes[post.id]?.liked ? 'text-red-400' : 'text-[#8e8e93] hover:text-white'}`}
                   >
-                    <Heart size={12} fill={postLikes[post.id]?.liked ? 'currentColor' : 'none'} /> {postLikes[post.id]?.count || 0}
+                    <OneIcon name="favorite" size={16} fill={postLikes[post.id]?.liked} /> {postLikes[post.id]?.count || 0}
                   </button>
-                  <span className="flex items-center gap-1 text-[10px] text-gray-500">
-                    <MessageCircle size={12} /> {postCommentCounts[post.id] || 0}
+                  <span className="flex items-center gap-1 text-xs text-[#8e8e93] font-medium">
+                    <OneIcon name="chat_bubble" size={16} /> {postCommentCounts[post.id] || 0}
                   </span>
                 </div>
               </div>
@@ -242,12 +251,12 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 pt-4">
+        <div className="flex items-center justify-center gap-2 pt-4">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button 
               key={page} 
               onClick={() => { setCurrentPage(page); fetchPosts(page, false); }} 
-              className={`w-10 h-10 rounded-full text-xs font-bold transition-all ${page === currentPage ? 'bg-[#c0ff00] text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+              className={`w-9 h-9 rounded-full text-xs font-bold transition-all border-none sf-tap ${page === currentPage ? 'bg-[#c0ff00] text-[#090b0e]' : 'bg-[#14171c] text-[#8e8e93] hover:bg-[#181c23] hover:text-white'}`}
             >
               {page}
             </button>
@@ -256,7 +265,7 @@ export default function MediaBlog({ currentUser, seasonName }: MediaBlogProps) {
       )}
 
       {posts.length === 0 && (
-        <div className="text-center py-12 text-xs text-gray-500 font-mono bg-[#14171c]/40 border border-white/5 rounded-2xl">
+        <div className="text-center py-16 text-xs text-[#8e8e93] font-mono bg-[#14171c] rounded-[28px] border-none">
           СТАТЕЙ ПОКА НЕТ
         </div>
       )}

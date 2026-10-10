@@ -16,6 +16,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
+      "@one/web-ui": ["src/ui/index.ts"],
+      "@one/web-ui/*": ["src/ui/*"],
       "@/*": ["src/*"]
     }
   },

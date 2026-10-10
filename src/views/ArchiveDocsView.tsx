@@ -172,14 +172,14 @@ export default function ArchiveDocsPage() {
   }, [isEditing]);
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
       {/* ИСПРАВЛЕНО: Контейнер расширен до max-w-6xl на ПК для поддержки Split-View */}
       <div className="w-full max-w-md md:max-w-6xl mx-auto flex flex-col gap-6 relative">
         
         {/* ВСПЛЫВАЮЩИЙ ТУЛБАР РЕДАКТОРА */}
         {isEditing && (
           <div className="fixed z-50 bottom-4 left-4 right-4 md:bottom-auto md:top-[96px] md:left-1/2 md:-translate-x-1/2 md:w-auto flex items-center justify-center animate-fade-in">
-            <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-2xl md:rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 w-full md:w-auto overflow-x-auto no-scrollbar">
+            <div className="p-1.5 bg-[#14171c]/95 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 w-full md:w-auto overflow-x-auto no-scrollbar">
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={14}/></button>
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={14}/></button>
               <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-xl md:rounded-full transition-all active:scale-75 ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={14}/></button>
@@ -202,7 +202,7 @@ export default function ArchiveDocsPage() {
               else if (activeDoc) { setActiveDoc(null); }
               else { navigate('/'); }
             }} 
-            className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-2xl active:scale-90 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-[#14171c] rounded-full text-white shadow-lg active:scale-90 transition-transform"
           >
             <ArrowLeft size={20} />
           </button>
@@ -219,13 +219,13 @@ export default function ArchiveDocsPage() {
             )}
 
             <div className="relative">
-              <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c]/90 border border-white/15 py-2 px-4 rounded-full backdrop-blur-md flex items-center gap-2 text-xs font-bold text-gray-200 shadow-lg">
+              <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md">
                 <FolderArchive size={14} className="text-[#c0ff00]" />
                 <span>{selectedSeason}</span>
                 <ChevronDown size={14} className="text-gray-500" />
               </button>
               {showSeasonSelector && (
-                <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1">
+                <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
                   {seasons.map(s => (
                     <button key={s} onClick={() => { setSelectedSeason(s); setShowSeasonSelector(false); setActiveDoc(null); }} className={`text-xs text-left px-3 py-2.5 rounded-xl font-bold transition-all ${selectedSeason === s ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-gray-400 hover:bg-white/5'}`}>{s}</button>
                   ))}
@@ -240,7 +240,7 @@ export default function ArchiveDocsPage() {
                   setDocTitle('');
                   setIsEditing(true);
                 }}
-                className="w-10 h-10 bg-[#14171c]/90 border border-white/15 rounded-full flex items-center justify-center text-[#c0ff00] shadow-lg"
+                className="w-10 h-10 bg-[#14171c] rounded-full flex items-center justify-center text-[#c0ff00] shadow-lg hover:bg-[#181c23] transition-colors"
               >
                 <Plus size={18} />
               </button>
@@ -258,20 +258,20 @@ export default function ArchiveDocsPage() {
               <span className="text-xs font-black uppercase tracking-wider text-gray-500">Документы ({selectedSeason})</span>
             </div>
             {docs.length === 0 ? (
-              <div className="text-center py-8 text-xs font-mono text-gray-500 bg-[#14171c]/40 rounded-2xl border border-white/5">ПУСТО</div>
+              <div className="text-center py-8 text-xs font-mono text-[#8e8e93] bg-[#14171c] rounded-[22px]">ПУСТО</div>
             ) : (
               docs.map(doc => (
                 <div 
                   key={doc.id} 
                   onClick={() => { setActiveDoc(doc); setIsEditing(false); }}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${activeDoc?.id === doc.id ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}
+                  className={`p-4 rounded-[22px] transition-all cursor-pointer flex items-center justify-between group ${activeDoc?.id === doc.id ? 'bg-[#181c23] text-[#c0ff00]' : 'bg-[#14171c] text-white hover:bg-[#181c23]'}`}
                 >
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-bold block truncate">{doc.title || `Документ #${doc.id}`}</span>
                     <span className="text-[10px] text-gray-500 block truncate mt-0.5">{stripHtml(doc.content || '')}</span>
                   </div>
                   {isEditor && (
-                    <button onClick={(e) => handleDeleteDocument(doc.id, e)} className="p-1.5 bg-white/5 hover:bg-red-500/20 text-gray-500 hover:text-red-400 rounded-lg transition-all ml-2 md:opacity-0 group-hover:opacity-100 shrink-0">
+                    <button onClick={(e) => handleDeleteDocument(doc.id, e)} className="p-1.5 bg-[#14171c] hover:bg-red-500/20 text-[#8e8e93] hover:text-red-400 rounded-full transition-all ml-2 md:opacity-0 group-hover:opacity-100 shrink-0">
                       <Trash2 size={12} />
                     </button>
                   )}
@@ -284,18 +284,18 @@ export default function ArchiveDocsPage() {
           <div className={`${!activeDoc ? 'hidden md:block' : 'block'} md:col-span-2 w-full`}>
             {activeDoc && isEditing ? (
               <div className="space-y-4 scale-100 w-full animate-fade-in">
-                <input type="text" placeholder="Название архивного документа" value={docTitle} onChange={e => setDocTitle(e.target.value)} className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 transition-all shadow-xl" />
-                <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c]/90 border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none break-words pb-24" data-placeholder="Текст архивного документа..." />
+                <input type="text" placeholder="Название архивного документа" value={docTitle} onChange={e => setDocTitle(e.target.value)} className="w-full bg-[#181c23] rounded-full px-5 py-3.5 text-sm font-black text-white outline-none placeholder:text-[#8e8e93] transition-all shadow-xl" />
+                <div ref={editorRef} contentEditable className="w-full min-h-[500px] bg-[#14171c] rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none shadow-inner prose prose-invert max-w-none break-words pb-24" data-placeholder="Текст архивного документа..." />
               </div>
             ) : activeDoc ? (
-              <div className="space-y-4 animate-fade-in w-full bg-[#14171c]/50 md:bg-[#14171c]/90 border border-white/5 p-5 rounded-[28px] shadow-2xl">
-                <div className="flex items-center justify-between w-full border-b border-white/5 pb-3 gap-4">
+              <div className="space-y-4 animate-fade-in w-full bg-[#14171c] p-6 rounded-[28px] shadow-2xl">
+                <div className="flex items-center justify-between w-full pb-3 gap-4">
                   <h2 className="text-lg font-black text-white flex items-center gap-2 min-w-0">
                     <BookOpen size={18} className="text-[#c0ff00] shrink-0" />
                     <span className="truncate">{activeDoc.title || `Документ #${activeDoc.id}`}</span>
                   </h2>
                   {isEditor && (
-                    <button onClick={() => { setDocTitle(activeDoc.title || ''); setIsEditing(true); }} className="w-9 h-9 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 transition-all" title="Редактировать">
+                    <button onClick={() => { setDocTitle(activeDoc.title || ''); setIsEditing(true); }} className="w-9 h-9 bg-[#181c23] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-[#c0ff00] hover:bg-[#1c222b] transition-all" title="Редактировать">
                       <Edit2 size={14} />
                     </button>
                   )}
@@ -303,7 +303,7 @@ export default function ArchiveDocsPage() {
                 <div className="text-base leading-relaxed text-gray-300 prose prose-invert break-words w-full" dangerouslySetInnerHTML={{ __html: activeDoc.content || '' }} />
               </div>
             ) : (
-              <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]">
+              <div className="bg-[#14171c] rounded-[28px] p-12 text-center text-[#8e8e93] font-mono text-xs flex flex-col items-center justify-center min-h-[400px]">
                 <BookOpen size={36} className="text-gray-700 mb-3" />
                 <span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span>
               </div>

@@ -1,340 +1,125 @@
 import React, { useState } from 'react';
-import { Icon } from '@iconify/react';
+import { OneIcon, Icon, IconProps } from '../../ui/components/Icon';
+export { OneIcon, Icon };
+export type { IconProps };
 
-// Google Material Symbols Rounded (Filled) from @iconify-icons/material-symbols
-import homeRounded from '@iconify-icons/material-symbols/home-rounded';
-import newspaperRounded from '@iconify-icons/material-symbols/newspaper-rounded';
-import descriptionRounded from '@iconify-icons/material-symbols/description-rounded';
-import menuBookRounded from '@iconify-icons/material-symbols/menu-book-rounded';
-import accountBalanceRounded from '@iconify-icons/material-symbols/account-balance-rounded';
-import inventory2Rounded from '@iconify-icons/material-symbols/inventory-2-rounded';
-import arrowCircleDownRounded from '@iconify-icons/material-symbols/arrow-circle-down-rounded';
-import arrowCircleUpRounded from '@iconify-icons/material-symbols/arrow-circle-up-rounded';
-import downloadRounded from '@iconify-icons/material-symbols/download-rounded';
-import uploadRounded from '@iconify-icons/material-symbols/upload-rounded';
-import cloudUploadRounded from '@iconify-icons/material-symbols/cloud-upload-rounded';
-import uploadFileRounded from '@iconify-icons/material-symbols/upload-file-rounded';
-import personRounded from '@iconify-icons/material-symbols/person-rounded';
-import groupRounded from '@iconify-icons/material-symbols/group-rounded';
-import personAddRounded from '@iconify-icons/material-symbols/person-add-rounded';
-import shieldRounded from '@iconify-icons/material-symbols/shield-rounded';
-import gppBadRounded from '@iconify-icons/material-symbols/gpp-bad-rounded';
-import verifiedUserRounded from '@iconify-icons/material-symbols/verified-user-rounded';
-import chevronLeftRounded from '@iconify-icons/material-symbols/chevron-left-rounded';
-import chevronRightRounded from '@iconify-icons/material-symbols/chevron-right-rounded';
-import expandMoreRounded from '@iconify-icons/material-symbols/expand-more-rounded';
-import expandLessRounded from '@iconify-icons/material-symbols/expand-less-rounded';
-import arrowBackRounded from '@iconify-icons/material-symbols/arrow-back-rounded';
-import arrowForwardRounded from '@iconify-icons/material-symbols/arrow-forward-rounded';
-import addCircleRounded from '@iconify-icons/material-symbols/add-circle-rounded';
-import addRounded from '@iconify-icons/material-symbols/add-rounded';
-import doNotDisturbOnRounded from '@iconify-icons/material-symbols/do-not-disturb-on-rounded';
-import removeRounded from '@iconify-icons/material-symbols/remove-rounded';
-import checkCircleRounded from '@iconify-icons/material-symbols/check-circle-rounded';
-import checkRounded from '@iconify-icons/material-symbols/check-rounded';
-import cancelRounded from '@iconify-icons/material-symbols/cancel-rounded';
-import closeRounded from '@iconify-icons/material-symbols/close-rounded';
-import searchRounded from '@iconify-icons/material-symbols/search-rounded';
-import syncRounded from '@iconify-icons/material-symbols/sync-rounded';
-import replayRounded from '@iconify-icons/material-symbols/replay-rounded';
-import scheduleRounded from '@iconify-icons/material-symbols/schedule-rounded';
-import favoriteRounded from '@iconify-icons/material-symbols/favorite-rounded';
-import heartBrokenRounded from '@iconify-icons/material-symbols/heart-broken-rounded';
-import chatBubbleRounded from '@iconify-icons/material-symbols/chat-bubble-rounded';
-import moreVertRounded from '@iconify-icons/material-symbols/more-vert-rounded';
-import moreHorizRounded from '@iconify-icons/material-symbols/more-horiz-rounded';
-import mapRounded from '@iconify-icons/material-symbols/map-rounded';
-import calendarTodayRounded from '@iconify-icons/material-symbols/calendar-today-rounded';
-import monetizationOnRounded from '@iconify-icons/material-symbols/monetization-on-rounded';
-import deleteRounded from '@iconify-icons/material-symbols/delete-rounded';
-import sendRounded from '@iconify-icons/material-symbols/send-rounded';
-import whatshotRounded from '@iconify-icons/material-symbols/whatshot-rounded';
-import boltRounded from '@iconify-icons/material-symbols/bolt-rounded';
-import northEastRounded from '@iconify-icons/material-symbols/north-east-rounded';
-import southWestRounded from '@iconify-icons/material-symbols/south-west-rounded';
-import subdirectoryArrowRightRounded from '@iconify-icons/material-symbols/subdirectory-arrow-right-rounded';
-import visibilityRounded from '@iconify-icons/material-symbols/visibility-rounded';
-import folderRounded from '@iconify-icons/material-symbols/folder-rounded';
-import folderOpenRounded from '@iconify-icons/material-symbols/folder-open-rounded';
-import createNewFolderRounded from '@iconify-icons/material-symbols/create-new-folder-rounded';
-import formatBoldRounded from '@iconify-icons/material-symbols/format-bold-rounded';
-import formatItalicRounded from '@iconify-icons/material-symbols/format-italic-rounded';
-import formatStrikethroughRounded from '@iconify-icons/material-symbols/format-strikethrough-rounded';
-import formatSizeRounded from '@iconify-icons/material-symbols/format-size-rounded';
-import formatAlignLeftRounded from '@iconify-icons/material-symbols/format-align-left-rounded';
-import formatAlignCenterRounded from '@iconify-icons/material-symbols/format-align-center-rounded';
-import smartDisplayRounded from '@iconify-icons/material-symbols/smart-display-rounded';
-import imageRounded from '@iconify-icons/material-symbols/image-rounded';
-import fullscreenRounded from '@iconify-icons/material-symbols/fullscreen-rounded';
-import dnsRounded from '@iconify-icons/material-symbols/dns-rounded';
-import saveRounded from '@iconify-icons/material-symbols/save-rounded';
-import editRounded from '@iconify-icons/material-symbols/edit-rounded';
-import contentCopyRounded from '@iconify-icons/material-symbols/content-copy-rounded';
-import playArrowRounded from '@iconify-icons/material-symbols/play-arrow-rounded';
-import squareRounded from '@iconify-icons/material-symbols/square-rounded';
-import paletteRounded from '@iconify-icons/material-symbols/palette-rounded';
-import flagRounded from '@iconify-icons/material-symbols/flag-rounded';
-import skullRounded from '@iconify-icons/material-symbols/skull-rounded';
-import swordsRounded from '@iconify-icons/material-symbols/swords-rounded';
-import constructionRounded from '@iconify-icons/material-symbols/construction-rounded';
-import infoRounded from '@iconify-icons/material-symbols/info-rounded';
-
-export const MATERIAL_SYMBOLS_MAP: Record<string, any> = {
-  // Navigation & Core Sections (Google Material Symbols Rounded Filled)
-  'info': infoRounded,
-  'info.circle': infoRounded,
-  'info.circle.fill': infoRounded,
-  'home': homeRounded,
-  'home.fill': homeRounded,
-  'house.fill': homeRounded,
-  'house': homeRounded,
-
-  'newspaper': newspaperRounded,
-  'newspaper.fill': newspaperRounded,
-
-  'description': descriptionRounded,
-  'doc.text.fill': descriptionRounded,
-  'doc.text': descriptionRounded,
-  'article': descriptionRounded,
-
-  'menu_book': menuBookRounded,
-  'book.fill': menuBookRounded,
-  'book': menuBookRounded,
-
-  'account_balance': accountBalanceRounded,
-  'building.columns.fill': accountBalanceRounded,
-  'building.columns': accountBalanceRounded,
-
-  'inventory_2': inventory2Rounded,
-  'archive': inventory2Rounded,
-  'archivebox.fill': inventory2Rounded,
-  'archivebox': inventory2Rounded,
-
-  'arrow_circle_down': arrowCircleDownRounded,
-  'arrow.down.circle.fill': arrowCircleDownRounded,
-  'arrow.down.circle': arrowCircleDownRounded,
-
-  'arrow_circle_up': arrowCircleUpRounded,
-  'arrow.up.circle.fill': arrowCircleUpRounded,
-  'arrow.up.circle': arrowCircleUpRounded,
-
-  'download': downloadRounded,
-  'upload': uploadRounded,
-  'cloud_upload': cloudUploadRounded,
-  'cloud.upload.fill': cloudUploadRounded,
-  'cloud.upload': cloudUploadRounded,
-  'upload_file': uploadFileRounded,
-  'arrow.up.doc': uploadFileRounded,
-
-  'person': personRounded,
-  'person.fill': personRounded,
-  'group': groupRounded,
-  'groups': groupRounded,
-  'person.2.fill': groupRounded,
-  'person.2': groupRounded,
-  'person_add': personAddRounded,
-  'person.crop.circle.badge.plus': personAddRounded,
-  'person.badge.plus': personAddRounded,
-
-  'shield': shieldRounded,
-  'shield.fill': shieldRounded,
-  'shield.lefthalf.fill': shieldRounded,
-  'gpp_bad': gppBadRounded,
-  'shield.slash': gppBadRounded,
-  'shield.alert': gppBadRounded,
-  'verified_user': verifiedUserRounded,
-  'shield.checkmark': verifiedUserRounded,
-
-  // Common Controls & Actions
-  'chevron_left': chevronLeftRounded,
-  'chevron.left': chevronLeftRounded,
-  'chevron_right': chevronRightRounded,
-  'chevron.right': chevronRightRounded,
-  'expand_more': expandMoreRounded,
-  'chevron.down': expandMoreRounded,
-  'expand_less': expandLessRounded,
-  'chevron.up': expandLessRounded,
-
-  'arrow_back': arrowBackRounded,
-  'arrow.left': arrowBackRounded,
-  'arrow_forward': arrowForwardRounded,
-  'arrow.right': arrowForwardRounded,
-
-  'add_circle': addCircleRounded,
-  'plus.circle.fill': addCircleRounded,
-  'add': addRounded,
-  'plus': addRounded,
-
-  'remove_circle': doNotDisturbOnRounded,
-  'minus.circle.fill': doNotDisturbOnRounded,
-  'remove': removeRounded,
-  'minus': removeRounded,
-
-  'check_circle': checkCircleRounded,
-  'checkmark.circle.fill': checkCircleRounded,
-  'check': checkRounded,
-  'checkmark': checkRounded,
-
-  'cancel': cancelRounded,
-  'xmark.circle.fill': cancelRounded,
-  'close': closeRounded,
-  'xmark': closeRounded,
-
-  'search': searchRounded,
-  'magnifyingglass': searchRounded,
-  'search.circle.fill': searchRounded,
-
-  'sync': syncRounded,
-  'refresh': syncRounded,
-  'arrow.clockwise': syncRounded,
-  'arrow.clockwise.circle.fill': syncRounded,
-
-  'replay': replayRounded,
-  'undo': replayRounded,
-  'arrow.counterclockwise': replayRounded,
-  'arrow.counterclockwise.circle.fill': replayRounded,
-
-  'schedule': scheduleRounded,
-  'clock': scheduleRounded,
-  'clock.fill': scheduleRounded,
-
-  'favorite': favoriteRounded,
-  'heart': favoriteRounded,
-  'heart.fill': favoriteRounded,
-
-  'heart_broken': heartBrokenRounded,
-  'heart.slash.fill': heartBrokenRounded,
-
-  'chat_bubble': chatBubbleRounded,
-  'bubble.left.and.bubble.right.fill': chatBubbleRounded,
-  'chat.bubble.fill': chatBubbleRounded,
-
-  'more_vert': moreVertRounded,
-  'ellipsis.vertical': moreVertRounded,
-
-  'more_horiz': moreHorizRounded,
-  'ellipsis': moreHorizRounded,
-  'ellipsis.circle.fill': moreHorizRounded,
-
-  'map': mapRounded,
-  'map.fill': mapRounded,
-
-  'calendar_today': calendarTodayRounded,
-  'calendar': calendarTodayRounded,
-  'calendar.fill': calendarTodayRounded,
-  'today.fill': calendarTodayRounded,
-
-  'monetization_on': monetizationOnRounded,
-  'coins': monetizationOnRounded,
-  'circle.grid.hex.fill': monetizationOnRounded,
-
-  'delete': deleteRounded,
-  'trash': deleteRounded,
-  'trash.fill': deleteRounded,
-
-  'send': sendRounded,
-  'paperplane': sendRounded,
-  'paperplane.fill': sendRounded,
-
-  'whatshot': whatshotRounded,
-  'flame.fill': whatshotRounded,
-
-  'bolt': boltRounded,
-  'bolt.fill': boltRounded,
-
-  'north_east': northEastRounded,
-  'arrow.up.right': northEastRounded,
-
-  'south_west': southWestRounded,
-  'arrow.down.left': southWestRounded,
-
-  'subdirectory_arrow_right': subdirectoryArrowRightRounded,
-  'arrow.turn.down.right': subdirectoryArrowRightRounded,
-
-  'visibility': visibilityRounded,
-  'eye': visibilityRounded,
-  'eye.fill': visibilityRounded,
-
-  'folder': folderRounded,
-  'folder.fill': folderRounded,
-  'folder_open': folderOpenRounded,
-  'create_new_folder': createNewFolderRounded,
-  'folder.badge.plus': createNewFolderRounded,
-  'folder.fill.badge.plus': createNewFolderRounded,
-
-  'format_bold': formatBoldRounded,
-  'bold': formatBoldRounded,
-
-  'format_italic': formatItalicRounded,
-  'italic': formatItalicRounded,
-
-  'format_strikethrough': formatStrikethroughRounded,
-  'strikethrough': formatStrikethroughRounded,
-
-  'format_size': formatSizeRounded,
-  'textformat': formatSizeRounded,
-  'textformat.size': formatSizeRounded,
-
-  'format_align_left': formatAlignLeftRounded,
-  'text.alignleft': formatAlignLeftRounded,
-
-  'format_align_center': formatAlignCenterRounded,
-  'text.aligncenter': formatAlignCenterRounded,
-
-  'smart_display': smartDisplayRounded,
-  'play.rectangle.fill': smartDisplayRounded,
-
-  'image': imageRounded,
-  'photo': imageRounded,
-  'photo.fill': imageRounded,
-
-  'fullscreen': fullscreenRounded,
-  'expand': fullscreenRounded,
-
-  'dns': dnsRounded,
-  'server': dnsRounded,
-  'desktopcomputer': dnsRounded,
-
-  'save': saveRounded,
-  'floppy.disk': saveRounded,
-
-  'edit': editRounded,
-  'pencil': editRounded,
-  'pencil.circle.fill': editRounded,
-
-  'content_copy': contentCopyRounded,
-  'doc.on.doc': contentCopyRounded,
-  'doc.on.doc.fill': contentCopyRounded,
-
-  'play_arrow': playArrowRounded,
-  'play.fill': playArrowRounded,
-
-  'square': squareRounded,
-  'square.fill': squareRounded,
-
-  'palette': paletteRounded,
-  'paintbrush': paletteRounded,
-  'paintbrush.fill': paletteRounded,
-
-  'flag': flagRounded,
-  'flag.fill': flagRounded,
-
-  'cube.box.fill': inventory2Rounded,
-
-  'skull': skullRounded,
-  'skull.fill': skullRounded,
-
-  'swords': swordsRounded,
-  'swords.fill': swordsRounded,
-
-  'construction': constructionRounded,
-  'anvil': constructionRounded,
+// Mapping for legacy SF Symbols and alias names to standard Material Symbols Rounded ligatures
+export const SF_TO_MATERIAL_LIGATURE_MAP: Record<string, string> = {
+  // Navigation & Core
+  'home': 'home',
+  'home.fill': 'home',
+  'house': 'home',
+  'house.fill': 'home',
+  'newspaper': 'newspaper',
+  'newspaper.fill': 'newspaper',
+  'description': 'description',
+  'doc.text': 'description',
+  'doc.text.fill': 'description',
+  'article': 'description',
+  'menu_book': 'menu_book',
+  'book': 'menu_book',
+  'book.fill': 'menu_book',
+  'account_balance': 'account_balance',
+  'building.columns': 'account_balance',
+  'building.columns.fill': 'account_balance',
+  'inventory_2': 'inventory_2',
+  'archive': 'inventory_2',
+  'archivebox': 'inventory_2',
+  'archivebox.fill': 'inventory_2',
+  'download': 'download',
+  'arrow_circle_down': 'arrow_circle_down',
+  'arrow.down.circle': 'arrow_circle_down',
+  'arrow.down.circle.fill': 'arrow_circle_down',
+  'upload': 'upload',
+  'cloud_upload': 'cloud_upload',
+  'cloud.upload': 'cloud_upload',
+  'cloud.upload.fill': 'cloud_upload',
+  'upload_file': 'upload_file',
+  'person': 'person',
+  'person.fill': 'person',
+  'group': 'group',
+  'groups': 'group',
+  'person.2': 'group',
+  'person.2.fill': 'group',
+  'person_add': 'person_add',
+  'shield': 'shield',
+  'shield.fill': 'shield',
+  'shield.alert': 'gpp_bad',
+  'shield.check': 'verified_user',
+  'gpp_bad': 'gpp_bad',
+  'verified_user': 'verified_user',
+  'chevron_left': 'chevron_left',
+  'chevron_right': 'chevron_right',
+  'expand_more': 'expand_more',
+  'expand_less': 'expand_less',
+  'chevron.down': 'expand_more',
+  'chevron.up': 'expand_less',
+  'arrow_back': 'arrow_back',
+  'arrow_forward': 'arrow_forward',
+  'add_circle': 'add_circle',
+  'add': 'add',
+  'remove_circle': 'do_not_disturb_on',
+  'remove': 'remove',
+  'check_circle': 'check_circle',
+  'check': 'check',
+  'cancel': 'cancel',
+  'close': 'close',
+  'x': 'close',
+  'search': 'search',
+  'sync': 'sync',
+  'refresh': 'sync',
+  'replay': 'replay',
+  'schedule': 'schedule',
+  'clock': 'schedule',
+  'favorite': 'favorite',
+  'heart': 'favorite',
+  'chat_bubble': 'chat_bubble',
+  'more_vert': 'more_vert',
+  'more_horiz': 'more_horiz',
+  'map': 'map',
+  'calendar_today': 'calendar_today',
+  'monetization_on': 'monetization_on',
+  'delete': 'delete',
+  'send': 'send',
+  'whatshot': 'whatshot',
+  'bolt': 'bolt',
+  'north_east': 'north_east',
+  'south_west': 'south_west',
+  'subdirectory_arrow_right': 'subdirectory_arrow_right',
+  'visibility': 'visibility',
+  'folder': 'folder',
+  'folder_open': 'folder_open',
+  'create_new_folder': 'create_new_folder',
+  'format_bold': 'format_bold',
+  'format_italic': 'format_italic',
+  'format_strikethrough': 'format_strikethrough',
+  'format_size': 'format_size',
+  'format_align_left': 'format_align_left',
+  'format_align_center': 'format_align_center',
+  'smart_display': 'smart_display',
+  'image': 'image',
+  'fullscreen': 'fullscreen',
+  'dns': 'dns',
+  'save': 'save',
+  'edit': 'edit',
+  'content_copy': 'content_copy',
+  'play_arrow': 'play_arrow',
+  'square': 'square',
+  'palette': 'palette',
+  'flag': 'flag',
+  'skull': 'skull',
+  'swords': 'swords',
+  'construction': 'construction',
+  'info': 'info',
+  'info.circle': 'info',
+  'info.circle.fill': 'info',
 };
 
 export interface MaterialSymbolProps extends React.HTMLAttributes<HTMLSpanElement> {
-  name: keyof typeof MATERIAL_SYMBOLS_MAP | string;
+  name: string;
   size?: number | string;
   color?: string;
+  fill?: boolean;
   animated?: boolean;
   effect?: 'bounce' | 'wiggle' | 'breathe' | 'rotate';
   className?: string;
@@ -345,7 +130,8 @@ export const MaterialSymbol = React.forwardRef<HTMLSpanElement, MaterialSymbolPr
   name,
   size = 20,
   color,
-  animated = true,
+  fill = true,
+  animated = false,
   effect = 'bounce',
   className = '',
   onClick,
@@ -354,7 +140,9 @@ export const MaterialSymbol = React.forwardRef<HTMLSpanElement, MaterialSymbolPr
 }, ref) => {
   const [animating, setAnimating] = useState(false);
 
-  const iconData = MATERIAL_SYMBOLS_MAP[name] || MATERIAL_SYMBOLS_MAP['description'] || descriptionRounded;
+  // Normalize name to Material Symbols ligature
+  const rawKey = typeof name === 'string' ? name.trim() : '';
+  const mapped = SF_TO_MATERIAL_LIGATURE_MAP[rawKey] || SF_TO_MATERIAL_LIGATURE_MAP[rawKey.toLowerCase()] || rawKey.toLowerCase().replace(/[-\s.]/g, '_');
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (animated) {
@@ -362,7 +150,6 @@ export const MaterialSymbol = React.forwardRef<HTMLSpanElement, MaterialSymbolPr
       const duration = effect === 'rotate' ? 550 : effect === 'wiggle' ? 480 : 460;
       setTimeout(() => setAnimating(false), duration);
 
-      // Trigger Telegram WebApp haptic vibration
       try {
         const tg = (window as any).Telegram?.WebApp;
         if (tg?.HapticFeedback) {
@@ -385,32 +172,26 @@ export const MaterialSymbol = React.forwardRef<HTMLSpanElement, MaterialSymbolPr
     : '';
 
   return (
-    <span
+    <OneIcon
       ref={ref}
-      className={`inline-flex items-center justify-center shrink-0 select-none ${animationClass} ${className}`}
+      name={mapped}
+      size={size}
+      fill={fill}
+      className={`select-none ${animationClass} ${className}`}
       onClick={handleClick}
       style={{
-        width: typeof size === 'number' ? `${size}px` : size,
-        height: typeof size === 'number' ? `${size}px` : size,
         color: color || undefined,
         cursor: onClick ? 'pointer' : undefined,
         ...style,
       }}
       {...props}
-    >
-      <Icon
-        icon={iconData}
-        width={typeof size === 'number' ? size : undefined}
-        height={typeof size === 'number' ? size : undefined}
-        className="w-full h-full pointer-events-none transition-colors"
-      />
-    </span>
+    />
   );
 });
 
 MaterialSymbol.displayName = 'MaterialSymbol';
 
-// Factory helper to create drop-in icon components with Material Symbols Rounded Filled
+// Factory helper to create drop-in icon components
 export function createMaterialSymbolIcon(symbolName: string) {
   const Component = React.forwardRef<HTMLSpanElement, any>(({ size = 20, className = '', ...props }, ref) => {
     return <MaterialSymbol name={symbolName} size={size} className={className} ref={ref} {...props} />;
@@ -496,4 +277,5 @@ export const Swords = createMaterialSymbolIcon('swords');
 export const Construction = createMaterialSymbolIcon('construction');
 export const Info = createMaterialSymbolIcon('info');
 
+export const MATERIAL_SYMBOLS_MAP = SF_TO_MATERIAL_LIGATURE_MAP;
 export default MaterialSymbol;

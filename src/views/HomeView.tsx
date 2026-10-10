@@ -18,6 +18,9 @@ import OneLaunchContent from '../components/OneLaunch';
 
 import Avatar from '../components/Avatar';
 import { MobileTabBar } from '../components/layout/MobileTabBar';
+import { DesktopNavbar } from '../components/layout/DesktopNavbar';
+import { SquareWidget } from '../ui/components/widgets/SquareWidget';
+import { LargeWidget } from '../ui/components/widgets/LargeWidget';
 
 import { isGuest } from '../lib/guests';
 
@@ -1861,10 +1864,17 @@ export default function Home() {
 
 
   return (
-
     <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative z-0 flex flex-col">
-
-      
+      {/* Десктопная верхняя панель навигации */}
+      <DesktopNavbar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        seasonEnded={seasonEnded}
+        currentUser={dbUser}
+        isAdmin={hasAdminAccess}
+        onAdminClick={() => navigate('/admin')}
+        onProfileClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }}
+      />
 
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
 
@@ -2329,104 +2339,66 @@ export default function Home() {
 
 
 
-            <div className="grid grid-cols-4 gap-4 w-full">
-
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
               {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
-
-              <div 
-
+              <SquareWidget
+                title="Конституция"
+                subtitle="РП ЗАКОНЫ"
+                icon="menu_book"
+                artworkUrl="/1000024917.png"
+                artworkClassName="opacity-15 group-hover:opacity-25 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]"
                 onClick={() => { setActiveSvodTab('laws'); setActiveDocument('constitution'); handleTabChange('svod'); }}
-
-                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
-
-              >
-
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><BookOpen size={20} /></div>
-
-                <div className="space-y-0.5 relative z-10">
-
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Конституция</h3>
-
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">РП Законы</p>
-
-                </div>
-
-              </div>
-
-
+                colSpan={1}
+              />
 
               {/* 2. АРХИВ СЕЗОНОВ */}
-
-              <div 
-
+              <SquareWidget
+                title="Архив"
+                subtitle="ПРОШЛЫЕ СЕЗОНЫ"
+                icon="inventory_2"
+                artworkUrl="/ArchiveIcon.webp"
+                artworkClassName="opacity-15 group-hover:opacity-25 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]"
                 onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
-
-                className="col-span-2 md:col-span-1 aspect-square bg-[#14171c]/90 backdrop-blur-xl rounded-[24px] border border-white/5 p-4 md:p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer hover:border-[#c0ff00]/30 transition-all duration-300 shadow-xl"
-
-              >
-
-                <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-20 transition-all duration-500 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]" style={{ backgroundImage: "url('/ArchiveIcon.webp')" }} />
-
-                <div className="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-[#c0ff00] shrink-0"><Library size={20} /></div>
-
-                <div className="space-y-0.5 relative z-10">
-
-                  <h3 className="text-sm md:text-base font-black text-white tracking-wide">Архив</h3>
-
-                  <p className="text-[10px] text-[#c0ff00] font-bold uppercase tracking-wider">Прошлые сезоны</p>
-
-                </div>
-
-              </div>
-
-
+                colSpan={1}
+              />
 
               {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ СЕРВЕРА */}
-
-              <div className="col-span-4 md:col-span-2 bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[24px] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between gap-3.5">
-
-                <div className="flex items-center justify-between">
-
-                  <div className="flex items-center gap-2">
-
-                    <Newspaper size={16} className="text-[#c0ff00]" />
-
-                    <div className="text-[11px] font-black uppercase text-gray-400 tracking-wider">Последние публикации</div>
-
+              <div className="col-span-2 md:col-span-2">
+                <LargeWidget
+                  title="Последние публикации"
+                  icon="newspaper"
+                  actions={
+                    <button
+                      onClick={() => handleTabChange('media')}
+                      className="text-xs font-bold text-[#c0ff00] hover:underline px-3 py-1 rounded-full bg-[#181c23] transition-colors"
+                    >
+                      Все статьи
+                    </button>
+                  }
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 h-full pt-1">
+                    {latestPosts.map((post, idx) => (
+                      <div
+                        key={post.id}
+                        onClick={() => navigate(`/media/${post.id}`)}
+                        className="bg-[#181c23] p-4 rounded-[18px] cursor-pointer hover:bg-[#1c222b] transition-all flex flex-col justify-between gap-3 group min-w-0 relative select-none"
+                      >
+                        {idx === 0 && (
+                          <span className="absolute top-2 right-2 bg-[#c0ff00]/15 text-[#c0ff00] text-[9px] font-black uppercase px-2 py-0.5 rounded-full tracking-wide">
+                            New
+                          </span>
+                        )}
+                        <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug pr-7">
+                          {post.title}
+                        </span>
+                        <span className="text-[10px] text-[#8e8e93] font-medium truncate">
+                          {post.author?.rp_name || 'Неизвестный'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-
-                  <button onClick={() => handleTabChange('media')} className="text-[11px] font-bold text-[#c0ff00] hover:underline">Все статьи</button>
-
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5 h-full">
-
-                  {latestPosts.map((post, idx) => (
-
-                    <div key={post.id} onClick={() => navigate(`/media/${post.id}`)} className="bg-black/20 border border-white/5 p-4 rounded-2xl cursor-pointer hover:border-white/10 transition-all duration-300 flex flex-col justify-between gap-3 group min-w-0 relative">
-
-                      {idx === 0 && (
-
-                        <div className="absolute top-2 right-2 bg-[#c0ff00]/10 text-[#c0ff00] border border-[#c0ff00]/30 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wide shadow-sm z-10">New</div>
-
-                      )}
-
-                      <span className="font-bold text-xs text-white group-hover:text-[#c0ff00] transition-colors line-clamp-2 break-words leading-snug pr-7">{post.title}</span>
-
-                      <span className="text-[10px] text-gray-500 font-medium truncate">{post.author?.rp_name || 'Неизвестный'}</span>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
+                </LargeWidget>
               </div>
-
-
-
             </div>
 
           </div>
@@ -2440,211 +2412,122 @@ export default function Home() {
 
 
         {activeTab === 'svod' && (
-
           <>
-
           {seasonEnded ? (
-
             /* СВОД ПРИ ЗАВЕРШЁННОМ СЕЗОНЕ: законы скрыты, архив работает */
-
             <div className="space-y-4 animate-fade-in w-full">
-
-              <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
-
-                <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />Свод данных</h2>
-
+              <div className="flex items-center justify-between w-full pb-3">
+                <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><BookMarked size={20} className="text-[#c0ff00]" />Свод данных</h2>
               </div>
 
-              <div className="flex gap-3 pb-4">
-
+              <div className="bg-[#14171c] p-1 rounded-full flex items-center gap-1 w-fit mb-4">
                 <button
-
                   onClick={() => setActiveSvodTab('laws')}
-
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
                     activeSvodTab === 'laws'
-
-                      ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
-
-                      : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
-
+                      ? 'bg-[#1c222b] text-[#c0ff00]'
+                      : 'text-[#8e8e93] hover:text-white'
                   }`}
-
                 >
-
-                  <BookOpen size={16} className="inline mr-2" />
-
-                  Законы
-
+                  <BookOpen size={15} />
+                  <span>Законы</span>
                 </button>
 
                 <button
-
                   onClick={() => setActiveSvodTab('archive')}
-
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
                     activeSvodTab === 'archive'
-
-                      ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
-
-                      : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
-
+                      ? 'bg-[#1c222b] text-[#c0ff00]'
+                      : 'text-[#8e8e93] hover:text-white'
                   }`}
-
                 >
-
-                  <Library size={16} className="inline mr-2" />
-
-                  Архив
-
+                  <Library size={15} />
+                  <span>Архив</span>
                 </button>
-
               </div>
 
               {activeSvodTab === 'laws' ? (
-
                 <SeasonPlaceholder />
-
               ) : (
-
                 <Archive currentUser={dbUser} />
-
               )}
-
             </div>
-
           ) : (
-
           <div className="space-y-4 animate-fade-in w-full">
-
             {/* Заголовок */}
-
-            <div className="flex items-center justify-between w-full border-b border-white/5 pb-3">
-
-              <h2 className="text-lg md:text-xl font-black text-[#c0ff00] tracking-wide flex items-center gap-2"><BookMarked size={20} />Свод данных</h2>
-
+            <div className="flex items-center justify-between w-full pb-3">
+              <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2"><BookMarked size={20} className="text-[#c0ff00]" />Свод данных</h2>
             </div>
-
-
 
             {/* Под-вкладки */}
-
-            <div className="flex gap-3 pb-4">
-
+            <div className="bg-[#14171c] p-1 rounded-full flex items-center gap-1 w-fit mb-4">
               <button
-
                 onClick={() => { setActiveSvodTab('laws'); setActiveDocument('none'); setIsEditing(false); }}
-
-                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
                   activeSvodTab === 'laws'
-
-                    ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
-
-                    : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
-
+                    ? 'bg-[#1c222b] text-[#c0ff00]'
+                    : 'text-[#8e8e93] hover:text-white'
                 }`}
-
               >
-
-                <BookOpen size={16} className="inline mr-2" />
-
-                Законы
-
+                <BookOpen size={15} />
+                <span>Законы</span>
               </button>
 
               <button
-
                 onClick={() => setActiveSvodTab('archive')}
-
-                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all ${
-
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${
                   activeSvodTab === 'archive'
-
-                    ? 'bg-[#c0ff00]/15 text-[#c0ff00] border border-[#c0ff00]/30'
-
-                    : 'bg-[#14171c]/90 text-gray-400 border border-white/5 hover:border-white/10'
-
+                    ? 'bg-[#1c222b] text-[#c0ff00]'
+                    : 'text-[#8e8e93] hover:text-white'
                 }`}
-
               >
-
-                <Library size={16} className="inline mr-2" />
-
-                Архив
-
+                <Library size={15} />
+                <span>Архив</span>
               </button>
-
             </div>
 
-
-
             {/* Контент под-вкладки */}
-
             {activeSvodTab === 'laws' ? (
-
               <>
-
-                {activeDocument !== 'none' && canEditConstitution && !isEditing && <button onClick={() => setIsEditing(true)} className="fixed bottom-28 right-4 md:top-24 md:right-8 w-14 h-14 bg-[#14171c] border border-[#c0ff00]/25 rounded-full flex items-center justify-center text-gray-500 hover:text-[#c0ff00] hover:border-[#c0ff00]/50 active:scale-90 transition-all z-50 shadow-2xl"><Edit2 size={22} /></button>}
+                {activeDocument !== 'none' && canEditConstitution && !isEditing && (
+                  <button onClick={() => setIsEditing(true)} className="fixed bottom-28 right-4 md:top-24 md:right-8 w-14 h-14 bg-[#14171c] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-[#c0ff00] hover:bg-[#181c23] active:scale-90 transition-all z-50 shadow-2xl">
+                    <Edit2 size={22} />
+                  </button>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start w-full flex-grow mt-2">
-
                   <div className="flex flex-col gap-5 md:col-span-1 w-full">
-
-                    <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
-
+                    <div onClick={() => { setActiveDocument('constitution'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'constitution' ? 'bg-[#181c23] text-[#c0ff00]' : 'bg-[#14171c] text-white hover:bg-[#181c23]'}`}>
                       <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/1000024917.png')", imageRendering: "pixelated" }} />
-
                       <h3 className="font-black text-lg relative z-10">Конституция</h3>
-
                     </div>
 
-                    <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] border transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/10 border-red-500/40 text-red-400' : 'bg-[#14171c]/90 border-white/5 text-white hover:border-white/15'}`}>
-
+                    <div onClick={() => { setActiveDocument('commandments'); setIsEditing(false); setSearchQuery(''); }} className={`p-6 rounded-[28px] transition-all cursor-pointer relative overflow-hidden min-h-[110px] flex items-center group ${activeDocument === 'commandments' ? 'bg-red-500/15 text-red-400' : 'bg-[#14171c] text-white hover:bg-[#181c23]'}`}>
                       <div className="absolute right-0 top-0 bottom-0 w-[45%] opacity-15 group-hover:opacity-25 transition-all duration-500 bg-no-repeat bg-cover bg-right" style={{ backgroundImage: "url('/zapovedi.gif')" }} />
-
                       <h3 className="font-black text-lg relative z-10">Заповеди дома</h3>
-
                     </div>
-
                   </div>
 
                   <div className="md:col-span-2 w-full">
-
                     {activeDocument === 'none' ? (
-
-                      <div className="bg-[#14171c]/30 border border-white/5 rounded-[28px] p-12 text-center text-gray-600 font-mono text-xs flex flex-col items-center justify-center min-h-[400px]"><BookOpen size={36} className="text-gray-700 mb-3" /><span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span></div>
-
+                      <div className="bg-[#14171c] rounded-[28px] p-12 text-center text-[#8e8e93] font-mono text-xs flex flex-col items-center justify-center min-h-[400px]">
+                        <BookOpen size={36} className="text-[#8e8e93]/50 mb-3" />
+                        <span>ВЫБЕРИТЕ ДОКУМЕНТ ИЗ СПИСКА СЛЕВА</span>
+                      </div>
                     ) : (
-
                       <div className="space-y-4 w-full">
-
                         {!isEditing && (
-
-                          <div className="flex items-center gap-2 bg-[#14171c]/90 border border-white/10 rounded-full px-4 py-2.5 sticky top-24 z-20 backdrop-blur-md shadow-lg mb-4">
-
-                            <Search size={16} className="text-gray-500 shrink-0" />
-
+                          <div className="flex items-center gap-2 bg-[#14171c] rounded-full px-4 py-2.5 sticky top-24 z-20 backdrop-blur-md shadow-lg mb-4">
+                            <Search size={16} className="text-[#8e8e93] shrink-0" />
                             <input 
-
                               type="text" 
-
                               placeholder="Поиск по документу…" 
-
                               value={searchQuery} 
-
-                              onChange={e => setSearchQuery(e.target.value)}
-
-                              className="flex-1 bg-transparent text-sm text-white outline-none placeholder-gray-500 min-w-0"
-
+                              onChange={e => setSearchQuery(e.target.value)} 
+                              className="flex-1 bg-transparent text-sm text-white outline-none placeholder-[#8e8e93] min-w-0"
                             />
-
                             {totalMatches > 0 && (
-
                               <span className="text-xs font-mono font-bold text-[#c0ff00] shrink-0 tabular-nums">{activeMatchIndex + 1}/{totalMatches}</span>
-
                             )}
 
                             {totalMatches > 0 && (
@@ -2716,227 +2599,130 @@ export default function Home() {
           ) : (
 
           <div className="space-y-6 animate-fade-in w-full">
-
             <h2 className="text-lg md:text-xl font-black text-white tracking-wide flex items-center gap-2 px-1"><Users size={20} className="text-[#c0ff00]" />Игроки</h2>
 
-
-
             {/* Саб-табы */}
-
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-
+            <div className="bg-[#14171c] p-1 rounded-full flex items-center gap-1 w-fit mb-4">
               {(['characters', 'players'] as const).map(tab => (
-
-                <button key={tab} onClick={() => setPlayersSubTab(tab)} className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${playersSubTab === tab ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30' : 'bg-white/5 text-gray-400 border border-white/5'}`}>
-
+                <button
+                  key={tab}
+                  onClick={() => setPlayersSubTab(tab)}
+                  className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+                    playersSubTab === tab
+                      ? 'bg-[#1c222b] text-[#c0ff00]'
+                      : 'text-[#8e8e93] hover:text-white'
+                  }`}
+                >
                   {tab === 'characters' && 'Персонажи'}
-
                   {tab === 'players' && 'Игроки'}
-
                 </button>
-
               ))}
-
             </div>
 
-
-
             {/* --- Персонажи --- */}
-
             {playersSubTab === 'characters' && (
-
               <>
-
                 {/* Мой персонаж */}
-
                 {dbUser && (
-
                   <div className="space-y-2 w-full md:max-w-sm">
-
                     <div className="text-xs text-[#c0ff00] uppercase tracking-wider font-extrabold pl-1">Мой персонаж</div>
-
-                    <div onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className={`p-4 rounded-[28px] border flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser) ? 'bg-[#050608] border-[#111316] grayscale' : 'bg-[#14171c]/90 border-[#c0ff00]/40'}`}>
-
-                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#1c2026] border-2 border-[#c0ff00]"><img src={dbUser.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
-
+                    <div onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className={`p-4 rounded-[28px] flex items-center space-x-4 transition-all duration-300 cursor-pointer shadow-xl w-full active:scale-95 ${isDead(dbUser) ? 'bg-[#090b0e] grayscale' : 'bg-[#14171c] hover:bg-[#181c23]'}`}>
+                      <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 bg-[#181c23]"><img src={dbUser.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
                       <div className="flex-1 min-w-0">
-
                         <span className="text-base font-black truncate tracking-wide text-[#c0ff00]">{dbUser.rp_name}</span>
-
-                        <div className="text-xs text-gray-400 truncate font-mono">{dbUser.mc_nickname}</div>
-
-                        <div className="text-[11px] text-gray-400 font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
-
+                        <div className="text-xs text-[#8e8e93] truncate font-mono">{dbUser.mc_nickname}</div>
+                        <div className="text-[11px] text-[#8e8e93] font-medium mt-0.5 truncate">🏛️ {dbUser.party || 'Нет партии'}</div>
                         <div className="flex flex-wrap gap-1 mt-1.5">
-
                           {dbUser.roles?.map((role, i) => (
-
-                            <span key={i} className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded border" style={{ backgroundColor: `${getRoleColor(role)}10`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}20` }}>{role}</span>
-
+                            <span key={i} className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(role)}1a`, color: getRoleColor(role) }}>
+                              <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: getRoleColor(role) }} />
+                              {role}
+                            </span>
                           ))}
-
                         </div>
-
                       </div>
-
                     </div>
-
                   </div>
-
                 )}
 
-
-
                 {/* Живые персонажи */}
-
                 {(() => {
-
                   const alive = sortedPlayers.filter(p => !isDead(p));
-
                   if (alive.length === 0) return null;
-
                   return (
-
                     <div className="space-y-3 w-full">
-
-                      <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Swords size={14} className="text-[#c0ff00]" />Живые ({alive.length})</div>
-
+                      <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Swords size={14} className="text-[#c0ff00]" />Живые ({alive.length})</div>
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
                         {alive.map((player) => (
-
-                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full border bg-[#14171c] border-white/5 hover:border-white/20 cv-card gpu-layer">
-
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
-
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#14171c] hover:bg-[#181c23] cv-card gpu-layer">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
                             <div className="flex-1 min-w-0">
-
                               <div className="text-sm font-black truncate tracking-wide text-white">{player.rp_name}</div>
-
-                              <div className="text-xs text-gray-400 truncate font-mono">{player.mc_nickname}</div>
-
-                              <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
-
+                              <div className="text-xs text-[#8e8e93] truncate font-mono">{player.mc_nickname}</div>
+                              <div className="text-[11px] text-[#8e8e93] font-medium mt-0.5 truncate">🏛️ {player.party || 'Нет партии'}</div>
                               <div className="flex flex-wrap gap-1 mt-1.5">
-
                                 {player.roles?.map((role, i) => (
-
-                                  <span key={i} className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded border" style={{ backgroundColor: `${getRoleColor(role)}10`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}20` }}>{role}</span>
-
+                                  <span key={i} className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: `${getRoleColor(role)}1a`, color: getRoleColor(role) }}>
+                                    <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: getRoleColor(role) }} />
+                                    {role}
+                                  </span>
                                 ))}
-
                               </div>
-
                             </div>
-
                           </div>
-
                         ))}
-
                       </div>
-
                     </div>
-
                   );
-
                 })()}
-
-
 
                 {/* Мёртвые персонажи */}
-
                 {(() => {
-
                   const dead = sortedPlayers.filter(p => isDead(p));
-
                   if (dead.length === 0) return null;
-
                   return (
-
                     <div className="space-y-3 w-full">
-
-                      <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Skull size={14} />Мёртвые ({dead.length})</div>
-
+                      <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Skull size={14} />Мёртвые ({dead.length})</div>
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
                         {dead.map((player) => (
-
-                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full border bg-[#050608] border-[#111316] grayscale cv-card gpu-layer">
-
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-gray-700 flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
-
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#090b0e] hover:bg-[#14171c] grayscale cv-card gpu-layer">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
                             <div className="flex-1 min-w-0">
-
                               <div className="text-sm font-black truncate tracking-wide text-gray-500 line-through">{player.rp_name}</div>
-
                               <div className="text-xs text-gray-600 truncate font-mono">{player.mc_nickname}</div>
-
                             </div>
-
                           </div>
-
                         ))}
-
                       </div>
-
                     </div>
-
                   );
-
                 })()}
-
               </>
-
             )}
-
-
 
             {/* --- Игроки (профили) --- */}
-
             {playersSubTab === 'players' && (
-
               <div className="space-y-3 w-full">
-
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Minecraft-профили</div>
-
+                <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">Minecraft-профили</div>
                 <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
                   {allPlayers.map((p: any) => (
-
                     <div key={p.id} onClick={async () => {
-
                       await loadPlayerCharacters(p.id);
-
                       const char = players.find(c => c.player_id === p.id);
-
                       setSelectedProfile(char || { id: p.id, player_id: p.id, rp_name: p.mc_nickname, mc_nickname: p.mc_nickname, avatar_url: p.avatar_url || '', roles: p.roles || [], party: 'Нет партии' } as any);
-
-                    }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full border bg-[#14171c] border-white/5 hover:border-white/20 cv-card gpu-layer">
-
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#1c2026] border border-white/10 flex-shrink-0 flex items-center justify-center">
-
-                        {p.avatar_url ? <img src={p.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={20} className="text-gray-600" />}
-
+                    }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#14171c] hover:bg-[#181c23] cv-card gpu-layer">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0 flex items-center justify-center">
+                        {p.avatar_url ? <img src={p.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={20} className="text-[#8e8e93]" />}
                       </div>
-
                       <div className="flex-1 min-w-0">
-
                         <div className="text-sm font-black truncate tracking-wide text-white">{p.mc_nickname}</div>
-
                       </div>
-
                     </div>
-
                   ))}
-
-                  {allPlayers.length === 0 && <p className="col-span-full text-xs text-gray-500 text-center py-8">Нет профилей</p>}
-
+                  {allPlayers.length === 0 && <p className="col-span-full text-xs text-[#8e8e93] text-center py-8">Нет профилей</p>}
                 </div>
-
               </div>
-
             )}
-
           </div>
 
           )}
@@ -2949,108 +2735,6 @@ export default function Home() {
 
 
       </main>
-
-
-
-      {/* ПК САЙДБАР */}
-
-      <aside className={`hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50 transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 -translate-x-32 pointer-events-none' : 'opacity-100 translate-x-0'}`}>
-
-        {dbUser && (
-
-          <button onClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }} className="group relative w-[72px] h-[72px] bg-[#14171c]/70 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:border-[#c0ff00]/40 transition-all shadow-2xl hover:scale-105 z-50">
-
-            <div className="w-[56px] h-[56px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#c0ff00]/50 transition-all"><img src={dbUser.avatar_url || ''} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="me" /></div>
-
-          </button>
-
-        )}
-
-
-
-        {/* Pill с вкладками (ПК) */}
-        <nav className="bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl flex flex-col items-center gap-3 relative transition-all duration-300 w-[68px] p-2">
-          <button
-            onClick={() => handleTabChange('profile')}
-            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              activeTab === 'profile'
-                ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <HomeIcon size={24} className={`transition-all duration-300 ${activeTab === 'profile' ? 'sf-glow-green' : ''}`} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
-          </button>
-
-          {seasonEnded ? (
-            <button
-              onClick={() => handleTabChange('archive')}
-              className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                activeTab === 'archive'
-                  ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                  : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Library size={24} className={`transition-all duration-300 ${activeTab === 'archive' ? 'sf-glow-green' : ''}`} />
-              <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Архив</span>
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => handleTabChange('media')}
-                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                  activeTab === 'media'
-                    ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Newspaper size={24} className={`transition-all duration-300 ${activeTab === 'media' ? 'sf-glow-green' : ''}`} />
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Медиа</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange('svod')}
-                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                  activeTab === 'svod'
-                    ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <BookMarked size={24} className={`transition-all duration-300 ${activeTab === 'svod' ? 'sf-glow-green' : ''}`} />
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Свод</span>
-              </button>
-
-              <button
-                onClick={() => handleTabChange('players')}
-                className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-                  activeTab === 'players'
-                    ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                    : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Users size={24} className={`transition-all duration-300 ${activeTab === 'players' ? 'sf-glow-green' : ''}`} />
-                <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
-              </button>
-            </>
-          )}
-        </nav>
-
-        {/* Кружок Скачать лаунчер (ПК) — единая структура */}
-        <div className="w-[68px] h-[68px] bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 p-2 rounded-full shadow-2xl flex items-center justify-center relative">
-          <button
-            onClick={() => handleTabChange('onelaunch')}
-            className={`group relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              activeTab === 'onelaunch'
-                ? 'bg-[#252c37] text-[#c0ff00] font-bold'
-                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-            }`}
-            title="Скачать лаунчер OneLaunch"
-          >
-            <Download size={24} className={`transition-all duration-300 ${activeTab === 'onelaunch' ? 'sf-glow-green' : ''}`} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Скачать</span>
-          </button>
-        </div>
-      </aside>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
       <div className={`md:hidden fixed bottom-7 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16' : 'opacity-100 translate-y-0'}`}>
@@ -3068,51 +2752,29 @@ export default function Home() {
       {/* Мобильная FAB — создание статьи */}
 
       {activeTab === 'media' && !seasonEnded && dbUser && !dbUser?.roles?.includes('guest') && (
-
         <button 
-
           onClick={() => navigate('/media/editor')} 
-
-          className="md:hidden fixed bottom-32 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
-
+          className="md:hidden fixed bottom-24 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
+          title="Создать статью"
         >
-
           <Plus size={28} />
-
         </button>
-
       )}
 
-
-
       <style>{`
-
         .prose, .prose * { word-break: break-word !important; overflow-wrap: break-word !important; max-w-full !important; white-space: pre-wrap !important; }
-
         .prose h1, [contenteditable] h1 { font-size: 1.25rem !important; font-weight: 800 !important; color: #ffffff !important; margin-top: 1.2rem !important; margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
-
         .prose h2, [contenteditable] h2 { font-size: 1.1rem !important; font-weight: 800 !important; color: #c0ff00 !important; margin-top: 1rem !important; margin-bottom: 0.4rem !important; line-height: 1.2 !important; }
-
         .prose p { margin-bottom: 0.75rem; color: #d1d5db !important; }
-
         [contenteditable]:empty:before { content: attr(data-placeholder); color: #4b5563; cursor: text; }
-
-        .ui-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #fff; outline: none; transition: all 0.2s; box-sizing: border-box; }
-
-        .ui-input:focus { border-color: rgba(192,255,0,0.4); background: rgba(255,255,255,0.08); }
-
-        .ui-input::placeholder { color: rgba(255,255,255,0.25); }
-
-        .ui-pill-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 9999px; font-size: 13px; font-weight: 700; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; }
-
-        .ui-pill-btn:hover { border-color: rgba(192,255,0,0.3); }
-
+        .ui-input { width: 100%; background: #181c23; border: none; border-radius: 9999px; padding: 10px 18px; font-size: 13px; color: #fff; outline: none; transition: all 0.2s; box-sizing: border-box; }
+        .ui-input:focus { background: #1c222b; }
+        .ui-input::placeholder { color: #8e8e93; }
+        .ui-pill-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 9999px; font-size: 13px; font-weight: 700; transition: all 0.2s; border: none; background: #181c23; color: #fff; cursor: pointer; }
+        .ui-pill-btn:hover { background: #1c222b; color: #c0ff00; }
         .ui-pill-btn:active { transform: scale(0.96); }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
-
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
       `}</style>
 
     </div>

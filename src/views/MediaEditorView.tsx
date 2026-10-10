@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getCurrentSeasonName } from '../lib/season';
 import { useTelegram } from '../hooks/useTelegram';
-import { ArrowLeft, Send, Clock, Image as ImageIcon, Youtube, X, Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, AlignCenter, RefreshCw, Check, ChevronDown } from '../components/ui/SFSymbol';
+import { OneIcon } from '../components/ui/SFSymbol';
 
 const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
 
@@ -100,39 +100,85 @@ function EditorContent() {
     } catch (e: any) { alert(e.message); } finally { setIsUploadingPostCover(false); }
   }
 
+  async function loadUser() {
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg?.initDataUnsafe?.user?.id) return;
+    const { data: player } = await supabase.from('players').select('id, roles').eq('tg_id', tg.initDataUnsafe.user.id).single();
+    if (player) {
+      setCurrentUser(player);
+      const { data: chars } = await supabase.from('characters').select('*').eq('player_id', player.id);
+      if (chars) {
+        setMyCharacters(chars);
+        const { data: activeId } = await supabase.rpc('get_active_character', { p_player_id: player.id });
+        if (activeId) setSelectedCharId(activeId);
+        else if (chars.length > 0) setSelectedCharId(chars[0].id);
+      }
+    }
+  }
+
+  async function loadEditingPost(postId: string) {
+    const { data: post } = await supabase.from('posts').select('*').eq('id', postId).single();
+    if (post) {
+      setNewPostTitle(post.title || '');
+      setNewPostCoverUrl(post.cover_url || '');
+      setNewPostYoutubeUrl(post.youtube_url || '');
+      if (post.author_id) setSelectedCharId(post.author_id);
+      if (post.created_at) {
+        const d = new Date(post.created_at);
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        setNewPostPublishedAtInput(`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+      }
+      if (editorRef.current) {
+        editorRef.current.innerHTML = post.content || '';
+        setIsEditorEmpty(!post.content || post.content === '<br>');
+      }
+    }
+  }
+
   async function handlePublish() {
-    const postContent = editorRef.current?.innerHTML || '';
-    if (!newPostTitle.trim() || isEditorEmpty || !currentUser || !selectedCharId) return;
+    if (!newPostTitle.trim()) return alert('Введите заголовок!');
+    const content = editorRef.current?.innerHTML || '';
+    if (!content.trim() || content === '<br>') return alert('Введите текст!');
+    if (!selectedCharId) return alert('Выберите персонажа!');
 
     setPublishStatus('publishing');
-    const finalDate = newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toISOString() : new Date().toISOString();
-    const season = await getCurrentSeasonName();
-    const payload = {
+    const seasonName = await getCurrentSeasonName();
+
+    const postPayload: any = {
+      title: newPostTitle.trim(),
+      content: content,
+      cover_url: newPostCoverUrl,
+      youtube_url: newPostYoutubeUrl,
       author_id: selectedCharId,
-      title: newPostTitle, content: postContent,
-      cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null, created_at: finalDate, season
+      season: seasonName,
     };
 
-    const query = editingPostId 
-      ? supabase.from('posts').update(payload).eq('id', editingPostId).select().single()
-      : supabase.from('posts').insert([payload]).select().single();
+    if (newPostPublishedAtInput) {
+      postPayload.created_at = new Date(newPostPublishedAtInput).toISOString();
+    }
 
-    const { data: savedPost, error } = await query;
-
-    if (!error && savedPost) {
-      if (!editingPostId && BOT_WEBHOOK_URL) {
+    try {
+      if (editingPostId) {
+        const { error } = await supabase.from('posts').update(postPayload).eq('id', editingPostId);
+        if (error) throw error;
+      } else {
+        const { data: inserted, error } = await supabase.from('posts').insert([postPayload]).select().single();
+        if (error) throw error;
+        
+        // Telegram notification webhook
         try {
-          await fetch(BOT_WEBHOOK_URL, {
-            method: 'POST', mode: 'no-cors',
+          fetch(BOT_WEBHOOK_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'new_post', id: savedPost.id, title: savedPost.title, cover_url: savedPost.cover_url })
-          });
-        } catch (e) {}
+            body: JSON.stringify({ type: 'new_post', post: inserted }),
+          }).catch(() => {});
+        } catch (_) {}
       }
+
       setPublishStatus('success');
-      setTimeout(() => { navigate('/'); }, 1200);
-    } else {
-      if (error) alert(error.message);
+      setTimeout(() => navigate('/'), 800);
+    } catch (e: any) {
+      alert(e.message);
       setPublishStatus('idle');
     }
   }
@@ -142,116 +188,99 @@ function EditorContent() {
     return () => hideBackButton();
   }, [showBackButton, hideBackButton, navigate]);
 
-  // Загружаем игрока и его персонажей
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const tg = (window as any).Telegram?.WebApp;
-    if (tg?.initDataUnsafe?.user?.id) {
-      supabase.from('players').select('id').eq('tg_id', tg.initDataUnsafe.user.id).single().then(async ({ data: player }) => {
-        if (player) {
-          setCurrentUser(player);
-          // Грузим всех персонажей игрока
-          const { data: chars } = await supabase.from('characters').select('id, rp_name, avatar_url, season, status').eq('player_id', player.id).order('created_at', { ascending: false });
-          if (chars && chars.length > 0) {
-            setMyCharacters(chars);
-            // По умолчанию выбираем первого живого, или первого в списке
-            const alive = chars.find((c: any) => c.status !== 'dead');
-            setSelectedCharId(alive ? alive.id : chars[0].id);
-          }
-        }
-      });
-    }
-  }, []);
-
-  // Загрузка данных при редактировании
-  useEffect(() => {
-    if (editingPostId) {
-      supabase.from('posts').select('*').eq('id', editingPostId).single().then(({ data }) => {
-        if (data) {
-          setNewPostTitle(data.title);
-          setNewPostCoverUrl(data.cover_url || '');
-          setNewPostYoutubeUrl(data.youtube_url || '');
-          if (data.author_id) setSelectedCharId(data.author_id);
-          const d = new Date(data.created_at);
-          d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-          setNewPostPublishedAtInput(d.toISOString().slice(0, 16));
-          if (editorRef.current) {
-            editorRef.current.innerHTML = data.content || '';
-            setIsEditorEmpty(!data.content || !data.content.trim() || data.content === '<br>');
-          }
-        }
-      });
-    }
+    loadUser();
+    if (editingPostId) loadEditingPost(editingPostId);
   }, [editingPostId]);
 
   useEffect(() => {
     const handleSelection = () => {
-      const s = window.getSelection();
-      if (s && s.toString().trim().length > 0 && editorRef.current?.contains(s.anchorNode)) {
-        setIsTextSelected(true); checkFormatting();
-      } else setIsTextSelected(false);
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+        setIsTextSelected(false);
+      } else {
+        const anchorNode = selection.anchorNode;
+        if (editorRef.current && anchorNode && editorRef.current.contains(anchorNode)) {
+          setIsTextSelected(true);
+          checkFormatting();
+        } else {
+          setIsTextSelected(false);
+        }
+      }
     };
     document.addEventListener('selectionchange', handleSelection);
     return () => document.removeEventListener('selectionchange', handleSelection);
   }, []);
 
-  const isButtonDisabled = isUploadingPostCover || !newPostTitle.trim() || isEditorEmpty || publishStatus !== 'idle' || !selectedCharId;
   const selectedChar = myCharacters.find(c => c.id === selectedCharId);
+  const isButtonDisabled = publishStatus !== 'idle' || !newPostTitle.trim() || isEditorEmpty || !selectedCharId;
 
-  let buttonClass = "w-12 h-12 flex items-center justify-center rounded-full shadow-lg transition-all duration-500 ease-out ";
-  let buttonIcon = <Send size={20} />;
+  let buttonClass = "w-11 h-11 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 border-none sf-tap ";
+  let buttonIcon = <OneIcon name="send" size={20} />;
 
   if (publishStatus === 'publishing') {
     buttonClass += "bg-yellow-500 text-black cursor-not-allowed scale-95";
-    buttonIcon = <RefreshCw size={20} className="animate-spin" />;
+    buttonIcon = <OneIcon name="sync" size={20} className="animate-spin" />;
   } else if (publishStatus === 'success') {
-    buttonClass += "bg-green-500 text-white scale-110";
-    buttonIcon = <Check size={20} className="animate-fade-in" />;
+    buttonClass += "bg-[#1bd96a] text-black scale-105";
+    buttonIcon = <OneIcon name="check" size={20} />;
   } else if (isButtonDisabled) {
-    buttonClass += "bg-gray-800 text-gray-600 border border-white/5 cursor-not-allowed";
+    buttonClass += "bg-[#14171c] text-[#8e8e93] cursor-not-allowed opacity-40";
   } else {
-    buttonClass += "bg-[#c0ff00] text-black active:scale-90 hover:scale-105";
+    buttonClass += "bg-[#c0ff00] text-[#090b0e] hover:bg-[#aee600] active:scale-90";
   }
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-40">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-6 md:pt-10 pb-40 select-none antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
-        
-        <div className="flex items-center justify-between w-full mb-12">
-          <button onClick={() => navigate('/')} disabled={publishStatus !== 'idle'} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300 disabled:opacity-30"><ArrowLeft size={20} /></button>
+        <div className="flex items-center justify-between w-full mb-8">
+          <button 
+            onClick={() => navigate('/')} 
+            disabled={publishStatus !== 'idle'} 
+            className="w-11 h-11 flex items-center justify-center bg-[#14171c] hover:bg-[#181c23] rounded-full text-white disabled:opacity-30 border-none sf-tap"
+          >
+            <OneIcon name="arrow_back" size={20} />
+          </button>
           
-          <button onClick={handlePublish} disabled={isButtonDisabled} className={buttonClass}>
+          <button onClick={handlePublish} disabled={isButtonDisabled} className={buttonClass} title="Опубликовать">
             {buttonIcon}
           </button>
         </div>
 
         {/* Выбор персонажа */}
-        <div className="w-full mb-8">
+        <div className="w-full mb-6">
           <div className="relative inline-block">
-            <button onClick={() => setShowCharPicker(!showCharPicker)} className="flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-[#c0ff00]/10 border-[#c0ff00]/30 text-[#c0ff00]">
-              <div className="w-5 h-5 rounded-full overflow-hidden border border-[#c0ff00]/30 bg-black/20 flex-shrink-0">
-                {selectedChar?.avatar_url ? <img src={selectedChar.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[8px]">?</div>}
+            <button 
+              onClick={() => setShowCharPicker(!showCharPicker)} 
+              className="flex items-center gap-2.5 px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-[#14171c] hover:bg-[#181c23] text-white border-none sf-tap"
+            >
+              <div className="w-6 h-6 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0 flex items-center justify-center border-none">
+                {selectedChar?.avatar_url ? (
+                  <img src={selectedChar.avatar_url} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <OneIcon name="person" size={14} className="text-[#8e8e93]" />
+                )}
               </div>
               <span>{selectedChar?.rp_name || 'Выбери персонажа'}</span>
-              <ChevronDown size={14} />
+              <OneIcon name="expand_more" size={16} className="text-[#8e8e93]" />
             </button>
 
             {showCharPicker && myCharacters.length > 0 && (
-              <div className="absolute left-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[220px] flex flex-col gap-0.5 animate-fade-in backdrop-blur-xl">
+              <div className="absolute left-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[240px] flex flex-col gap-1 animate-fade-in border-none">
                 {myCharacters.map((char: any) => (
                   <button
                     key={char.id}
                     onClick={() => { setSelectedCharId(char.id); setShowCharPicker(false); }}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${selectedCharId === char.id ? 'bg-[#c0ff00]/10' : 'hover:bg-white/5'}`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-full text-left transition-all border-none ${selectedCharId === char.id ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-white hover:bg-white/5'}`}
                   >
-                    <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-black/20 flex-shrink-0">
-                      {char.avatar_url ? <img src={char.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs text-gray-600">?</div>}
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0 border-none">
+                      {char.avatar_url ? <img src={char.avatar_url} className="w-full h-full object-cover" alt="" /> : <OneIcon name="person" size={16} className="text-[#8e8e93] m-auto" />}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-bold text-white truncate">{char.rp_name}</div>
-                      <div className="text-[10px] text-gray-500">{char.season} · {char.status === 'dead' ? 'Мёртв' : 'Жив'}</div>
+                      <div className="text-sm font-bold truncate">{char.rp_name}</div>
+                      <div className="text-[10px] text-[#8e8e93]">{char.season} · {char.status === 'dead' ? 'Мёртв' : 'Жив'}</div>
                     </div>
-                    {selectedCharId === char.id && <Check size={14} className="text-[#c0ff00] ml-auto flex-shrink-0" />}
+                    {selectedCharId === char.id && <OneIcon name="check" size={16} className="text-[#c0ff00] ml-auto flex-shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -259,31 +288,60 @@ function EditorContent() {
           </div>
         </div>
 
-        {/* Панель вложений */}
-        <div className="w-full mb-8">
-          <div className="flex flex-wrap gap-3">
-            <div onClick={() => publishStatus === 'idle' && dateInputRef.current?.showPicker()} className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
-              <Clock size={14} /> 
+        {/* Панель вложений (Strictly Pill, No Borders) */}
+        <div className="w-full mb-6">
+          <div className="flex flex-wrap gap-2.5">
+            <div 
+              onClick={() => publishStatus === 'idle' && dateInputRef.current?.showPicker()} 
+              className="relative flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-[#14171c] hover:bg-[#181c23] text-[#8e8e93] hover:text-white border-none sf-tap"
+            >
+              <OneIcon name="schedule" size={16} /> 
               <span>{newPostPublishedAtInput ? new Date(newPostPublishedAtInput).toLocaleDateString('ru-RU') : 'Дата'}</span>
               <input ref={dateInputRef} type="datetime-local" value={newPostPublishedAtInput} onChange={e => setNewPostPublishedAtInput(e.target.value)} style={{ colorScheme: 'dark' }} className="absolute opacity-0 w-0 h-0" />
             </div>
-            <label className="relative flex items-center gap-2 border px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-white/5 border-white/10 text-gray-400">
+
+            <label className="relative flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer text-xs font-bold bg-[#14171c] hover:bg-[#181c23] text-[#8e8e93] hover:text-white border-none sf-tap">
               <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileUpload} disabled={publishStatus !== 'idle'} />
-              {isUploadingPostCover ? <RefreshCw className="animate-spin" size={14} /> : <ImageIcon size={14} />} <span>Фото</span>
+              {isUploadingPostCover ? <OneIcon name="sync" size={16} className="animate-spin" /> : <OneIcon name="image" size={16} />} 
+              <span>Фото</span>
             </label>
-            <button onClick={() => publishStatus === 'idle' && setIsYoutubeModalOpen(true)} className="flex items-center gap-2 border px-4 py-2 rounded-full bg-white/5 border-white/10 text-gray-400 text-xs font-bold outline-none">
-              <Youtube size={14} /> <span>YouTube</span>
+
+            <button 
+              type="button"
+              onClick={() => publishStatus === 'idle' && setIsYoutubeModalOpen(true)} 
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#14171c] hover:bg-[#181c23] text-[#8e8e93] hover:text-white text-xs font-bold border-none outline-none sf-tap"
+            >
+              <OneIcon name="smart_display" size={16} /> 
+              <span>YouTube</span>
             </button>
           </div>
         </div>
 
-        <input type="text" placeholder="Заголовок статьи..." value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)} disabled={publishStatus !== 'idle'} className="w-full bg-transparent text-xl md:text-3xl font-black text-white border-none outline-none py-1 focus:ring-0 placeholder:text-gray-700 mb-6 disabled:opacity-50" />
+        {/* Поле заголовка */}
+        <input 
+          type="text" 
+          placeholder="Заголовок статьи..." 
+          value={newPostTitle} 
+          onChange={e => setNewPostTitle(e.target.value)} 
+          disabled={publishStatus !== 'idle'} 
+          className="w-full bg-transparent text-2xl md:text-3xl font-black text-white border-none outline-none ring-0 focus:ring-0 py-2 placeholder-[#8e8e93]/50 mb-6 disabled:opacity-50" 
+        />
         
+        {/* Превью медиа */}
         <div className="space-y-4 mb-6">
-          {newPostCoverUrl && <div className="w-full rounded-[24px] overflow-hidden relative" style={{ aspectRatio: '16/9' }}><img src={newPostCoverUrl} className="w-full h-full object-cover" alt="preview" /></div>}
-          {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && <div className="w-full relative rounded-[24px] overflow-hidden bg-black/50 shadow-md" style={{ paddingBottom: '56.25%', height: 0 }}><iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen /></div>}
+          {newPostCoverUrl && (
+            <div className="w-full rounded-[28px] overflow-hidden relative border-none" style={{ aspectRatio: '16/9' }}>
+              <img src={newPostCoverUrl} className="w-full h-full object-cover" alt="preview" />
+            </div>
+          )}
+          {newPostYoutubeUrl && getYoutubeEmbedUrl(newPostYoutubeUrl) && (
+            <div className="w-full relative rounded-[28px] overflow-hidden bg-black/50 shadow-md border-none" style={{ paddingBottom: '56.25%', height: 0 }}>
+              <iframe src={getYoutubeEmbedUrl(newPostYoutubeUrl)!} className="absolute inset-0 w-full h-full border-none" allowFullScreen />
+            </div>
+          )}
         </div>
 
+        {/* Область редактора текста */}
         <div 
           ref={editorRef} 
           contentEditable={publishStatus === 'idle'} 
@@ -298,39 +356,53 @@ function EditorContent() {
           data-placeholder="Текст вашей статьи..." 
         />
 
+        {/* Плавающий тулбар форматирования (Strictly Pill, No Borders) */}
         {isTextSelected && publishStatus === 'idle' && (
           <div className="fixed bottom-24 left-0 right-0 z-[99999] flex items-center justify-center px-4 pointer-events-none animate-fade-in">
-            <div className="p-2 bg-[#14171c]/95 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md flex items-center gap-1.5 pointer-events-auto w-full max-w-sm overflow-x-auto no-scrollbar justify-around">
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2 rounded-xl ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2 rounded-xl ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2 rounded-xl ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={16}/></button>
+            <div className="p-1.5 bg-[#14171c] rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 pointer-events-auto w-auto overflow-x-auto no-scrollbar border-none">
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-2 rounded-full transition-all border-none ${formats.bold ? 'bg-[#c0ff00] text-[#090b0e]' : 'text-[#8e8e93] hover:text-white'}`}><OneIcon name="format_bold" size={18}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-2 rounded-full transition-all border-none ${formats.italic ? 'bg-[#c0ff00] text-[#090b0e]' : 'text-[#8e8e93] hover:text-white'}`}><OneIcon name="format_italic" size={18}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-2 rounded-full transition-all border-none ${formats.strikeThrough ? 'bg-[#c0ff00] text-[#090b0e]' : 'text-[#8e8e93] hover:text-white'}`}><OneIcon name="format_strikethrough" size={18}/></button>
               <div className="w-[1px] h-4 bg-white/10" />
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2 rounded-xl ${formats.h1 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading1 size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H2')} className={`p-2 rounded-xl ${formats.h2 ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Heading2 size={16}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('formatBlock', 'H1')} className={`p-2 rounded-full transition-all border-none ${formats.h1 ? 'bg-[#c0ff00] text-[#090b0e]' : 'text-[#8e8e93] hover:text-white'}`}><OneIcon name="format_size" size={18}/></button>
               <div className="w-[1px] h-4 bg-white/10" />
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-2 rounded-xl ${formats.justifyLeft ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignLeft size={16}/></button>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2 rounded-xl ${formats.justifyCenter ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><AlignCenter size={16}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyLeft')} className={`p-2 rounded-full transition-all border-none ${formats.justifyLeft ? 'bg-[#c0ff00] text-[#090b0e]' : 'text-[#8e8e93] hover:text-white'}`}><OneIcon name="format_align_left" size={18}/></button>
+              <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('justifyCenter')} className={`p-2 rounded-full transition-all border-none ${formats.justifyCenter ? 'bg-[#c0ff00] text-[#090b0e]' : 'text-[#8e8e93] hover:text-white'}`}><OneIcon name="format_align_center" size={18}/></button>
             </div>
           </div>
         )}
 
+        {/* Модалка YouTube */}
         {isYoutubeModalOpen && (
-          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4">
-            <div className="bg-[#14171c] border border-white/10 p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-6">
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 text-gray-400"><X size={20}/></button>
+          <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#14171c] p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-5 border-none shadow-2xl">
+              <button 
+                onClick={() => setIsYoutubeModalOpen(false)} 
+                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] flex items-center justify-center text-[#8e8e93] hover:text-white border-none sf-tap"
+              >
+                <OneIcon name="close" size={18} />
+              </button>
               <h3 className="text-xl font-black text-white">Видео с YouTube</h3>
-              <input type="text" placeholder="Ссылка..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none" />
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black py-4 rounded-2xl">Сохранить</button>
+              <input 
+                type="text" 
+                placeholder="Ссылка на видео..." 
+                value={newPostYoutubeUrl} 
+                onChange={e => setNewPostYoutubeUrl(e.target.value)} 
+                className="w-full bg-[#181c23] rounded-full h-12 px-5 text-sm text-white placeholder-[#8e8e93] border-none outline-none ring-0 focus:ring-0" 
+              />
+              <button 
+                onClick={() => setIsYoutubeModalOpen(false)} 
+                className="w-full bg-[#c0ff00] text-[#090b0e] font-black h-12 rounded-full hover:bg-[#aee600] active:scale-95 transition-all border-none sf-tap"
+              >
+                Сохранить
+              </button>
             </div>
           </div>
         )}
       </div>
 
       <style>{`
-        body { font-family: 'Wix Madefor Display', sans-serif !important; }
-        .prose h1 { font-size: 1.25rem !important; font-weight: 800 !important; }
-        .prose h2 { font-size: 1.1rem !important; font-weight: 800 !important; }
-        [contenteditable]:empty:before { content: attr(data-placeholder); color: #374151; }
+        [contenteditable]:empty:before { content: attr(data-placeholder); color: #8e8e93; }
       `}</style>
     </div>
   );
@@ -340,7 +412,7 @@ export default function StandalonePostEditor() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#090b0e] flex flex-col items-center justify-center gap-4">
-        <RefreshCw className="animate-spin text-[#c0ff00]" size={36} />
+        <OneIcon name="sync" className="animate-spin text-[#c0ff00]" size={36} />
       </div>
     }>
       <EditorContent />

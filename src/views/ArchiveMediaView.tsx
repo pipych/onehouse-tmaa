@@ -68,21 +68,21 @@ export default function ArchiveMediaPage() {
   }, [selectedSeason]);
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
         
         <div className="flex items-center justify-between w-full select-none">
-          <button onClick={() => navigate('/')} className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-2xl active:scale-90 transition-transform"><ArrowLeft size={20} /></button>
+          <button onClick={() => navigate('/')} className="w-10 h-10 flex items-center justify-center bg-[#14171c] rounded-full text-white shadow-lg active:scale-90 transition-transform"><ArrowLeft size={20} /></button>
 
           <div className="relative">
-            <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c]/90 border border-white/15 py-2 px-4 rounded-full backdrop-blur-md flex items-center gap-2 text-xs font-bold text-gray-200 shadow-lg active:scale-95 transition-all">
+            <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md active:scale-95 transition-all">
               <FolderArchive size={14} className="text-[#c0ff00]" />
               <span>{selectedSeason}</span>
               <ChevronDown size={14} className={`text-gray-500 transition-transform duration-300 ${showSeasonSelector ? 'rotate-180' : ''}`} />
             </button>
 
             {showSeasonSelector && (
-              <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
+              <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
                 {seasons.map((season) => (
                   <button key={season} onClick={() => { setSelectedSeason(season); setShowSeasonSelector(false); }} className={`text-xs text-left px-3 py-2.5 rounded-xl font-bold transition-all ${selectedSeason === season ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-gray-400 hover:bg-white/5'}`}>{season}</button>
                 ))}
@@ -100,17 +100,17 @@ export default function ArchiveMediaPage() {
           {loading ? (
             <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-[#c0ff00]" size={24} /></div>
           ) : selectedSeason === 'Сезон 1' ? (
-            <div className="text-center py-12 text-xs font-mono font-bold text-red-400 bg-red-500/5 border border-red-500/10 rounded-[24px] tracking-wider">
+            <div className="text-center py-12 text-xs font-mono font-bold text-red-400 bg-red-500/10 rounded-[28px] tracking-wider">
               🚨 СТАТЬИ ПЕРВОГО СЕЗОНА УТЕРЯНЫ ПРИ МИГРАЦИИ ЯДРА
             </div>
           ) : archivedPosts.length === 0 ? (
-            <div className="text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-2xl">СТАТЕЙ НЕ НАЙДЕНО</div>
+            <div className="text-center py-12 text-xs font-mono text-[#8e8e93] bg-[#14171c] rounded-[28px]">СТАТЕЙ НЕ НАЙДЕНО</div>
           ) : (
             archivedPosts.map(post => (
               <div 
                 key={post.id} 
                 onClick={() => navigate(`/media/${post.id}`)}
-                className="bg-[#14171c] border border-white/5 p-5 rounded-[24px] shadow-xl space-y-3 hover:border-white/10 transition-colors cursor-pointer group cv-card gpu-layer"
+                className="bg-[#14171c] p-5 rounded-[28px] shadow-xl space-y-3 hover:bg-[#181c23] transition-colors cursor-pointer group cv-card gpu-layer"
               >
                 <div className="flex items-center justify-between text-[10px] font-bold font-mono text-gray-500 uppercase tracking-wider">
                   <span className="flex items-center gap-1"><User size={12} className="text-[#c0ff00]" /> {post.author?.rp_name || 'Неизвестный'}</span>

@@ -12,14 +12,14 @@ export default function ArchiveMapPage() {
   const seasons = ['Сезон 1', 'Сезон 2'];
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
         
         {/* Навигация */}
         <div className="flex items-center justify-between w-full select-none">
           <button 
             onClick={() => navigate('/')} 
-            className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-2xl active:scale-90 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-[#14171c] rounded-full text-white shadow-lg active:scale-90 transition-transform"
           >
             <ArrowLeft size={20} />
           </button>
@@ -27,7 +27,7 @@ export default function ArchiveMapPage() {
           <div className="relative">
             <button 
               onClick={() => setShowSeasonSelector(!showSeasonSelector)}
-              className="bg-[#14171c]/90 border border-white/15 py-2 px-4 rounded-full backdrop-blur-md flex items-center gap-2 text-xs font-bold text-gray-200 shadow-lg active:scale-95 transition-all"
+              className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md active:scale-95 transition-all"
             >
               <FolderArchive size={14} className="text-[#c0ff00]" />
               <span>{selectedSeason}</span>
@@ -35,7 +35,7 @@ export default function ArchiveMapPage() {
             </button>
 
             {showSeasonSelector && (
-              <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in backdrop-blur-xl">
+              <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
                 {seasons.map((season) => (
                   <button
                     key={season}
@@ -56,9 +56,9 @@ export default function ArchiveMapPage() {
         </div>
 
         {/* Карточка карты */}
-        <div className="bg-[#14171c]/90 backdrop-blur-xl border border-white/5 rounded-[32px] overflow-hidden shadow-2xl flex flex-col">
+        <div className="bg-[#14171c] rounded-[32px] overflow-hidden shadow-2xl flex flex-col">
           {/* Сюда рендерится превью-изображение карты из Supabase */}
-          <div className="w-full aspect-video bg-black/40 flex flex-col items-center justify-center border-b border-white/5 relative group">
+          <div className="w-full aspect-video bg-[#181c23] flex flex-col items-center justify-center relative group">
             <Map size={48} className="text-gray-700 group-hover:text-[#c0ff00] transition-colors duration-500" />
             <span className="text-[10px] text-gray-500 font-mono mt-2 uppercase tracking-wider">Карта-изображение {selectedSeason}</span>
           </div>
@@ -72,8 +72,8 @@ export default function ArchiveMapPage() {
             </div>
 
             <div className="flex gap-2">
-              <button className="flex-1 ui-pill-btn justify-center py-2.5 !bg-[#c0ff00] !text-black font-black"><Eye size={14}/><span>Открыть веб-карту</span></button>
-              <button className="ui-pill-btn !py-2.5 !px-4 !bg-white/5"><Download size={14} className="text-gray-400"/></button>
+              <button className="flex-1 ui-pill-btn justify-center py-3 !bg-[#c0ff00] !text-[#090b0e] font-black"><Eye size={14}/><span>Открыть веб-карту</span></button>
+              <button className="ui-pill-btn !py-3 !px-5 !bg-[#181c23] text-white hover:bg-[#1c222b]"><Download size={14} className="text-gray-400"/></button>
             </div>
           </div>
         </div>

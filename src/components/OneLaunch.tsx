@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Check } from './ui/SFSymbol';
+import { OneIcon } from './ui/SFSymbol';
 import SmartScreenGuide from './SmartScreenGuide';
 
 export default function OneLaunchContent() {
@@ -19,7 +19,7 @@ export default function OneLaunchContent() {
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center gap-10 md:gap-14 px-4 py-8 md:py-12 animate-fade-in">
+    <div className="w-full flex flex-col items-center justify-center gap-10 md:gap-14 px-4 py-8 md:py-12 animate-fade-in select-none">
       {/* Главный заголовок и логотип лаунчера */}
       <div className="flex items-center gap-5 sm:gap-7 md:gap-10 pt-2 md:pt-4">
         <img
@@ -31,7 +31,7 @@ export default function OneLaunchContent() {
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-none">
             OneLaunch
           </h1>
-          <p className="text-sm sm:text-base md:text-xl text-gray-400 font-medium mt-1.5 sm:mt-2.5">
+          <p className="text-sm sm:text-base md:text-xl text-[#8e8e93] font-medium mt-1.5 sm:mt-2.5">
             Фирменный лаунчер OneHouse
           </p>
         </div>
@@ -42,17 +42,17 @@ export default function OneLaunchContent() {
         <button
           onClick={handleDownload}
           disabled={status !== 'idle'}
-          className={`inline-flex items-center gap-3 md:gap-4 px-8 md:px-12 py-4 md:py-5 rounded-full font-black text-lg md:text-xl transition-all duration-300 shadow-xl ${
+          className={`inline-flex items-center gap-3 md:gap-4 px-8 md:px-12 py-4 md:py-5 rounded-full font-black text-lg md:text-xl transition-all duration-300 shadow-xl border-none sf-tap ${
             status === 'idle'
-              ? 'bg-[#c0ff00] text-black hover:scale-105 active:scale-95 hover:shadow-[#c0ff00]/25'
+              ? 'bg-[#c0ff00] text-[#090b0e] hover:bg-[#aee600] active:scale-95'
               : status === 'loading'
               ? 'bg-yellow-400 text-black animate-pulse cursor-wait'
               : 'bg-green-500 text-white'
           }`}
         >
-          {status === 'idle' && <Download size={22} className="md:w-7 md:h-7" />}
-          {status === 'loading' && <Download size={22} className="md:w-7 md:h-7 animate-bounce" />}
-          {status === 'done' && <Check size={22} className="md:w-7 md:h-7" />}
+          {status === 'idle' && <OneIcon name="download" size={24} />}
+          {status === 'loading' && <OneIcon name="download" size={24} className="animate-bounce" />}
+          {status === 'done' && <OneIcon name="check" size={24} />}
           <span>
             {status === 'idle' && 'Скачать'}
             {status === 'loading' && 'Загрузка...'}
@@ -61,7 +61,7 @@ export default function OneLaunchContent() {
         </button>
       </div>
 
-      {/* Компонент предупреждения безопасности и инструкции по установке (строго под кнопкой Скачать) */}
+      {/* Компонент предупреждения безопасности и инструкции по установке */}
       <SmartScreenGuide onDownload={handleDownload} status={status} />
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { SFSymbol } from '../ui/SFSymbol';
+import { OneIcon } from '../ui/SFSymbol';
+import { cn } from '../../ui/utils/cn';
 
 export interface MobileTabBarProps {
   activeTab: string;
@@ -15,6 +16,8 @@ interface TabItem {
   icon: string;
 }
 
+const MAX_MOBILE_ITEMS = 5;
+
 export function MobileTabBar({
   activeTab,
   onTabChange,
@@ -22,16 +25,17 @@ export function MobileTabBar({
   isPlayersActive = false,
   className = '',
 }: MobileTabBarProps) {
+  // Main tabs (4 items) + Download tab (1 item) = exactly 5 items
   const mainTabs: TabItem[] = seasonEnded
     ? [
-        { id: 'profile', label: 'Главная', icon: 'house.fill' },
-        { id: 'archive', label: 'Архив', icon: 'archivebox.fill' },
+        { id: 'profile', label: 'Главная', icon: 'home' },
+        { id: 'archive', label: 'Архив', icon: 'inventory_2' },
       ]
     : [
-        { id: 'profile', label: 'Главная', icon: 'house.fill' },
-        { id: 'media', label: 'Медиа', icon: 'newspaper.fill' },
-        { id: 'svod', label: 'Свод', icon: 'doc.text.fill' },
-        { id: 'players', label: 'Игроки', icon: 'person.2.fill' },
+        { id: 'profile', label: 'Главная', icon: 'home' },
+        { id: 'media', label: 'Медиа', icon: 'newspaper' },
+        { id: 'svod', label: 'Свод', icon: 'description' },
+        { id: 'players', label: 'Игроки', icon: 'group' },
       ];
 
   const currentActiveTab = isPlayersActive && activeTab !== 'profile' ? 'players' : activeTab;
@@ -82,19 +86,25 @@ export function MobileTabBar({
   }, [updatePill]);
 
   return (
-    <div className={`flex items-center justify-center w-full select-none ${className}`}>
-      {/* Главный плавающий пилл */}
+    <div
+      className={cn(
+        'fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-4 right-4 z-40 flex items-center justify-center pointer-events-none select-none transition-all duration-300',
+        className
+      )}
+    >
       <nav
-        className={`bg-[#14171c]/95 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-2xl relative flex items-center h-[70px] transition-all duration-300 w-full ${
+        className={cn(
+          'bg-[#14171c]/90 backdrop-blur-2xl border border-white/[0.04] p-1.5 rounded-full shadow-2xl relative flex items-center h-[70px] transition-all duration-300 w-full pointer-events-auto',
           seasonEnded ? 'max-w-[340px]' : 'max-w-md'
-        }`}
+        )}
       >
         <div ref={navRef} className="relative flex items-center w-full h-full">
-          {/* Анимированная скользящая капсула (Active Pill Indicator) БЕЗ ОБВОДКИ */}
+          {/* Animated Sliding Pill Indicator without border */}
           <div
-            className={`absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-0 ${
+            className={cn(
+              'absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-0',
               pillRect.ready ? 'opacity-100' : 'opacity-0'
-            }`}
+            )}
             style={{
               transform: `translate3d(${pillRect.left}px, 0, 0)`,
               width: `${pillRect.width}px`,
@@ -103,7 +113,7 @@ export function MobileTabBar({
             <div className="w-full h-full rounded-full bg-[#252c37]" />
           </div>
 
-          {/* Основные вкладки */}
+          {/* Main navigation tabs (flex-1 evenly divided) */}
           <div className="flex items-center flex-1 h-full min-w-0">
             {mainTabs.map((tab) => {
               const isActive = currentActiveTab === tab.id;
@@ -114,21 +124,28 @@ export function MobileTabBar({
                     tabRefs.current[tab.id] = el;
                   }}
                   onClick={() => onTabChange(tab.id)}
-                  className={`relative z-10 flex-1 h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-95 sf-tap ${
+                  className={cn(
+                    'relative z-10 flex-1 h-full min-w-0 flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-90 sf-tap px-1 group',
                     isActive ? 'text-[#c0ff00] font-bold' : 'text-[#8e8e93] hover:text-white'
-                  }`}
+                  )}
+                  aria-label={tab.label}
+                  role="tab"
                 >
-                  <SFSymbol
-                    name={tab.icon}
-                    size={26}
-                    className={`transition-all duration-300 ${
-                      isActive ? 'sf-glow-green' : 'text-[#8e8e93]'
-                    }`}
-                  />
+                  <div className="relative flex items-center justify-center transition-transform duration-150 active:scale-90 group-active:scale-90">
+                    <OneIcon
+                      name={tab.icon}
+                      size={24}
+                      className={cn(
+                        'transition-all duration-300',
+                        isActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
+                      )}
+                    />
+                  </div>
                   <span
-                    className={`text-[10px] font-bold tracking-tight mt-1 whitespace-nowrap transition-colors duration-200 ${
+                    className={cn(
+                      'text-[10px] font-bold tracking-tight mt-1 whitespace-nowrap transition-colors duration-200 truncate max-w-full px-0.5',
                       isActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
-                    }`}
+                    )}
                   >
                     {tab.label}
                   </span>
@@ -137,32 +154,39 @@ export function MobileTabBar({
             })}
           </div>
 
-          {/* Тонкий вертикальный разделитель */}
-          <div className="w-px h-6 bg-white/10 mx-1 shrink-0 pointer-events-none z-10" />
+          {/* Subtle vertical divider before Download action */}
+          <div className="w-px h-6 bg-white/[0.06] mx-1 shrink-0 pointer-events-none z-10" />
 
-          {/* Раздел Скачать — форма широкого пила, шейп переезжает сюда плавно */}
-          <div className="shrink-0 h-full w-[86px] flex items-center justify-center">
+          {/* Download Launcher Tab (5th slot) */}
+          <div className="shrink-0 h-full w-[80px] flex items-center justify-center">
             <button
               ref={(el) => {
                 tabRefs.current['onelaunch'] = el;
               }}
               onClick={() => onTabChange('onelaunch')}
-              className={`relative z-10 w-full h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-95 sf-tap ${
+              className={cn(
+                'relative z-10 w-full h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-90 sf-tap px-1 group',
                 isDownloadActive ? 'text-[#c0ff00] font-bold' : 'text-[#8e8e93] hover:text-white'
-              }`}
+              )}
               title="Скачать лаунчер OneLaunch"
+              aria-label="Скачать"
+              role="tab"
             >
-              <SFSymbol
-                name="arrow.down.circle.fill"
-                size={26}
-                className={`transition-all duration-300 ${
-                  isDownloadActive ? 'sf-glow-green' : 'text-[#8e8e93]'
-                }`}
-              />
+              <div className="relative flex items-center justify-center transition-transform duration-150 active:scale-90 group-active:scale-90">
+                <OneIcon
+                  name="arrow_circle_down"
+                  size={24}
+                  className={cn(
+                    'transition-all duration-300',
+                    isDownloadActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
+                  )}
+                />
+              </div>
               <span
-                className={`text-[10px] font-bold tracking-tight mt-1 whitespace-nowrap transition-colors duration-200 ${
+                className={cn(
+                  'text-[10px] font-bold tracking-tight mt-1 whitespace-nowrap transition-colors duration-200 truncate max-w-full px-0.5',
                   isDownloadActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
-                }`}
+                )}
               >
                 Скачать
               </span>

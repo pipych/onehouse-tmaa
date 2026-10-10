@@ -254,14 +254,14 @@ export default function AdminPage() {
   // RENDER
   // ===================================================================
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-5">
 
         {/* --- Header --- */}
         <div className="flex items-center gap-3 select-none">
           <button
             onClick={() => navigate('/')}
-            className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-2xl active:scale-90 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-[#14171c] rounded-full text-white shadow-lg active:scale-90 transition-transform"
           >
             <ArrowLeft size={20} />
           </button>
@@ -304,7 +304,7 @@ export default function AdminPage() {
                   className={`text-xs font-bold uppercase px-4 py-2 rounded-full whitespace-nowrap transition-all flex items-center gap-1.5 ${
                     playersSubTab === tab.key
                       ? 'bg-[#c0ff00]/20 text-[#c0ff00] border border-[#c0ff00]/30'
-                      : 'bg-white/5 text-gray-400 border border-white/5'
+                      : 'bg-white/5 text-gray-400 '
                   }`}
                 >
                   {tab.icon}
@@ -316,7 +316,7 @@ export default function AdminPage() {
             {/* --- Профили --- */}
             {playersSubTab === 'profiles' && (
               <div className="space-y-4">
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] space-y-4 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                     <UserPlus size={16} /><span>Создать Minecraft-профиль</span>
                   </div>
@@ -347,7 +347,7 @@ export default function AdminPage() {
                   }} className="ui-pill-btn w-full justify-center py-3"><Check size={16} /><span>Создать профиль</span></button>
                 </div>
 
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                     <Users size={16} /><span>Все профили ({allPlayers.length})</span>
                   </div>
@@ -399,9 +399,9 @@ export default function AdminPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl group">
+                          <div className="flex items-center justify-between bg-[#181c23] p-3 rounded-2xl group">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-full bg-[#1c2026] border border-white/10 overflow-hidden flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-[#1c2026]  overflow-hidden flex-shrink-0">
                                 {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
                               </div>
                               <div className="min-w-0">
@@ -423,7 +423,7 @@ export default function AdminPage() {
             {/* --- Персонажи --- */}
             {playersSubTab === 'characters' && (
               <div className="space-y-4">
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] space-y-4 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                     <UserPlus size={16} /><span>Создать персонажа для сезона</span>
                   </div>
@@ -461,7 +461,7 @@ export default function AdminPage() {
                   }} className="ui-pill-btn w-full justify-center py-3"><Plus size={16} /><span>Создать персонажа</span></button>
                 </div>
 
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                     <Users size={16} /><span>Персонажи сезона ({players.length})</span>
                   </div>
@@ -499,9 +499,9 @@ export default function AdminPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between bg-black/20 border border-white/5 p-3 rounded-xl group">
+                          <div className="flex items-center justify-between bg-[#181c23] p-3 rounded-2xl group">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-full bg-[#1c2026] border border-white/10 overflow-hidden flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-[#1c2026]  overflow-hidden flex-shrink-0">
                                 {c.avatar_url ? <img src={c.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
                               </div>
                               <div className="min-w-0">
@@ -535,13 +535,13 @@ export default function AdminPage() {
             {/* --- Профессии --- */}
             {playersSubTab === 'professions' && (
               <div className="space-y-4">
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] space-y-4 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                     <AnvilIcon size={16} /><span>Создать профессию</span>
                   </div>
                   <div className="flex gap-2 items-end">
                     <input type="text" placeholder="Название профессии" value={newProfessionName} onChange={e => setNewProfessionName(e.target.value)} className="ui-input flex-1"/>
-                    <input type="color" value={newProfessionColor} onChange={e => setNewProfessionColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
+                    <input type="color" value={newProfessionColor} onChange={e => setNewProfessionColor(e.target.value)} className="w-10 h-10 rounded-xl  bg-transparent cursor-pointer"/>
                   </div>
                   <button onClick={async () => {
                     if (!newProfessionName.trim()) return;
@@ -550,14 +550,14 @@ export default function AdminPage() {
                     else alert('Ошибка создания профессии');
                   }} className="ui-pill-btn w-full justify-center py-3"><AnvilIcon size={14} /><span>Создать профессию</span></button>
                 </div>
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                     <AnvilIcon size={16} /><span>Все профессии</span>
                   </div>
                   <div className="space-y-2">
                     {professions.map((prof) => (
-                      <div key={prof.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
-                        <input type="color" value={prof.color} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, color: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ color: prof.color }).eq('id', prof.id); }} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
+                      <div key={prof.id} className="flex items-center gap-3 bg-[#181c23] p-3 rounded-2xl">
+                        <input type="color" value={prof.color} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, color: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ color: prof.color }).eq('id', prof.id); }} className="w-8 h-8 rounded-lg  bg-transparent cursor-pointer flex-shrink-0"/>
                         <input type="text" value={prof.name} onChange={e => { setProfessions(ps => ps.map(p => p.id === prof.id ? { ...p, name: e.target.value } : p)); }} onBlur={async () => { if (!prof.id) return; await supabase.from('professions').update({ name: prof.name }).eq('id', prof.id); }} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: prof.color }}/>
                       </div>
                     ))}
@@ -570,13 +570,13 @@ export default function AdminPage() {
             {/* --- Роли --- */}
             {playersSubTab === 'roles' && (
               <div className="space-y-4">
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] space-y-4 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                     <ShieldCheck size={16} /><span>Создать роль</span>
                   </div>
                   <div className="flex gap-2 items-end">
                     <input type="text" placeholder="Название роли" value={newRoleName} onChange={e => setNewRoleName(e.target.value)} className="ui-input flex-1"/>
-                    <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-10 h-10 rounded-xl border border-white/10 bg-transparent cursor-pointer"/>
+                    <input type="color" value={newRoleColor} onChange={e => setNewRoleColor(e.target.value)} className="w-10 h-10 rounded-xl  bg-transparent cursor-pointer"/>
                   </div>
                   <label className="flex items-center gap-2 text-xs text-gray-400">
                     <input type="checkbox" checked={newRolePerm} onChange={e => setNewRolePerm(e.target.checked)} className="accent-[#c0ff00]"/>
@@ -584,14 +584,14 @@ export default function AdminPage() {
                   </label>
                   <button onClick={handleCreateRole} className="ui-pill-btn w-full justify-center py-3"><UserPlus size={14} /><span>Создать роль</span></button>
                 </div>
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                     <ShieldCheck size={16} /><span>Все роли</span>
                   </div>
                   <div className="space-y-2">
                     {customRoles.map((role) => (
-                      <div key={role.id} className="flex items-center gap-3 bg-black/20 border border-white/5 p-3 rounded-xl">
-                        <input type="color" value={role.color} onChange={e => { setCustomRoles(prev => prev.map(r => r.id === role.id ? { ...r, color: e.target.value } : r)); }} onBlur={async () => { if (!role.id) return; await supabase.from('roles').update({ color: role.color }).eq('id', role.id); }} className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer flex-shrink-0"/>
+                      <div key={role.id} className="flex items-center gap-3 bg-[#181c23] p-3 rounded-2xl">
+                        <input type="color" value={role.color} onChange={e => { setCustomRoles(prev => prev.map(r => r.id === role.id ? { ...r, color: e.target.value } : r)); }} onBlur={async () => { if (!role.id) return; await supabase.from('roles').update({ color: role.color }).eq('id', role.id); }} className="w-8 h-8 rounded-lg  bg-transparent cursor-pointer flex-shrink-0"/>
                         <input type="text" value={role.name} onChange={e => { setCustomRoles(prev => prev.map(r => r.id === role.id ? { ...r, name: e.target.value } : r)); }} onBlur={async () => { if (!role.id) return; await supabase.from('roles').update({ name: role.name, can_edit_constitution: role.canEditConstitution }).eq('id', role.id); }} className="bg-transparent text-sm font-bold flex-1 min-w-0" style={{ color: role.color }}/>
                         <label className="flex items-center gap-1 text-[10px] text-gray-500 flex-shrink-0">
                           <input type="checkbox" checked={role.canEditConstitution} onChange={e => { setCustomRoles(prev => prev.map(r => r.id === role.id ? { ...r, canEditConstitution: e.target.checked } : r)); }} onBlur={async () => { await supabase.from('roles').update({ can_edit_constitution: role.canEditConstitution }).eq('id', role.id); }} className="accent-[#c0ff00]"/>
@@ -607,7 +607,7 @@ export default function AdminPage() {
             {/* --- Гости --- */}
             {playersSubTab === 'guests' && (
               <div className="space-y-4">
-                <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+                <div className="bg-[#14171c] p-6 rounded-[28px] space-y-4 shadow-xl">
                   <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                     <User size={16} /><span>Добавить гостя</span>
                   </div>
@@ -618,7 +618,7 @@ export default function AdminPage() {
                   {guestList.length > 0 && (
                     <div className="space-y-1.5 max-h-40 overflow-y-auto no-scrollbar">
                       {guestList.map(g => (
-                        <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl border border-white/5 text-xs">
+                        <div key={g.tg_id} className="flex items-center justify-between p-2.5 bg-black/10 rounded-xl  text-xs">
                           <div>
                             <span className="text-white font-bold">ID: {g.tg_id}</span>
                             <span className="text-gray-500 ml-2">{new Date(g.created_at).toLocaleDateString('ru-RU')}</span>
@@ -637,7 +637,7 @@ export default function AdminPage() {
         {/* ==================== СЕРВЕР ==================== */}
         {mainTab === 'server' && (
           <div className="space-y-4">
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 space-y-4 shadow-xl">
+            <div className="bg-[#14171c] p-6 rounded-[28px] space-y-4 shadow-xl">
               <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider">
                 <Calendar size={16} /><span>Управление сезонами</span>
               </div>
@@ -666,13 +666,13 @@ export default function AdminPage() {
             </div>
 
             {pastSeasons.length > 0 && (
-              <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 shadow-xl">
+              <div className="bg-[#14171c] p-6 rounded-[28px] shadow-xl">
                 <div className="flex items-center space-x-2 text-[#c0ff00] font-bold text-sm uppercase tracking-wider mb-3">
                   <Library size={16} /><span>Архив сезонов</span>
                 </div>
                 <div className="space-y-2">
                   {pastSeasons.map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] border border-white/5">
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-black/20 rounded-[18px] ">
                       <div className="text-sm">
                         <span className="text-white font-bold">Сезон #{s.season_number}</span>
                         <span className="text-gray-500 ml-2">{s.days_count} дн.</span>
@@ -692,47 +692,11 @@ export default function AdminPage() {
       </div>
 
       {/* ПК САЙДБАР */}
-      <aside className="hidden md:flex flex-col items-center gap-3 fixed left-6 top-1/2 -translate-y-1/2 z-50">
-        <nav className="bg-[#14171c]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] shadow-2xl flex flex-col items-center gap-3 relative transition-all duration-300 w-[68px] p-2">
-          <button
-            onClick={() => setMainTab('home')}
-            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              mainTab === 'home'
-                ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
-                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <ShieldAlert size={22} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Главная</span>
-          </button>
-          <button
-            onClick={() => setMainTab('players')}
-            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              mainTab === 'players'
-                ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
-                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Users size={22} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Игроки</span>
-          </button>
-          <button
-            onClick={() => setMainTab('server')}
-            className={`group relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 sf-tap ${
-              mainTab === 'server'
-                ? 'bg-[#252c37] text-white shadow-md shadow-black/50 font-bold'
-                : 'text-[#8e8e93] hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Folder size={22} />
-            <span className="absolute left-full ml-4 px-3 py-1.5 bg-[#14171c]/95 border border-white/10 rounded-full text-[11px] font-bold text-white shadow-2xl transition-all duration-200 opacity-0 scale-95 translate-x-[-8px] group-hover:opacity-100 group-hover:scale-100 group-hover:translate-x-0 pointer-events-none whitespace-nowrap z-50 backdrop-blur-md">Сервер</span>
-          </button>
-        </nav>
-      </aside>
+      
 
       {/* Мобильный навбар */}
       <div className="md:hidden fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none">
-        <nav className="bg-[#14171c]/95 backdrop-blur-2xl border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full pointer-events-auto">
+        <nav className="bg-[#14171c]/95 backdrop-blur-2xl  p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full pointer-events-auto">
           <div className="flex items-center w-full h-full gap-1">
             <button
               onClick={() => setMainTab('home')}

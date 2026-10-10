@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@one/web-ui': path.resolve(__dirname, './src/ui/index.ts'),
       '@': path.resolve(__dirname, './src'),
     },
   },

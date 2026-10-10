@@ -168,7 +168,7 @@ export default function ArchiveTimelinePage() {
   }, [isEditing]);
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-24 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-6">
         
         <div className="flex items-center justify-between w-full select-none">
@@ -184,7 +184,7 @@ export default function ArchiveTimelinePage() {
                 navigate('/');
               }
             }} 
-            className="w-12 h-12 flex items-center justify-center bg-[#14171c]/90 backdrop-blur-xl border border-white/10 rounded-full text-white shadow-2xl active:scale-90 transition-transform"
+            className="w-10 h-10 flex items-center justify-center bg-[#14171c] rounded-full text-white shadow-lg active:scale-90 transition-transform"
           >
             <ArrowLeft size={20} />
           </button>
@@ -194,13 +194,13 @@ export default function ArchiveTimelinePage() {
               <div className="relative">
                 <button 
                   onClick={() => setShowActionMenu(!showActionMenu)}
-                  className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-gray-400 hover:text-white active:scale-95 transition-all shadow-md"
+                  className="w-10 h-10 bg-[#181c23] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-white active:scale-95 transition-all shadow-md"
                 >
                   <MoreVertical size={18} />
                 </button>
                 
                 {showActionMenu && (
-                  <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[160px] flex flex-col gap-1 backdrop-blur-xl animate-fade-in">
+                  <div className="absolute right-0 mt-2 bg-[#181c23] rounded-[24px] p-2 z-50 shadow-2xl min-w-[160px] flex flex-col gap-1 animate-fade-in">
                     <button 
                       onClick={() => {
                         setEventTitle(activeEvent.title);
@@ -242,7 +242,7 @@ export default function ArchiveTimelinePage() {
                   setActiveEvent({ isNew: true });
                   setIsEditing(true);
                 }}
-                className="w-10 h-10 bg-[#14171c]/90 border border-white/15 rounded-full flex items-center justify-center text-[#c0ff00] shadow-lg active:scale-95 transition-all"
+                className="w-10 h-10 bg-[#14171c] rounded-full flex items-center justify-center text-[#c0ff00] shadow-lg hover:bg-[#181c23] active:scale-95 transition-all"
               >
                 <Plus size={18} />
               </button>
@@ -252,14 +252,14 @@ export default function ArchiveTimelinePage() {
               <div className="relative">
                 <button 
                   onClick={() => setShowSeasonSelector(!showSeasonSelector)}
-                  className="bg-[#14171c]/90 border border-white/15 py-2 px-4 rounded-full backdrop-blur-md flex items-center gap-2 text-xs font-bold text-gray-200 shadow-lg"
+                  className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md"
                 >
                   <FolderArchive size={14} className="text-[#c0ff00]" />
                   <span>{selectedSeason}</span>
                   <ChevronDown size={14} className={`text-gray-500 transition-transform duration-300 ${showSeasonSelector ? 'rotate-180' : ''}`} />
                 </button>
                 {showSeasonSelector && (
-                  <div className="absolute right-0 mt-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 backdrop-blur-xl animate-fade-in">
+                  <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
                     {seasons.map((season) => (
                       <button key={season} onClick={() => { setSelectedSeason(season); setShowSeasonSelector(false); }} className={`text-xs text-left px-3 py-2.5 rounded-xl font-bold transition-all ${selectedSeason === season ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-gray-400 hover:bg-white/5'}`}>{season}</button>
                     ))}
@@ -281,7 +281,7 @@ export default function ArchiveTimelinePage() {
         </div>
 
         {isEditing && (
-          <div className="p-1.5 bg-[#14171c]/95 border border-white/10 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 w-max mx-auto overflow-x-auto no-scrollbar">
+          <div className="p-1.5 bg-[#14171c]/95 rounded-full shadow-2xl backdrop-blur-md flex items-center gap-1 w-max mx-auto overflow-x-auto no-scrollbar">
             <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('bold')} className={`p-1.5 rounded-full transition-all ${formats.bold ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Bold size={14}/></button>
             <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('italic')} className={`p-1.5 rounded-full transition-all ${formats.italic ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Italic size={14}/></button>
             <button onMouseDown={e => e.preventDefault()} onClick={() => execEditorCommand('strikeThrough')} className={`p-1.5 rounded-full transition-all ${formats.strikeThrough ? 'bg-[#c0ff00]/20 text-[#c0ff00]' : 'text-gray-400'}`}><Strikethrough size={14}/></button>
@@ -301,11 +301,11 @@ export default function ArchiveTimelinePage() {
               placeholder="Заголовок исторической вехи..." 
               value={eventTitle} 
               onChange={e => setEventTitle(e.target.value)} 
-              className="w-full bg-[#14171c]/60 border border-white/10 rounded-2xl p-4 text-sm font-black text-white outline-none focus:border-[#c0ff00]/40 focus:bg-black/40 transition-all shadow-xl placeholder:text-gray-600"
+              className="w-full bg-[#181c23] rounded-full px-5 py-3.5 text-sm font-black text-white outline-none placeholder:text-[#8e8e93] transition-all shadow-xl"
             />
             
             <div className="flex flex-wrap gap-2.5 pt-1 select-none">
-              <div className="inline-flex items-center gap-2 bg-[#14171c]/80 border border-white/10 rounded-full px-4 py-2 text-xs font-bold text-gray-300 shadow-md">
+              <div className="inline-flex items-center gap-2 bg-[#181c23] rounded-full px-4 py-2 text-xs font-bold text-gray-300 shadow-md">
                 <Calendar size={14} className="text-[#c0ff00]" />
                 <input 
                   type="date" 
@@ -335,13 +335,13 @@ export default function ArchiveTimelinePage() {
             <div 
               ref={editorRef} 
               contentEditable 
-              className="w-full min-h-[500px] bg-[#14171c]/90 backdrop-blur-xl border border-white/5 focus:border-[#c0ff00]/40 rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-24" 
+              className="w-full min-h-[500px] bg-[#14171c] rounded-[28px] p-5 text-base leading-relaxed text-gray-200 focus:outline-none transition-all shadow-inner prose prose-invert max-w-none break-words pb-24" 
               data-placeholder="Детальный разбор исторического события..." 
             />
           </div>
         ) : activeEvent ? (
           <div className="space-y-4 animate-fade-in w-full">
-            <div className="space-y-1 w-full border-b border-white/5 pb-3">
+            <div className="space-y-1 w-full pb-3">
               <h2 className="text-xl md:text-2xl font-black text-white leading-tight break-words">
                 {activeEvent.title}
               </h2>
@@ -349,7 +349,7 @@ export default function ArchiveTimelinePage() {
                 <Clock size={12} /> {new Date(activeEvent.event_date).toLocaleDateString('ru-RU')}
               </div>
             </div>
-            <div className="bg-[#14171c]/90 backdrop-blur-xl p-5 rounded-[28px] border border-white/5 text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: activeEvent.content }} />
+            <div className="bg-[#14171c] p-6 rounded-[28px] text-base leading-relaxed text-gray-300 prose prose-invert shadow-md break-words w-full" dangerouslySetInnerHTML={{ __html: activeEvent.content }} />
           </div>
         ) : (
           <>
@@ -358,11 +358,11 @@ export default function ArchiveTimelinePage() {
               <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Хронология великих вех ({selectedSeason})</h2>
             </div>
 
-            <div className="relative pl-6 border-l border-white/10 space-y-5 ml-4 pt-2">
+            <div className="relative pl-6 border-l border-white/[0.06] space-y-5 ml-4 pt-2">
               {loading ? (
                 <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-[#c0ff00]" size={24} /></div>
               ) : events.length === 0 ? (
-                <div className="text-center py-12 text-xs font-mono text-gray-500 bg-[#14171c]/40 border border-white/5 rounded-[24px] -ml-6">
+                <div className="text-center py-12 text-xs font-mono text-[#8e8e93] bg-[#14171c] rounded-[28px] -ml-6">
                   ИСТОРИЧЕСКИХ ЗАПИСЕЙ ДЛЯ ЭТОГО СЕЗОНА НЕТ
                 </div>
               ) : (
@@ -373,7 +373,7 @@ export default function ArchiveTimelinePage() {
                       setActiveEvent(event);
                       setIsEditing(false);
                     }}
-                    className="bg-[#14171c]/90 border border-white/5 p-4 rounded-2xl flex items-center justify-between hover:border-white/10 transition-all cursor-pointer group relative shadow-xl transform hover:scale-[1.01]"
+                    className="bg-[#14171c] p-4 rounded-[22px] flex items-center justify-between hover:bg-[#181c23] transition-all cursor-pointer group relative shadow-xl"
                   >
                     <div className="absolute -left-[31px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#090b0e] border-2 border-white/20 flex items-center justify-center group-hover:border-[#c0ff00] transition-colors">
                       <div className="w-1.5 h-1.5 rounded-full bg-white/20 group-hover:bg-[#c0ff00]" />
