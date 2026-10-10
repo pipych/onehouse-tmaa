@@ -6,6 +6,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      spacing: {
+        'tma-safe': 'var(--tma-top-padding)',
+      },
       colors: {
         // Direct OneHouse tokens
         'bg-base': '#090b0e',

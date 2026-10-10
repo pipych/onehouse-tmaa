@@ -162,11 +162,11 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
       {/* ФИКС: block вместо флекса гарантирует корректное пролистывание полей ввода и превью медиафайлов */}
-      <div className="w-full max-w-3xl mx-auto block relative p-4 pt-36 pb-40 md:pl-[120px] animate-fade-in">
+      <div className="w-full max-w-3xl mx-auto block relative p-4 pt-tma-safe pb-40 md:pt-12 md:pl-[120px] animate-fade-in">
         
         <div className="flex items-between justify-between w-full mb-12">
-          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-full text-gray-300"><ArrowLeft size={20} /></button>
-          <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full"><Send size={20} /></button>
+          <button onClick={onClose} className="w-12 h-12 flex items-center justify-center bg-[#14171c] hover:bg-[#181c23] rounded-full text-gray-300 sf-tap border-none"><ArrowLeft size={20} /></button>
+          <button onClick={handlePublish} disabled={isUploadingPostCover || !newPostTitle.trim()} className="w-12 h-12 flex items-center justify-center bg-[#c0ff00] text-black rounded-full sf-tap border-none"><Send size={20} /></button>
         </div>
 
         <div className="w-full mb-14">

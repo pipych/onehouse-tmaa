@@ -41,7 +41,7 @@ export function AppLayout({
       )}
 
       {/* Контентная область */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-28 md:pb-12 transition-all">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-tma-safe md:pt-6 pb-28 md:pb-12 transition-all">
         {children}
       </main>
 

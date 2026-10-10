@@ -1898,7 +1898,7 @@ export default function Home() {
 
       {/* ПЛАВАЮЩИЙ ТУЛБАР ТЕКСТОВОГО РЕДАКТОРА */}
 
-      <div className="fixed top-[96px] left-4 right-4 md:left-40 md:right-12 z-40 max-w-md md:max-w-7xl mx-auto flex items-center justify-end gap-2 pointer-events-none">
+      <div className="fixed top-[calc(var(--tma-top-padding)+12px)] md:top-[96px] left-4 right-4 md:left-40 md:right-12 z-40 max-w-md md:max-w-7xl mx-auto flex items-center justify-end gap-2 pointer-events-none">
 
         <div className={`transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] overflow-hidden flex items-center justify-center ${showToolbar ? 'w-10 opacity-100 scale-100 translate-x-0' : 'w-0 opacity-0 scale-50 -translate-x-8 pointer-events-none'}`}>
 
@@ -2209,7 +2209,7 @@ export default function Home() {
 
       {/* ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК */}
 
-      <main className="p-4 pt-36 pb-24 md:p-12 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
+      <main className="p-4 pt-tma-safe pb-24 md:p-12 max-w-md md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto transition-all duration-300 w-full flex-grow flex flex-col animate-fade-in">
 
         {activeTab === 'profile' && (
 
@@ -2289,7 +2289,7 @@ export default function Home() {
 
                   onClick={() => navigate('/admin')}
 
-                  className="absolute top-2 right-0 w-10 h-10 rounded-full bg-[#14171c]/95 border border-white/10 flex items-center justify-center text-gray-400 hover:text-[#c0ff00] hover:border-[#c0ff00]/30 active:scale-90 transition-all z-10"
+                  className="absolute top-2 right-0 w-10 h-10 rounded-full bg-[#14171c] hover:bg-[#181c23] flex items-center justify-center text-[#8e8e93] hover:text-[#c0ff00] active:scale-90 transition-all z-10 border-none sf-tap shadow-lg"
 
                   title="Админ-панель"
 

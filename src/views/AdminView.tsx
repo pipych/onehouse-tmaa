@@ -254,7 +254,7 @@ export default function AdminPage() {
   // RENDER
   // ===================================================================
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-tma-safe md:pt-8 pb-32 antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col gap-5">
 
         {/* --- Header --- */}

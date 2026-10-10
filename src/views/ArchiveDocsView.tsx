@@ -172,7 +172,7 @@ export default function ArchiveDocsPage() {
   }, [isEditing]);
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-8 pb-32 antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-tma-safe md:pt-8 pb-32 antialiased">
       {/* ИСПРАВЛЕНО: Контейнер расширен до max-w-6xl на ПК для поддержки Split-View */}
       <div className="w-full max-w-md md:max-w-6xl mx-auto flex flex-col gap-6 relative">
         

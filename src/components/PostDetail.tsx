@@ -206,7 +206,7 @@ export default function PostDetail({ post, currentUser, onClose, onProfileClick:
 
   return (
     <div className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
-      <div className="w-full max-w-3xl mx-auto block p-4 pt-8 md:pt-12 pb-32 animate-fade-in select-none">
+      <div className="w-full max-w-3xl mx-auto block p-4 pt-tma-safe md:pt-12 pb-32 animate-fade-in select-none">
         <div className="w-full flex items-center justify-between mb-6">
           <button 
             onClick={onClose} 

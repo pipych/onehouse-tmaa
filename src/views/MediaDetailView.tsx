@@ -137,7 +137,7 @@ export default function StandalonePostDetail() {
   const getCommentReplies = (parentId: string) => comments.filter((c: any) => c.parent_id === parentId);
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-6 md:pt-10 pb-32 select-none antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-tma-safe md:pt-10 pb-32 select-none antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col">
         {/* Кнопка назад */}
         <div className="w-full mb-6">

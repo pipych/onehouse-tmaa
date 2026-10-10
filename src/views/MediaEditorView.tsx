@@ -231,7 +231,7 @@ function EditorContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-6 md:pt-10 pb-40 select-none antialiased">
+    <div className="min-h-screen bg-[#090b0e] text-white p-4 pt-tma-safe md:pt-10 pb-40 select-none antialiased">
       <div className="w-full max-w-3xl mx-auto flex flex-col relative">
         <div className="flex items-center justify-between w-full mb-8">
           <button 

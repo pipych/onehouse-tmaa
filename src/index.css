@@ -38,6 +38,49 @@
   --oneweb-radius-sheet: 32px;
   --oneweb-radius-modal: 32px;
   --oneweb-radius-full: 9999px;
+
+  /* Telegram Mini App Adaptive Insets */
+  --js-tg-top-inset: 0px;
+  --js-tg-content-top: 0px;
+  --js-tg-safe-top: 0px;
+  --tg-content-safe-area-inset-top: 0px;
+  --tg-safe-area-inset-top: 0px;
+
+  /*
+    Raw top safe inset from WebKit env(), Telegram WebApp CSS variables,
+    or JS-injected Telegram.WebApp.contentSafeAreaInset.
+  */
+  --tma-raw-top-inset: max(
+    env(safe-area-inset-top, 0px),
+    var(--tg-content-safe-area-inset-top, 0px),
+    var(--tg-safe-area-inset-top, 0px),
+    var(--js-tg-content-top, 0px),
+    var(--js-tg-safe-top, 0px),
+    var(--js-tg-top-inset, 0px)
+  );
+
+  /*
+    Adaptive top padding on mobile:
+    - Minimum safe floor of 76px guarantees native Telegram buttons (close X, menu ...)
+      never obscure header buttons even on devices/clients that don't report insets.
+    - If Telegram reports a larger safe area inset (e.g. 94px on iPhone with Dynamic Island in fullscreen),
+      it adds a comfortable +16px buffer (110px).
+  */
+  --tma-top-padding: max(calc(var(--tma-raw-top-inset) + 16px), 76px);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --tma-top-padding: 32px;
+  }
+}
+
+.pt-tma-safe {
+  padding-top: var(--tma-top-padding);
+}
+
+.top-tma-safe {
+  top: var(--tma-top-padding);
 }
 
 html, body {
