@@ -4,16 +4,18 @@ import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
 import { getAllPastSeasons, getSeasonState, seasonName } from '../lib/season';
 import { 
-  ArrowLeft, FolderArchive, ChevronDown, Calendar, Plus, Save, 
+  ArrowLeft, Calendar, Plus, Save, 
   RefreshCw, Trash2, Edit2, X, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, Clock, ArrowRight, MoreVertical 
 } from '../components/ui/SFSymbol';
+import SeasonSelector from '../components/SeasonSelector';
+import { ActionMenu } from '../ui/overlays/ActionMenu';
+import { OneIcon } from '../ui/components/Icon';
 
 export default function ArchiveTimelinePage() {
   const navigate = useNavigate();
   const { showBackButton, hideBackButton } = useTelegram();
   const [selectedSeason, setSelectedSeason] = useState<string>('Сезон 2');
-  const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,6 @@ export default function ArchiveTimelinePage() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false);
 
   const [formats, setFormats] = useState({
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
@@ -176,10 +177,8 @@ export default function ArchiveTimelinePage() {
             onClick={() => {
               if (isEditing && !activeEvent?.isNew) {
                 setIsEditing(false);
-                setShowActionMenu(false);
               } else if (activeEvent) {
                 setActiveEvent(null);
-                setShowActionMenu(false);
               } else {
                 navigate('/');
               }
@@ -191,46 +190,36 @@ export default function ArchiveTimelinePage() {
 
           <div className="relative flex items-center gap-2">
             {activeEvent && !isEditing && isEditor && (
-              <div className="relative">
-                <button 
-                  onClick={() => setShowActionMenu(!showActionMenu)}
-                  className="w-10 h-10 bg-[#181c23] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-white active:scale-95 transition-all shadow-md"
-                >
-                  <MoreVertical size={18} />
-                </button>
-                
-                {showActionMenu && (
-                  <div className="absolute right-0 mt-2 bg-[#181c23] rounded-[24px] p-2 z-50 shadow-2xl min-w-[160px] flex flex-col gap-1 animate-fade-in">
-                    <button 
-                      onClick={() => {
-                        setEventTitle(activeEvent.title);
-                        setEventDate(new Date(activeEvent.event_date).toISOString().substring(0, 10));
-                        setSelectedSeason(activeEvent.season || 'Сезон 2');
-                        setIsEditing(true);
-                        setShowActionMenu(false);
-                      }}
-                      className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-gray-300 hover:bg-white/5 flex items-center gap-2 transition-all"
-                    >
-                      <Edit2 size={14} className="text-[#c0ff00]" />
-                      <span>Редактировать</span>
-                    </button>
-                    <button 
-                      onClick={async () => {
-                        if (confirm('Вы действительно хотите стереть это событие из хронологии?')) {
-                          await supabase.from('timeline_events').delete().eq('id', activeEvent.id);
-                          setActiveEvent(null);
-                          setShowActionMenu(false);
-                          loadEvents();
-                        }
-                      }}
-                      className="text-xs text-left px-3 py-2.5 rounded-xl font-bold text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-all"
-                    >
-                      <Trash2 size={14} />
-                      <span>Удалить веху</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ActionMenu
+                title="Управление вехой"
+                description={activeEvent.title}
+                items={[
+                  {
+                    id: 'edit',
+                    label: 'Редактировать событие',
+                    icon: 'edit',
+                    onClick: () => {
+                      setEventTitle(activeEvent.title);
+                      setEventDate(new Date(activeEvent.event_date).toISOString().substring(0, 10));
+                      setSelectedSeason(activeEvent.season || 'Сезон 2');
+                      setIsEditing(true);
+                    },
+                  },
+                  {
+                    id: 'delete',
+                    label: 'Удалить веху',
+                    icon: 'delete',
+                    danger: true,
+                    onClick: async () => {
+                      if (confirm('Вы действительно хотите стереть это событие из хронологии?')) {
+                        await supabase.from('timeline_events').delete().eq('id', activeEvent.id);
+                        setActiveEvent(null);
+                        loadEvents();
+                      }
+                    },
+                  },
+                ]}
+              />
             )}
 
             {isEditor && !isEditing && !activeEvent && (
@@ -249,23 +238,11 @@ export default function ArchiveTimelinePage() {
             )}
 
             {!isEditing && !activeEvent && (
-              <div className="relative">
-                <button 
-                  onClick={() => setShowSeasonSelector(!showSeasonSelector)}
-                  className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md"
-                >
-                  <FolderArchive size={14} className="text-[#c0ff00]" />
-                  <span>{selectedSeason}</span>
-                  <ChevronDown size={14} className={`text-gray-500 transition-transform duration-300 ${showSeasonSelector ? 'rotate-180' : ''}`} />
-                </button>
-                {showSeasonSelector && (
-                  <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
-                    {seasons.map((season) => (
-                      <button key={season} onClick={() => { setSelectedSeason(season); setShowSeasonSelector(false); }} className={`text-xs text-left px-3 py-2.5 rounded-xl font-bold transition-all ${selectedSeason === season ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-gray-400 hover:bg-white/5'}`}>{season}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <SeasonSelector
+                seasons={seasons}
+                selectedSeason={selectedSeason}
+                onSelectSeason={setSelectedSeason}
+              />
             )}
 
             {isEditing && (
@@ -315,8 +292,8 @@ export default function ArchiveTimelinePage() {
                 />
               </div>
 
-              <div className="inline-flex items-center gap-2 bg-[#14171c]/80 border border-white/10 rounded-full px-4 py-2 text-xs font-bold text-gray-300 shadow-md relative">
-                <FolderArchive size={14} className="text-[#c0ff00]" />
+              <div className="inline-flex items-center gap-2 bg-[#14171c]/80 border-none rounded-full px-4 py-2 text-xs font-bold text-gray-300 shadow-md relative">
+                <OneIcon name="inventory_2" size={16} className="text-[#c0ff00]" />
                 <select 
                   value={selectedSeason} 
                   onChange={e => setSelectedSeason(e.target.value)}
@@ -327,7 +304,7 @@ export default function ArchiveTimelinePage() {
                   ))}
                 </select>
                 <div className="absolute right-3 pointer-events-none text-gray-500">
-                  <ChevronDown size={12} />
+                  <OneIcon name="expand_more" size={16} />
                 </div>
               </div>
             </div>

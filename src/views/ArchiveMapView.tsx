@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../hooks/useTelegram';
-import { ArrowLeft, FolderArchive, ChevronDown, Map, Eye, Download } from '../components/ui/SFSymbol';
+import { ArrowLeft, Map, Eye, Download } from '../components/ui/SFSymbol';
+import SeasonSelector from '../components/SeasonSelector';
 
 export default function ArchiveMapPage() {
   const navigate = useNavigate();
   const { showBackButton, hideBackButton } = useTelegram();
   const [selectedSeason, setSelectedSeason] = useState<string>('Сезон 1');
-  const [showSeasonSelector, setShowSeasonSelector] = useState(false);
 
   const seasons = ['Сезон 1', 'Сезон 2'];
 
@@ -24,30 +24,11 @@ export default function ArchiveMapPage() {
             <ArrowLeft size={20} />
           </button>
 
-          <div className="relative">
-            <button 
-              onClick={() => setShowSeasonSelector(!showSeasonSelector)}
-              className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md active:scale-95 transition-all"
-            >
-              <FolderArchive size={14} className="text-[#c0ff00]" />
-              <span>{selectedSeason}</span>
-              <ChevronDown size={14} className={`text-gray-500 transition-transform duration-300 ${showSeasonSelector ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showSeasonSelector && (
-              <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
-                {seasons.map((season) => (
-                  <button
-                    key={season}
-                    onClick={() => { setSelectedSeason(season); setShowSeasonSelector(false); }}
-                    className={`text-xs text-left px-3 py-2.5 rounded-xl font-bold transition-all ${selectedSeason === season ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-gray-400 hover:bg-white/5'}`}
-                  >
-                    {season}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <SeasonSelector
+            seasons={seasons}
+            selectedSeason={selectedSeason}
+            onSelectSeason={setSelectedSeason}
+          />
         </div>
 
         <div className="flex items-center gap-2 px-1">

@@ -213,12 +213,13 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
         )}
 
         {isYoutubeModalOpen && (
-          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-center justify-center px-4">
-            <div className="bg-[#14171c] border border-white/10 p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-6">
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="absolute top-5 right-5 text-gray-400"><X size={20}/></button>
+          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-end md:items-center justify-center p-0 md:px-4">
+            <div className="bg-[#14171c] p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] md:pb-6 rounded-t-[32px] rounded-b-none md:rounded-[32px] w-full max-w-md relative flex flex-col gap-5 border-none shadow-2xl">
+              <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-1 md:hidden" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="hidden md:flex absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white border-none sf-tap"><X size={16}/></button>
               <h3 className="text-xl font-black text-white">Видео с YouTube</h3>
-              <input type="text" placeholder="Ссылка..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white outline-none" />
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black py-4 rounded-2xl">Сохранить</button>
+              <input type="text" placeholder="Ссылка..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-[#181c23] rounded-full px-5 py-3.5 text-white outline-none border-none text-sm placeholder-[#8e8e93]" />
+              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black py-3.5 rounded-full border-none sf-tap active:scale-95 transition-transform">Сохранить</button>
             </div>
           </div>
         )}

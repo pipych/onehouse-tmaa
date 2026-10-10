@@ -207,17 +207,20 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
       {/* МОДАЛЬНОЕ ОКНО «ПОДРОБНЕЕ» (OneWebUI Centered Modal on Desktop / Bottom Sheet on Mobile) */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
           onClick={() => setIsModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-[#14171c] rounded-[32px] p-6 sm:p-7 shadow-2xl flex flex-col gap-5 text-left relative border-none select-none"
+            className="w-full max-w-lg bg-[#14171c] rounded-t-[32px] rounded-b-none md:rounded-[32px] p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] md:pb-7 shadow-2xl flex flex-col gap-5 text-left relative border-none select-none max-h-[88vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Кнопка закрытия */}
+            {/* Шторка: ручка для свайпа на мобильном */}
+            <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-1 shrink-0 md:hidden" />
+
+            {/* Кнопка закрытия: только на десктопе */}
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] flex items-center justify-center text-[#8e8e93] hover:text-white transition-colors border-none sf-tap"
+              className="hidden md:flex absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white transition-colors border-none sf-tap"
               title="Закрыть"
             >
               <OneIcon name="close" size={18} />

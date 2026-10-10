@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { OneIcon } from '../components/Icon';
 import { useIsMobile } from '../utils/useIsMobile';
@@ -46,6 +46,17 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const dragControls = useDragControls();
+
+  // Lock body scroll when mobile bottom sheet is open
+  useEffect(() => {
+    if (!mobileOpen || !isMobile) return;
+    const orig = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = orig;
+    };
+  }, [mobileOpen, isMobile]);
 
   // Default Three-dots round icon button trigger
   const defaultTrigger = (
@@ -79,7 +90,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
           createPortal(
             <AnimatePresence>
               {mobileOpen && (
-                <div className="fixed inset-0 z-50 flex items-end">
+                <div className="fixed inset-0 z-[70] flex items-end">
                   {/* Backdrop */}
                   <motion.div
                     key="action-menu-backdrop"
@@ -88,7 +99,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                     onClick={() => setMobileOpen(false)}
-                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+                    className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm"
                     aria-hidden="true"
                   />
 
@@ -96,8 +107,10 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                   <motion.div
                     key="action-menu-sheet"
                     drag="y"
+                    dragListener={false}
+                    dragControls={dragControls}
                     dragConstraints={{ top: 0 }}
-                    dragElastic={0.2}
+                    dragElastic={0.15}
                     onDragEnd={(_, info) => {
                       if (info.offset.y > 60 || info.velocity.y > 250) {
                         setMobileOpen(false);
@@ -106,22 +119,27 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                     initial={{ y: '100%' }}
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 320 }}
                     className={cn(
-                      'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] max-h-[85vh] select-none',
+                      'fixed inset-x-0 bottom-0 z-[75] flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-16px_50px_rgba(0,0,0,0.9)] max-h-[85dvh] select-none focus:outline-none',
                       className
                     )}
                     role="dialog"
                     aria-modal="true"
                   >
-                    {/* Swipe Handle */}
-                    <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-2 shrink-0 touch-none cursor-grab active:cursor-grabbing" />
+                    {/* Swipe Handle Area */}
+                    <div
+                      onPointerDown={(e) => dragControls.start(e)}
+                      className="w-full pt-3.5 pb-2 cursor-grab active:cursor-grabbing touch-none flex flex-col items-center shrink-0"
+                    >
+                      <div className="w-12 h-1.5 rounded-full bg-white/25" />
+                    </div>
 
                     {/* Header info */}
                     {(title || description) && (
-                      <div className="px-6 pt-2 pb-2 text-left">
+                      <div className="px-6 pt-1 pb-3 text-left shrink-0">
                         {title && (
-                          <h4 className="text-base font-bold text-white tracking-tight">
+                          <h4 className="text-lg font-black text-white tracking-tight">
                             {title}
                           </h4>
                         )}
@@ -131,8 +149,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                       </div>
                     )}
 
-                    {/* Mobile Touch Rows with clearance above MobileNavbar */}
-                    <div className="p-4 pt-1 space-y-2 pb-28 overflow-y-auto no-scrollbar">
+                    {/* Mobile Touch Rows - Big, prominent OneWebUI buttons */}
+                    <div className="p-4 pt-1 space-y-2.5 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] overflow-y-auto no-scrollbar">
                       {items.map((item, idx) => {
                         if (item.separator) {
                           return <div key={`sep-${idx}`} className="my-2 h-px bg-white/5" />;
@@ -148,26 +166,26 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                               item.onClick?.();
                             }}
                             className={cn(
-                              'w-full h-13 px-4 rounded-[20px] bg-[#181c23] active:bg-[#1c222b] active:scale-[0.98] transition-all flex items-center justify-between text-left cursor-pointer border-none outline-none',
+                              'w-full min-h-[58px] px-4 py-3 rounded-[22px] bg-[#181c23] hover:bg-[#1c222b] active:bg-[#252c37] active:scale-[0.98] transition-all flex items-center justify-between text-left cursor-pointer border-none outline-none sf-tap',
                               item.disabled && 'opacity-40 pointer-events-none'
                             )}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-3.5 min-w-0">
                               {item.icon && (
                                 <div
                                   className={cn(
-                                    'w-9 h-9 rounded-xl flex items-center justify-center shrink-0',
+                                    'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-colors',
                                     item.danger
                                       ? 'bg-red-500/15 text-red-400'
                                       : 'bg-[#1c222b] text-[#8e8e93]'
                                   )}
                                 >
-                                  <OneIcon name={item.icon} size={20} />
+                                  <OneIcon name={item.icon} size={22} />
                                 </div>
                               )}
                               <span
                                 className={cn(
-                                  'text-sm font-semibold truncate',
+                                  'text-base font-bold truncate',
                                   item.danger ? 'text-red-400' : 'text-white'
                                 )}
                               >
@@ -176,13 +194,13 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                             </div>
 
                             {item.badge !== undefined ? (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white/5 text-[#8e8e93]">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/5 text-[#8e8e93]">
                                 {item.badge}
                               </span>
                             ) : (
                               <OneIcon
                                 name="chevron_right"
-                                size={18}
+                                size={20}
                                 className="text-white/20 shrink-0"
                               />
                             )}

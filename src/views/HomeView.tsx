@@ -1892,7 +1892,7 @@ export default function Home() {
 
 
 
-      <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ease-in-out ${(selectedCharacter || selectedProfile) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedCharacter(null); setSelectedProfile(null); setIsEditingProfile(false); setShowRoleSelector(false); }} />
+      <div className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] transition-opacity duration-300 ease-in-out ${(selectedCharacter || selectedProfile) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => { setSelectedCharacter(null); setSelectedProfile(null); setIsEditingProfile(false); setShowRoleSelector(false); setCharacterMenuOpen(false); setShowPlayerRoleMenu(false); }} />
 
 
 
@@ -1942,29 +1942,33 @@ export default function Home() {
 
 
 
-      {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ */}
+      {/* МОДАЛЬНОЕ ОКНО ПЕРСОНАЖА */}
 
       {selectedCharacter && (
 
-        <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 ${isDead(selectedCharacter) ? 'bg-[#050608]' : 'bg-[#14171c]'}`}>
+        <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedCharacter) ? 'bg-[#050608]' : 'bg-[#14171c]'}`}>
+
+          {/* Шторка: ручка для свайпа на мобильном */}
+          <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
 
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
 
-          <button onClick={() => { setSelectedCharacter(null); setIsEditingProfile(false); setShowRoleSelector(false); setCharacterMenuOpen(false); setPlayerCharacters([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
+          {/* Крестик: строго скрыт на телефоне, есть только на десктопе */}
+          <button onClick={() => { setSelectedCharacter(null); setIsEditingProfile(false); setShowRoleSelector(false); setCharacterMenuOpen(false); setPlayerCharacters([]); }} className="hidden md:flex absolute top-4 right-4 w-9 h-9 items-center justify-center bg-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10 border-none sf-tap"><X size={16} /></button>
 
           {/* ... menu */}
           {isAdmin && !isEditingProfile && (
-            <div className="absolute top-4 right-12 z-20">
-              <button onClick={() => setCharacterMenuOpen(!characterMenuOpen)} className="p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10">
-                <MoreVertical size={14} />
+            <div className="absolute top-4 right-4 md:right-14 z-20">
+              <button onClick={() => setCharacterMenuOpen(!characterMenuOpen)} className="w-9 h-9 flex items-center justify-center bg-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10 border-none sf-tap">
+                <MoreVertical size={16} />
               </button>
               {characterMenuOpen && (
-                <div className="absolute top-full right-0 mt-1 bg-[#14171c]/95 border border-white/10 rounded-2xl p-1.5 shadow-2xl min-w-[160px] flex flex-col backdrop-blur-xl">
-                  <button onClick={() => { setNewRpName(selectedCharacter.rp_name); setNewAvatarUrl(selectedCharacter.avatar_url || ''); setIsEditingProfile(true); setCharacterMenuOpen(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-white/5 flex items-center gap-2 text-white">
-                    <Edit2 size={12} /> Редактировать
+                <div className="absolute top-full right-0 mt-2 bg-[#1c222b] rounded-2xl p-2 z-30 shadow-2xl min-w-[200px] flex flex-col gap-1.5 border-none">
+                  <button onClick={() => { setNewRpName(selectedCharacter.rp_name); setNewAvatarUrl(selectedCharacter.avatar_url || ''); setIsEditingProfile(true); setCharacterMenuOpen(false); }} className="min-h-[44px] text-sm text-left px-4 py-2.5 rounded-xl font-bold transition-all hover:bg-white/10 active:scale-95 flex items-center gap-3 text-white border-none">
+                    <Edit2 size={16} /> Редактировать
                   </button>
-                  <button onClick={() => { killCharacter(); setCharacterMenuOpen(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all hover:bg-white/5 flex items-center gap-2 text-red-400">
-                    <Skull size={12} /> Убить
+                  <button onClick={() => { killCharacter(); setCharacterMenuOpen(false); }} className="min-h-[44px] text-sm text-left px-4 py-2.5 rounded-xl font-bold transition-all hover:bg-red-500/10 active:scale-95 flex items-center gap-3 text-red-400 border-none">
+                    <Skull size={16} /> Убить
                   </button>
                 </div>
               )}
@@ -1973,7 +1977,7 @@ export default function Home() {
 
 
 
-          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 mx-auto shadow-lg transition-all duration-300 ${isDead(selectedCharacter) ? 'border-gray-600 opacity-60 grayscale' : 'border-[#c0ff00]'}`}>
+          <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] mx-auto shadow-lg transition-all duration-300 ${isDead(selectedCharacter) ? 'opacity-60 grayscale' : ''}`}>
 
             <img src={isEditingProfile ? newAvatarUrl : (selectedCharacter.avatar_url || '')} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" />
 
@@ -1989,17 +1993,17 @@ export default function Home() {
 
                 <input type="text" placeholder="Имя профиля" value={newRpName} onChange={(e) => setNewRpName(e.target.value)} className="ui-input text-center font-bold" />
 
-                <label className="ui-pill-btn w-full justify-center !bg-white/5 !border-white/10 hover:!border-[#c0ff00]/40 cursor-pointer py-2.5 relative overflow-hidden">
+                <label className="ui-pill-btn w-full justify-center !bg-white/5 cursor-pointer py-3 relative overflow-hidden border-none">
 
                   <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onChange={(e) => handleFileUpload(e, setNewAvatarUrl, setLoadingProfile)} disabled={isUploadingProfile} />
 
-                  <Upload size={14} className={isUploadingProfile ? "animate-bounce" : ""} />
+                  <Upload size={16} className={isUploadingProfile ? "animate-bounce" : ""} />
 
-                  <span className="font-medium text-xs">{isUploadingProfile ? 'Грузим...' : 'Загрузить из галереи'}</span>
+                  <span className="font-bold text-sm">{isUploadingProfile ? 'Грузим...' : 'Загрузить из галереи'}</span>
 
                 </label>
 
-                <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-bold py-2.5 mt-2"><Save size={14} /><span>Сохранить всё</span></button>
+                <button onClick={saveProfileData} disabled={isUploadingProfile} className="ui-pill-btn w-full justify-center !bg-[#c0ff00] !text-black font-black py-3.5 mt-2 border-none"><Save size={16} /><span>Сохранить всё</span></button>
 
               </div>
 
@@ -2007,11 +2011,11 @@ export default function Home() {
 
               <div className="w-full space-y-1">
 
-                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedCharacter) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedCharacter.rp_name}{isDead(selectedCharacter) && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 ml-2 align-middle inline-block">мёртв</span>}</h2>
+                <h2 className={`text-2xl font-black tracking-wide break-all px-6 transition-all duration-300 ${isDead(selectedCharacter) ? 'text-gray-500 line-through' : 'text-white'}`}>{selectedCharacter.rp_name}{isDead(selectedCharacter) && <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 ml-2 align-middle inline-block">мёртв</span>}</h2>
 
                 <p className="text-sm text-gray-400 font-mono tracking-tight break-all">{selectedCharacter.mc_nickname}</p>
 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#181c23] rounded-full text-xs font-semibold mt-1 text-[#c0ff00]">
 
                   <span>🏛️ Партия:</span><span className="font-bold">{selectedCharacter.party || 'Нет партии'}</span>
 
@@ -2037,11 +2041,11 @@ export default function Home() {
 
               {(selectedCharacter.professions || []).filter(p => p.toLowerCase() !== 'мёртв').map((p: string, idx: number) => (
 
-                <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getProfessionColor(p)}15`, color: getProfessionColor(p), borderColor: `${getProfessionColor(p)}30` }}>
+                <span key={idx} className="text-xs font-bold py-1.5 rounded-full transition-all flex items-center gap-1.5 px-3.5" style={{ backgroundColor: `${getProfessionColor(p)}15`, color: getProfessionColor(p) }}>
 
                   <span>• {p.toUpperCase()}</span>
 
-                  {isAdmin && <button onClick={() => handleRemoveProfessionFromChar(p)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
+                  {isAdmin && <button onClick={() => handleRemoveProfessionFromChar(p)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all border-none"><X size={12} /></button>}
 
                 </span>
 
@@ -2051,19 +2055,19 @@ export default function Home() {
 
                 <div className="relative inline-block">
 
-                  <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all shadow-sm"><Plus size={14} /></button>
+                  <button onClick={() => setShowRoleSelector(!showRoleSelector)} className="flex items-center justify-center w-7 h-7 rounded-full bg-white/5 text-gray-400 hover:text-white transition-all shadow-sm border-none"><Plus size={16} /></button>
 
                   {showRoleSelector && (
 
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 backdrop-blur-xl">
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#1c222b] rounded-2xl p-2 z-50 shadow-2xl min-w-[220px] max-w-[280px] max-h-[260px] overflow-y-auto flex flex-col gap-1 border-none">
 
                       {professions.filter(prof => !(selectedCharacter.professions || []).includes(prof.name)).map((prof, idx) => (
 
-                        <button key={idx} onClick={() => handleAddProfessionToChar(prof.name)} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-2" style={{color: prof.color}}><span className="w-2 h-2 rounded-full" style={{backgroundColor: prof.color}}/>{prof.name.toUpperCase()}</button>
+                        <button key={idx} onClick={() => handleAddProfessionToChar(prof.name)} className="min-h-[44px] text-sm text-left px-3.5 py-2.5 rounded-xl font-bold transition-all hover:bg-white/10 active:scale-95 flex items-center gap-2.5 border-none" style={{color: prof.color}}><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: prof.color}}/>{prof.name.toUpperCase()}</button>
 
                       ))}
 
-                      {professions.filter(prof => !(selectedCharacter.professions || []).includes(prof.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Все профессии назначены</span>}
+                      {professions.filter(prof => !(selectedCharacter.professions || []).includes(prof.name)).length === 0 && <span className="text-sm text-gray-500 px-3.5 py-2.5">Все профессии назначены</span>}
 
                     </div>
 
@@ -2091,23 +2095,23 @@ export default function Home() {
 
                 <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
 
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
 
                   {playerCharacters.map((pc: any) => (
 
-                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
+                    <div key={pc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-none text-left min-h-[54px] ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] opacity-60' : 'bg-[#181c23]'}`}>
 
-                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
+                      <div className={`w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'grayscale' : ''}`}>
 
-                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={16} className="m-auto text-gray-500" />}
 
                       </div>
 
                       <div className="min-w-0 flex-1">
 
-                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className={`text-sm font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
 
-                        <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
+                        <div className="text-[11px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
 
                       </div>
 
@@ -2115,7 +2119,7 @@ export default function Home() {
 
                         {pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') && (
 
-                          <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">мёртв</span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">мёртв</span>
 
                         )}
 
@@ -2139,11 +2143,16 @@ export default function Home() {
 
       {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ ИГРОКА */}
       {selectedProfile && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] border border-white/10 shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible transition-colors duration-300 bg-[#14171c]">
-          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-          <button onClick={() => { setSelectedProfile(null); setShowPlayerRoleMenu(false); setPlayerCharacters([]); }} className="absolute top-4 right-4 p-1.5 bg-white/5 border border-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10"><X size={14} /></button>
+        <div className="fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 bg-[#14171c]">
+          {/* Шторка: ручка для свайпа на мобильном */}
+          <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
 
-          <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] border-2 border-[#c0ff00] mx-auto shadow-lg">
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
+          
+          {/* Крестик: строго скрыт на телефоне, есть только на десктопе */}
+          <button onClick={() => { setSelectedProfile(null); setShowPlayerRoleMenu(false); setPlayerCharacters([]); }} className="hidden md:flex absolute top-4 right-4 w-9 h-9 items-center justify-center bg-white/5 rounded-full text-gray-400 hover:text-white active:scale-90 transition-all z-10 border-none sf-tap"><X size={16} /></button>
+
+          <div className="relative w-24 h-24 rounded-full overflow-hidden bg-[#1c2026] mx-auto shadow-lg">
             {selectedProfile.avatar_url ? <img src={selectedProfile.avatar_url} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={36} className="m-auto text-gray-600" />}
           </div>
 
@@ -2156,21 +2165,21 @@ export default function Home() {
             <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Роли</div>
             <div className="flex flex-wrap gap-2 items-center">
               {(selectedProfile.roles || []).map((role: string, idx: number) => (
-                <span key={idx} className="text-xs font-bold py-1 rounded-full border transition-all flex items-center gap-1.5 px-3" style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role), borderColor: `${getRoleColor(role)}30` }}>
+                <span key={idx} className="text-xs font-bold py-1.5 rounded-full transition-all flex items-center gap-1.5 px-3.5" style={{ backgroundColor: `${getRoleColor(role)}15`, color: getRoleColor(role) }}>
                   <span>• {role.toUpperCase()}</span>
-                  {isAdmin && <button onClick={() => handleRemoveRoleFromProfile(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all"><X size={10} /></button>}
+                  {isAdmin && <button onClick={() => handleRemoveRoleFromProfile(role)} className="opacity-60 hover:opacity-100 hover:bg-white/10 rounded-full p-1 transition-all border-none"><X size={12} /></button>}
                 </span>
               ))}
-              {(selectedProfile.roles || []).length === 0 && <span className="text-xs text-gray-500">Нет ролей</span>}
+              {(selectedProfile.roles || []).length === 0 && <span className="text-sm text-gray-500">Нет ролей</span>}
               {isAdmin && (
                 <div className="relative inline-block">
-                  <button onClick={() => setShowPlayerRoleMenu(!showPlayerRoleMenu)} className="flex items-center justify-center w-6 h-6 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/40 transition-all shadow-sm"><Plus size={14} /></button>
+                  <button onClick={() => setShowPlayerRoleMenu(!showPlayerRoleMenu)} className="flex items-center justify-center w-7 h-7 rounded-full bg-white/5 text-gray-400 hover:text-white transition-all shadow-sm border-none"><Plus size={16} /></button>
                   {showPlayerRoleMenu && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#14171c]/95 border border-white/10 rounded-2xl p-2 z-50 shadow-2xl min-w-[150px] flex flex-col gap-1 backdrop-blur-xl">
+                    <div className="absolute bottom-full left-0 mb-2 bg-[#1c222b] rounded-2xl p-2 z-50 shadow-2xl min-w-[220px] max-w-[280px] max-h-[260px] overflow-y-auto flex flex-col gap-1 border-none">
                       {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).map((role, idx) => (
-                        <button key={idx} onClick={() => { handleAddRoleToProfile(role.name); setShowPlayerRoleMenu(false); }} className="text-xs text-left px-3 py-2 rounded-xl font-bold transition-all flex items-center gap-2" style={{color: role.color}}><span className="w-2 h-2 rounded-full" style={{backgroundColor: role.color}}/>{role.name.toUpperCase()}</button>
+                        <button key={idx} onClick={() => { handleAddRoleToProfile(role.name); setShowPlayerRoleMenu(false); }} className="min-h-[44px] text-sm text-left px-3.5 py-2.5 rounded-xl font-bold transition-all hover:bg-white/10 active:scale-95 flex items-center gap-2.5 border-none" style={{color: role.color}}><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: role.color}}/>{role.name.toUpperCase()}</button>
                       ))}
-                      {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).length === 0 && <span className="text-xs text-gray-500 px-3 py-2">Все роли назначены</span>}
+                      {customRoles.filter(cr => !(selectedProfile.roles || []).includes(cr.name)).length === 0 && <span className="text-sm text-gray-500 px-3.5 py-2.5">Все роли назначены</span>}
                     </div>
                   )}
                 </div>
@@ -2183,18 +2192,18 @@ export default function Home() {
               <div className="w-full h-[1px] bg-white/5 my-2" />
               <div className="text-left space-y-2 w-full">
                 <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold pl-1">Персонажи</div>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {playerCharacters.map((pc: any) => (
-                    <div key={pc.id} className={`flex items-center gap-2 p-2 rounded-xl border text-left ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] border-gray-800/30 opacity-60' : 'bg-black/20 border-white/5'}`}>
-                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'border-gray-600 grayscale' : 'border-white/10'}`}>
-                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={14} className="m-auto text-gray-600" />}
+                    <div key={pc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-none text-left min-h-[54px] ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'bg-[#050608] opacity-60' : 'bg-[#181c23]'}`}>
+                      <div className={`w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'grayscale' : ''}`}>
+                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <User size={16} className="m-auto text-gray-600" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className={`text-xs font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
-                        <div className="text-[9px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
+                        <div className={`text-sm font-bold truncate ${pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв') ? 'text-gray-500 line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className="text-[11px] text-gray-500">{pc.season} · {pc.party || 'Нет партии'}</div>
                       </div>
                       {(pc.status === 'dead' || pc.professions?.some((r: string) => r.toLowerCase() === 'мёртв')) && (
-                        <span className="text-[7px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 flex-shrink-0">мёртв</span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 flex-shrink-0">мёртв</span>
                       )}
                     </div>
                   ))}

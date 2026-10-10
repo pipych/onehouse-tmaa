@@ -4,13 +4,13 @@ import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
 import { getSeasonState, getAllPastSeasons, seasonName } from '../lib/season';
 import Avatar from '../components/Avatar';
-import { ArrowLeft, FolderArchive, ChevronDown, Users, Search, RefreshCw, X, Skull, Swords } from '../components/ui/SFSymbol';
+import { ArrowLeft, Users, Search, RefreshCw, X, Skull, Swords } from '../components/ui/SFSymbol';
+import SeasonSelector from '../components/SeasonSelector';
 
 export default function ArchiveCharactersPage() {
   const navigate = useNavigate();
   const { showBackButton, hideBackButton } = useTelegram();
   const [selectedSeason, setSelectedSeason] = useState<string>('Сезон 2');
-  const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [characters, setCharacters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,21 +96,11 @@ export default function ArchiveCharactersPage() {
         <div className="flex items-center justify-between w-full select-none">
           <button onClick={() => navigate('/')} className="w-10 h-10 flex items-center justify-center bg-[#14171c] rounded-full text-white shadow-lg active:scale-90 transition-transform"><ArrowLeft size={18} /></button>
 
-          <div className="relative">
-            <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md active:scale-95 transition-all">
-              <FolderArchive size={14} className="text-[#c0ff00]" />
-              <span>{selectedSeason}</span>
-              <ChevronDown size={14} className={`text-[#8e8e93] transition-transform duration-300 ${showSeasonSelector ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showSeasonSelector && (
-              <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
-                {seasons.map((season) => (
-                  <button key={season} onClick={() => { setSelectedSeason(season); setShowSeasonSelector(false); }} className={`text-xs text-left px-3 py-2 rounded-full font-bold transition-all ${selectedSeason === season ? 'bg-[#1c222b] text-[#c0ff00]' : 'text-[#8e8e93] hover:text-white hover:bg-white/5'}`}>{season}</button>
-                ))}
-              </div>
-            )}
-          </div>
+          <SeasonSelector
+            seasons={seasons}
+            selectedSeason={selectedSeason}
+            onSelectSeason={setSelectedSeason}
+          />
         </div>
 
         <div className="flex items-center bg-[#14171c] rounded-full px-4 py-3 w-full shadow-lg">
@@ -154,10 +144,15 @@ export default function ArchiveCharactersPage() {
       {/* Модальное окно персонажа */}
       {selectedPlayer && (
         <>
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} />
-          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-32px)] max-w-md p-6 rounded-[32px] shadow-2xl text-center space-y-5 animate-profile-grow overflow-visible ${isDead(selectedPlayer) ? 'bg-[#090b0e]' : 'bg-[#14171c]'}`}>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] transition-opacity duration-300" onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} />
+          <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedPlayer) ? 'bg-[#090b0e]' : 'bg-[#14171c]'}`}>
+            {/* Шторка: ручка для свайпа на мобильном */}
+            <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
+
             <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-            <button onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#181c23] flex items-center justify-center text-[#8e8e93] hover:text-white transition-all"><X size={14} /></button>
+            
+            {/* Крестик: строго скрыт на телефоне, есть только на десктопе */}
+            <button onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} className="hidden md:flex absolute top-4 right-4 w-9 h-9 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white transition-all border-none sf-tap"><X size={16} /></button>
 
             <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#181c23] mx-auto shadow-lg ${isDead(selectedPlayer) ? 'opacity-60 grayscale' : ''}`}>
               <img src={selectedPlayer.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" />
@@ -166,17 +161,17 @@ export default function ArchiveCharactersPage() {
             <div className="space-y-1">
               <h2 className={`text-2xl font-black tracking-wide break-all px-6 ${isDead(selectedPlayer) ? 'text-[#8e8e93] line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
               <p className="text-sm text-[#8e8e93] font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#181c23] rounded-full text-xs font-medium mt-1 text-[#c0ff00]">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#181c23] rounded-full text-xs font-semibold mt-1 text-[#c0ff00]">
                 <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
               </div>
-              <p className="text-[10px] text-[#8e8e93]">{selectedPlayer.season}</p>
+              <p className="text-xs text-[#8e8e93] pt-0.5">{selectedPlayer.season}</p>
             </div>
 
             <div className="text-left space-y-2 w-full pt-1">
               <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">Роли</div>
               <div className="flex flex-wrap gap-2 items-center">
                 {selectedPlayer.roles?.map((role: string, idx: number) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 text-xs font-bold py-1 px-3 rounded-full bg-white/5 text-[#8e8e93]">
+                  <span key={idx} className="inline-flex items-center gap-2 text-xs font-bold py-1.5 px-3.5 rounded-full bg-[#181c23] text-[#8e8e93] border-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#8e8e93] shrink-0" />
                     <span>{role.toUpperCase()}</span>
                   </span>
@@ -188,15 +183,15 @@ export default function ArchiveCharactersPage() {
             {playerChars.length > 0 && (
               <div className="text-left space-y-2 w-full pt-2">
                 <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">Персонажи</div>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto">
                   {playerChars.map((pc: any) => (
-                    <div key={pc.id} className={`flex items-center gap-2 p-2.5 rounded-2xl ${isDead(pc) ? 'bg-[#090b0e] opacity-60' : 'bg-[#181c23]'}`}>
-                      <div className={`w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-[#14171c] ${isDead(pc) ? 'grayscale' : ''}`}>
-                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <Users size={14} className="m-auto text-[#8e8e93]" />}
+                    <div key={pc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-none min-h-[54px] ${isDead(pc) ? 'bg-[#090b0e] opacity-60' : 'bg-[#181c23]'}`}>
+                      <div className={`w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#14171c] ${isDead(pc) ? 'grayscale' : ''}`}>
+                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <Users size={16} className="m-auto text-[#8e8e93]" />}
                       </div>
                       <div className="min-w-0 flex-1 text-left">
-                        <div className={`text-xs font-bold truncate ${isDead(pc) ? 'text-[#8e8e93] line-through' : 'text-white'}`}>{pc.rp_name}</div>
-                        <div className="text-[9px] text-[#8e8e93]">{pc.season} · {pc.party || 'Нет партии'}</div>
+                        <div className={`text-sm font-bold truncate ${isDead(pc) ? 'text-[#8e8e93] line-through' : 'text-white'}`}>{pc.rp_name}</div>
+                        <div className="text-[11px] text-[#8e8e93]">{pc.season} · {pc.party || 'Нет партии'}</div>
                       </div>
                     </div>
                   ))}

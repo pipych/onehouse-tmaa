@@ -374,11 +374,12 @@ function EditorContent() {
 
         {/* Модалка YouTube */}
         {isYoutubeModalOpen && (
-          <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-[#14171c] p-6 rounded-[32px] w-full max-w-md relative flex flex-col gap-5 border-none shadow-2xl">
+          <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-4">
+            <div className="bg-[#14171c] p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] md:pb-6 rounded-t-[32px] rounded-b-none md:rounded-[32px] w-full max-w-md relative flex flex-col gap-5 border-none shadow-2xl">
+              <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-1 md:hidden" />
               <button 
                 onClick={() => setIsYoutubeModalOpen(false)} 
-                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] flex items-center justify-center text-[#8e8e93] hover:text-white border-none sf-tap"
+                className="hidden md:flex absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white border-none sf-tap"
               >
                 <OneIcon name="close" size={18} />
               </button>

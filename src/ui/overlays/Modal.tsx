@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { OneIcon } from '../components/Icon';
 import { useIsMobile } from '../utils/useIsMobile';
@@ -42,6 +42,7 @@ export const Modal: React.FC<ModalProps> = ({
   className,
 }) => {
   const isMobile = useIsMobile();
+  const dragControls = useDragControls();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
           {/* Backdrop with blur & smooth fade */}
           <motion.div
             key="modal-backdrop"
@@ -84,7 +85,7 @@ export const Modal: React.FC<ModalProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm"
             aria-hidden="true"
           />
 
@@ -94,10 +95,12 @@ export const Modal: React.FC<ModalProps> = ({
             <motion.div
               key="modal-drawer"
               drag="y"
+              dragListener={false}
+              dragControls={dragControls}
               dragConstraints={{ top: 0 }}
               dragElastic={0.2}
               onDragEnd={(_, info) => {
-                if (info.offset.y > 75 || info.velocity.y > 300) {
+                if (info.offset.y > 60 || info.velocity.y > 250) {
                   onClose();
                 }
               }}
@@ -106,17 +109,22 @@ export const Modal: React.FC<ModalProps> = ({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 350 }}
               className={cn(
-                'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] focus:outline-none max-h-[85vh] select-none',
+                'fixed inset-x-0 bottom-0 z-[70] flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] focus:outline-none max-h-[88vh] select-none',
                 className
               )}
               role="dialog"
               aria-modal="true"
             >
-              {/* Top Swipe Indicator (Handle Bar) */}
-              <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-2 shrink-0 touch-none cursor-grab active:cursor-grabbing" />
+              {/* Top Swipe Indicator (Handle Bar Area) */}
+              <div 
+                className="w-full pt-3.5 pb-2.5 cursor-grab active:cursor-grabbing touch-none flex justify-center shrink-0"
+                onPointerDown={(e) => dragControls.start(e)}
+              >
+                <div className="w-12 h-1 rounded-full bg-white/20" />
+              </div>
 
-              {/* Mobile Content Area with pb-28 safe clearance above floating MobileNavbar */}
-              <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-2 pb-28 space-y-4">
+              {/* Mobile Content Area with safe clearance above floating MobileNavbar */}
+              <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-1 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] space-y-4">
                 {(title || description) && (
                   <div className="space-y-1.5 text-left mb-2">
                     {title && (
@@ -137,7 +145,7 @@ export const Modal: React.FC<ModalProps> = ({
 
                 {/* Footer Actions */}
                 {footer && (
-                  <div className="pt-3 flex flex-col gap-2 mt-4">
+                  <div className="pt-3 flex flex-col gap-2.5 mt-4">
                     {footer}
                   </div>
                 )}
@@ -152,7 +160,7 @@ export const Modal: React.FC<ModalProps> = ({
               exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-48%' }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
-                'fixed left-1/2 top-1/2 z-50 w-full',
+                'fixed left-1/2 top-1/2 z-[70] w-full',
                 maxWidth,
                 'bg-[#14171c] p-6 sm:p-7 rounded-[32px] border-none shadow-[0_20px_60px_rgba(0,0,0,0.9)] focus:outline-none select-none max-h-[90vh] overflow-y-auto no-scrollbar',
                 className

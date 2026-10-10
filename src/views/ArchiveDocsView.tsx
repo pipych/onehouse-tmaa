@@ -4,16 +4,16 @@ import { useTelegram } from '../hooks/useTelegram';
 import { supabase } from '../lib/supabase';
 import { getAllPastSeasons, getSeasonState, seasonName } from '../lib/season';
 import { 
-  ArrowLeft, FolderArchive, ChevronDown, FileText, Plus, Save, 
+  ArrowLeft, FileText, Plus, Save, 
   RefreshCw, Trash2, Edit2, X, Bold, Italic, Strikethrough, 
   Heading1, Heading2, AlignLeft, AlignCenter, BookOpen
 } from '../components/ui/SFSymbol';
+import SeasonSelector from '../components/SeasonSelector';
 
 export default function ArchiveDocsPage() {
   const navigate = useNavigate();
   const { showBackButton, hideBackButton } = useTelegram();
   const [selectedSeason, setSelectedSeason] = useState<string>('Сезон 2');
-  const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -218,20 +218,14 @@ export default function ArchiveDocsPage() {
               </button>
             )}
 
-            <div className="relative">
-              <button onClick={() => setShowSeasonSelector(!showSeasonSelector)} className="bg-[#14171c] py-2 px-4 rounded-full flex items-center gap-2 text-xs font-bold text-white shadow-md">
-                <FolderArchive size={14} className="text-[#c0ff00]" />
-                <span>{selectedSeason}</span>
-                <ChevronDown size={14} className="text-gray-500" />
-              </button>
-              {showSeasonSelector && (
-                <div className="absolute right-0 mt-2 bg-[#14171c] rounded-[24px] p-2 z-50 shadow-2xl min-w-[140px] flex flex-col gap-1 animate-fade-in">
-                  {seasons.map(s => (
-                    <button key={s} onClick={() => { setSelectedSeason(s); setShowSeasonSelector(false); setActiveDoc(null); }} className={`text-xs text-left px-3 py-2.5 rounded-xl font-bold transition-all ${selectedSeason === s ? 'bg-[#c0ff00]/10 text-[#c0ff00]' : 'text-gray-400 hover:bg-white/5'}`}>{s}</button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SeasonSelector
+              seasons={seasons}
+              selectedSeason={selectedSeason}
+              onSelectSeason={(s) => {
+                setSelectedSeason(s);
+                setActiveDoc(null);
+              }}
+            />
             
             {isEditor && (
               <button 
