@@ -145,7 +145,7 @@ export default function ArchiveCharactersPage() {
       {selectedPlayer && (
         <>
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] transition-opacity duration-300" onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} />
-          <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedPlayer) ? 'bg-[#090b0e]' : 'bg-[#14171c]'}`}>
+          <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedPlayer) ? 'bg-[#090b0e]' : 'bg-[#14171c]'}`}>
             {/* Шторка: ручка для свайпа на мобильном */}
             <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
 

@@ -150,7 +150,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                     )}
 
                     {/* Mobile Touch Rows - Big, prominent OneWebUI buttons */}
-                    <div className="p-4 pt-1 space-y-2.5 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] overflow-y-auto no-scrollbar">
+                    <div className="p-4 pt-1 space-y-2.5 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] overflow-y-auto no-scrollbar">
                       {items.map((item, idx) => {
                         if (item.separator) {
                           return <div key={`sep-${idx}`} className="my-2 h-px bg-white/5" />;

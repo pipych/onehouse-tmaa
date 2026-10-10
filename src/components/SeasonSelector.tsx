@@ -162,7 +162,7 @@ export const SeasonSelector: React.FC<SeasonSelectorProps> = ({
                   </div>
 
                   {/* Big Touch-Friendly Rows */}
-                  <div className="p-4 pt-1 space-y-2.5 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] overflow-y-auto no-scrollbar">
+                  <div className="p-4 pt-1 space-y-2.5 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] overflow-y-auto no-scrollbar">
                     {seasons.map((season) => {
                       const isSelected = selectedSeason === season;
                       return (

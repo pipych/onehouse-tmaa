@@ -40,7 +40,7 @@ export function DesktopNavbar({
   return (
     <header
       className={cn(
-        'hidden md:block sticky top-0 z-40 w-full bg-[#090b0e]/90 backdrop-blur-2xl border-b border-white/[0.04] transition-all select-none',
+        'hidden md:block sticky top-0 z-[999999] w-full bg-[#090b0e]/90 backdrop-blur-2xl border-b border-white/[0.04] transition-all select-none',
         className
       )}
     >

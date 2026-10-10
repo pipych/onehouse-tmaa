@@ -124,7 +124,7 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
 
               {/* Mobile Content Area with safe clearance above floating MobileNavbar */}
-              <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-1 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] space-y-4">
+              <div className="flex-1 overflow-y-auto no-scrollbar px-6 pt-1 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] space-y-4">
                 {(title || description) && (
                   <div className="space-y-1.5 text-left mb-2">
                     {title && (

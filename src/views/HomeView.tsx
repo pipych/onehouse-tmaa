@@ -1946,7 +1946,7 @@ export default function Home() {
 
       {selectedCharacter && (
 
-        <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedCharacter) ? 'bg-[#050608]' : 'bg-[#14171c]'}`}>
+        <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedCharacter) ? 'bg-[#050608]' : 'bg-[#14171c]'}`}>
 
           {/* Шторка: ручка для свайпа на мобильном */}
           <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
@@ -2143,7 +2143,7 @@ export default function Home() {
 
       {/* МОДАЛЬНОЕ ОКНО ПРОФИЛЯ ИГРОКА */}
       {selectedProfile && (
-        <div className="fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 bg-[#14171c]">
+        <div className="fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 bg-[#14171c]">
           {/* Шторка: ручка для свайпа на мобильном */}
           <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
 
@@ -2499,7 +2499,7 @@ export default function Home() {
             {activeSvodTab === 'laws' ? (
               <>
                 {activeDocument !== 'none' && canEditConstitution && !isEditing && (
-                  <button onClick={() => setIsEditing(true)} className="fixed bottom-28 right-4 md:top-24 md:right-8 w-14 h-14 bg-[#14171c] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-[#c0ff00] hover:bg-[#181c23] active:scale-90 transition-all z-50 shadow-2xl">
+                  <button onClick={() => setIsEditing(true)} className="fixed bottom-[calc(108px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] right-4 md:bottom-auto md:top-24 md:right-8 w-14 h-14 bg-[#14171c] rounded-full flex items-center justify-center text-[#8e8e93] hover:text-[#c0ff00] hover:bg-[#181c23] active:scale-90 transition-all z-50 shadow-2xl border-none sf-tap">
                     <Edit2 size={22} />
                   </button>
                 )}
@@ -2746,24 +2746,19 @@ export default function Home() {
       </main>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
-      <div className={`md:hidden fixed bottom-7 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-16' : 'opacity-100 translate-y-0'}`}>
-        <div className="w-full max-w-md pointer-events-auto">
-          <MobileTabBar
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            seasonEnded={seasonEnded}
-          />
-        </div>
+      <div className={`md:hidden fixed inset-x-0 bottom-0 z-[999999] pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-24' : 'opacity-100 translate-y-0'}`}>
+        <MobileTabBar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          seasonEnded={seasonEnded}
+        />
       </div>
 
-
-
       {/* Мобильная FAB — создание статьи */}
-
       {activeTab === 'media' && !seasonEnded && dbUser && !dbUser?.roles?.includes('guest') && (
         <button 
           onClick={() => navigate('/media/editor')} 
-          className="md:hidden fixed bottom-[calc(84px+var(--tma-raw-bottom-inset,0px))] right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50 border-none sf-tap"
+          className="md:hidden fixed bottom-[calc(108px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50 border-none sf-tap"
           title="Создать статью"
         >
           <Plus size={28} />

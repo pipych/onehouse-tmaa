@@ -695,8 +695,8 @@ export default function AdminPage() {
       
 
       {/* Мобильный навбар */}
-      <div className="md:hidden fixed bottom-4 pb-[env(safe-area-inset-bottom,0px)] left-0 right-0 px-3 z-50 flex items-center justify-center pointer-events-none">
-        <nav className="bg-[#14171c]/95 backdrop-blur-2xl  p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full pointer-events-auto">
+      <div className="md:hidden fixed bottom-2 pb-[var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px))] left-0 right-0 px-3 z-[999999] flex items-center justify-center pointer-events-none">
+        <nav className="bg-[#14171c]/95 backdrop-blur-2xl p-1.5 rounded-full shadow-2xl flex items-center h-[58px] max-w-sm w-full pointer-events-auto border border-white/[0.04]">
           <div className="flex items-center w-full h-full gap-1">
             <button
               onClick={() => setMainTab('home')}

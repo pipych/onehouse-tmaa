@@ -29,7 +29,7 @@ export const MobileActionBtn = React.forwardRef<HTMLButtonElement, MobileActionB
       icon,
       variant = 'primary',
       iconSize = 28,
-      bottomOffsetClass = 'bottom-24',
+      bottomOffsetClass = 'bottom-[calc(108px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))]',
       forceVisible = false,
       disabled,
       type = 'button',
@@ -54,7 +54,7 @@ export const MobileActionBtn = React.forwardRef<HTMLButtonElement, MobileActionB
         className={cn(
           // Visibility & Positioning
           !forceVisible && 'md:hidden',
-          'fixed right-4 z-40',
+          'fixed right-4 z-50',
           bottomOffsetClass,
           // Shape & Dimensions
           'w-14 h-14 rounded-full aspect-square',
