@@ -46,6 +46,10 @@
   --tg-content-safe-area-inset-top: 0px;
   --tg-safe-area-inset-top: 0px;
 
+  --js-tg-bottom-inset: 0px;
+  --tg-content-safe-area-inset-bottom: 0px;
+  --tg-safe-area-inset-bottom: 0px;
+
   /*
     Raw top safe inset from WebKit env(), Telegram WebApp CSS variables,
     or JS-injected Telegram.WebApp.contentSafeAreaInset.
@@ -57,6 +61,14 @@
     var(--js-tg-content-top, 0px),
     var(--js-tg-safe-top, 0px),
     var(--js-tg-top-inset, 0px)
+  );
+
+  /* Raw bottom safe inset from WebKit env() or Telegram WebApp */
+  --tma-raw-bottom-inset: max(
+    env(safe-area-inset-bottom, 0px),
+    var(--tg-content-safe-area-inset-bottom, 0px),
+    var(--tg-safe-area-inset-bottom, 0px),
+    var(--js-tg-bottom-inset, 0px)
   );
 
   /*
@@ -81,6 +93,66 @@
 
 .top-tma-safe {
   top: var(--tma-top-padding);
+}
+
+/* Адаптивные градиенты затемнения в цвет фона страницы (#090b0e) сверху и снизу */
+.vignette-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: max(calc(var(--tma-top-padding) + 8px), 104px);
+  background: linear-gradient(
+    to bottom,
+    #090b0e 0%,
+    rgba(9, 11, 14, 0.98) 28%,
+    rgba(9, 11, 14, 0.85) 52%,
+    rgba(9, 11, 14, 0.45) 76%,
+    rgba(9, 11, 14, 0.15) 90%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 30;
+}
+
+.vignette-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 130px;
+  background: linear-gradient(
+    to top,
+    #090b0e 0%,
+    rgba(9, 11, 14, 0.98) 28%,
+    rgba(9, 11, 14, 0.85) 52%,
+    rgba(9, 11, 14, 0.45) 76%,
+    rgba(9, 11, 14, 0.15) 90%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 30;
+}
+
+@media (min-width: 768px) {
+  .vignette-top {
+    height: 72px;
+    background: linear-gradient(
+      to bottom,
+      #090b0e 0%,
+      rgba(9, 11, 14, 0.9) 35%,
+      transparent 100%
+    );
+  }
+  .vignette-bottom {
+    height: 80px;
+    background: linear-gradient(
+      to top,
+      #090b0e 0%,
+      rgba(9, 11, 14, 0.8) 35%,
+      transparent 100%
+    );
+  }
 }
 
 html, body {

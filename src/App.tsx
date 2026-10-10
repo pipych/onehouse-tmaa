@@ -36,6 +36,10 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        {/* Адаптивные градиенты затемнения в цвет фона (#090b0e) сверху и снизу */}
+        <div className="vignette-top pointer-events-none" aria-hidden="true" />
+        <div className="vignette-bottom pointer-events-none" aria-hidden="true" />
+
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<HomeView />} />

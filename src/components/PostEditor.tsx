@@ -161,6 +161,8 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
       className="fixed inset-0 bg-[#090b0e] z-[99999] overflow-y-scroll h-[100dvh] w-full overscroll-contain" 
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
+      <div className="vignette-top pointer-events-none" aria-hidden="true" />
+      <div className="vignette-bottom pointer-events-none" aria-hidden="true" />
       {/* ФИКС: block вместо флекса гарантирует корректное пролистывание полей ввода и превью медиафайлов */}
       <div className="w-full max-w-3xl mx-auto block relative p-4 pt-tma-safe pb-40 md:pt-12 md:pl-[120px] animate-fade-in">
         

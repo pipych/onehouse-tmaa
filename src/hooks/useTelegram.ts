@@ -17,8 +17,14 @@ export function applyTelegramSafeAreas(webApp: any): number {
     const safeTop = Number(webApp.safeAreaInset?.top) || 0;
     const topInset = Math.max(contentTop, safeTop);
 
+    const contentBottom = Number(webApp.contentSafeAreaInset?.bottom) || 0;
+    const safeBottom = Number(webApp.safeAreaInset?.bottom) || 0;
+    const bottomInset = Math.max(contentBottom, safeBottom);
+
     const root = document.documentElement;
     root.style.setProperty('--js-tg-top-inset', `${topInset}px`);
+    root.style.setProperty('--js-tg-bottom-inset', `${bottomInset}px`);
+
     if (contentTop > 0) {
       root.style.setProperty('--js-tg-content-top', `${contentTop}px`);
       root.style.setProperty('--tg-content-safe-area-inset-top', `${contentTop}px`);
@@ -26,6 +32,12 @@ export function applyTelegramSafeAreas(webApp: any): number {
     if (safeTop > 0) {
       root.style.setProperty('--js-tg-safe-top', `${safeTop}px`);
       root.style.setProperty('--tg-safe-area-inset-top', `${safeTop}px`);
+    }
+    if (contentBottom > 0) {
+      root.style.setProperty('--tg-content-safe-area-inset-bottom', `${contentBottom}px`);
+    }
+    if (safeBottom > 0) {
+      root.style.setProperty('--tg-safe-area-inset-bottom', `${safeBottom}px`);
     }
     return topInset;
   } catch (e) {

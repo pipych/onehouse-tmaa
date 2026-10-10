@@ -2754,7 +2754,7 @@ export default function Home() {
       {activeTab === 'media' && !seasonEnded && dbUser && !dbUser?.roles?.includes('guest') && (
         <button 
           onClick={() => navigate('/media/editor')} 
-          className="md:hidden fixed bottom-24 right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50"
+          className="md:hidden fixed bottom-[calc(84px+var(--tma-raw-bottom-inset,0px))] right-4 w-14 h-14 bg-[#c0ff00] text-black rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-90 z-50 border-none sf-tap"
           title="Создать статью"
         >
           <Plus size={28} />
