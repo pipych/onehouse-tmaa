@@ -100,19 +100,29 @@ export const Modal: React.FC<ModalProps> = ({
               dragControls={dragControls}
               dragListener={false}
               dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={{ top: 0, bottom: 0.5 }}
-              dragTransition={{ bounceStiffness: 400, bounceDamping: 35 }}
+              dragElastic={{ top: 0, bottom: 0.4 }}
+              dragTransition={{ bounceStiffness: 500, bounceDamping: 35 }}
               onDragEnd={(_, info) => {
-                if (info.offset.y > 120 || (info.velocity.y > 450 && info.offset.y > 20)) {
+                // If user is flicking or moving upwards, keep open
+                if (info.velocity.y < -50) return;
+                // Only close on deliberate downward drag or intentional downward flick
+                if (info.offset.y > 120 || (info.velocity.y > 500 && info.offset.y > 50)) {
                   onClose();
                 }
               }}
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
+              transition={{
+                y: {
+                  type: 'spring',
+                  damping: 32,
+                  stiffness: 340,
+                  mass: 0.75,
+                },
+              }}
               className={cn(
-                'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] focus:outline-none max-h-[88vh] will-change-transform',
+                'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] focus:outline-none max-h-[88vh] will-change-transform transform-gpu select-none',
                 className
               )}
               role="dialog"
@@ -180,12 +190,12 @@ export const Modal: React.FC<ModalProps> = ({
             /* DESKTOP: Centered Floating Modal */
             <motion.div
               key="modal-desktop"
-              initial={{ opacity: 0, scale: 0.95, x: '-50%', y: '-48%' }}
-              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
-              exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-48%' }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
-                'fixed left-1/2 top-1/2 z-50 w-full',
+                'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full transform-gpu',
                 maxWidth,
                 'bg-[#14171c] p-6 sm:p-7 rounded-[32px] border-none shadow-[0_20px_60px_rgba(0,0,0,0.9)] focus:outline-none select-none max-h-[90vh] overflow-y-auto no-scrollbar',
                 className

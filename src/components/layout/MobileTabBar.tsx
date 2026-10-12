@@ -56,13 +56,16 @@ export function MobileTabBar({
     if (activeEl && navEl) {
       const navBox = navEl.getBoundingClientRect();
       const activeBox = activeEl.getBoundingClientRect();
-      setPillRect({
-        left: activeBox.left - navBox.left,
-        width: activeBox.width,
-        ready: true,
+      const left = activeBox.left - navBox.left;
+      const width = activeBox.width;
+      setPillRect((prev) => {
+        if (prev.ready && Math.abs(prev.left - left) < 0.5 && Math.abs(prev.width - width) < 0.5) {
+          return prev;
+        }
+        return { left, width, ready: true };
       });
     } else {
-      setPillRect((prev) => ({ ...prev, ready: false }));
+      setPillRect((prev) => (prev.ready ? { ...prev, ready: false } : prev));
     }
   }, [currentActiveTab]);
 
@@ -102,7 +105,7 @@ export function MobileTabBar({
           {/* Animated Sliding Pill Indicator without border */}
           <div
             className={cn(
-              'absolute top-0 bottom-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-0',
+              'absolute top-0 bottom-0 rounded-full transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] transform-gpu will-change-transform pointer-events-none z-0',
               pillRect.ready ? 'opacity-100' : 'opacity-0'
             )}
             style={{
@@ -125,18 +128,18 @@ export function MobileTabBar({
                   }}
                   onClick={() => onTabChange(tab.id)}
                   className={cn(
-                    'relative z-10 flex-1 h-full min-w-0 flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-90 sf-tap px-1 group',
+                    'relative z-10 flex-1 h-full min-w-0 flex flex-col items-center justify-center rounded-full transition-[color,opacity] duration-200 active:scale-95 sf-tap px-1 group',
                     isActive ? 'text-[#c0ff00] font-bold' : 'text-[#8e8e93] hover:text-white'
                   )}
                   aria-label={tab.label}
                   role="tab"
                 >
-                  <div className="relative flex items-center justify-center transition-transform duration-150 active:scale-90 group-active:scale-90">
+                  <div className="relative flex items-center justify-center">
                     <OneIcon
                       name={tab.icon}
                       size={24}
                       className={cn(
-                        'transition-all duration-300',
+                        'transition-colors duration-200',
                         isActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
                       )}
                     />
@@ -165,19 +168,19 @@ export function MobileTabBar({
               }}
               onClick={() => onTabChange('onelaunch')}
               className={cn(
-                'relative z-10 w-full h-full flex flex-col items-center justify-center rounded-full transition-all duration-200 active:scale-90 sf-tap px-1 group',
+                'relative z-10 w-full h-full flex flex-col items-center justify-center rounded-full transition-[color,opacity] duration-200 active:scale-95 sf-tap px-1 group',
                 isDownloadActive ? 'text-[#c0ff00] font-bold' : 'text-[#8e8e93] hover:text-white'
               )}
               title="Скачать лаунчер OneLaunch"
               aria-label="Скачать"
               role="tab"
             >
-              <div className="relative flex items-center justify-center transition-transform duration-150 active:scale-90 group-active:scale-90">
+              <div className="relative flex items-center justify-center">
                 <OneIcon
                   name="arrow_circle_down"
                   size={24}
                   className={cn(
-                    'transition-all duration-300',
+                    'transition-colors duration-200',
                     isDownloadActive ? 'text-[#c0ff00]' : 'text-[#8e8e93]'
                   )}
                 />

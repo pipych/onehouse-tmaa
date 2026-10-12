@@ -172,7 +172,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
           {/* Скользящая активная капсула (Flat, No Glow) */}
           <div
             className={cn(
-              'absolute left-0 right-0 rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-0',
+              'absolute left-0 right-0 rounded-full transition-[transform,height,opacity] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] transform-gpu will-change-transform pointer-events-none z-0',
               pillRect.ready ? 'opacity-100' : 'opacity-0'
             )}
             style={{
@@ -196,7 +196,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
                 disabled={tab.disabled}
                 style={{ justifyContent: isCollapsed ? 'center' : 'flex-start' }}
                 className={cn(
-                  'relative z-10 h-[50px] w-full rounded-full flex items-center transition-all duration-200 sf-tap group active:scale-95',
+                  'relative z-10 h-[50px] w-full rounded-full flex items-center transition-[color,opacity] duration-200 sf-tap group active:scale-95',
                   isCollapsed ? 'justify-center px-0' : '!justify-start justify-start pl-3',
                   isActive ? 'text-[#c0ff00] font-bold' : 'text-[#8e8e93] hover:text-white',
                   tab.disabled && 'opacity-35 cursor-not-allowed pointer-events-none'
@@ -205,13 +205,13 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
                 aria-selected={isActive}
                 role="tab"
               >
-                {/* Иконка с микроанимацией тактильного сжатия при клике */}
-                <div className="w-6 h-6 flex items-center justify-center shrink-0 transition-transform duration-150 active:scale-90 group-active:scale-90">
+                {/* Иконка */}
+                <div className="w-6 h-6 flex items-center justify-center shrink-0">
                   <Icon
                     name={tab.icon}
                     size={22}
                     className={cn(
-                      'transition-all duration-300',
+                      'transition-colors duration-200',
                       isActive ? 'text-[#c0ff00]' : 'text-[#8e8e93] group-hover:text-white'
                     )}
                   />

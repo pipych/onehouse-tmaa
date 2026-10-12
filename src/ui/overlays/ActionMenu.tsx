@@ -48,7 +48,7 @@ export const DrawerItem: React.FC<DrawerItemProps> = ({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'w-full flex items-center p-3.5 md:p-4 rounded-[20px] md:rounded-[24px] bg-[#181c23] hover:bg-white/[0.06] active:bg-white/[0.08] active:scale-[0.99] transition-all text-left cursor-pointer border-none outline-none select-none',
+        'w-full flex items-center p-3.5 md:p-4 rounded-[20px] md:rounded-[24px] bg-[#181c23] hover:bg-white/[0.06] active:bg-white/[0.08] active:scale-[0.99] transition-[background-color,transform] duration-150 text-left cursor-pointer border-none outline-none select-none',
         disabled && 'opacity-40 pointer-events-none',
         className
       )}
@@ -216,19 +216,22 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                     dragControls={dragControls}
                     dragListener={false}
                     dragConstraints={{ top: 0, bottom: 0 }}
-                    dragElastic={{ top: 0, bottom: 0.5 }}
-                    dragTransition={{ bounceStiffness: 400, bounceDamping: 35 }}
+                    dragElastic={{ top: 0, bottom: 0.4 }}
+                    dragTransition={{ bounceStiffness: 500, bounceDamping: 35 }}
                     onDragEnd={(_, info) => {
-                      if (info.offset.y > 120 || (info.velocity.y > 450 && info.offset.y > 20)) {
+                      // If user is flicking or moving upwards, keep open
+                      if (info.velocity.y < -50) return;
+                      // Only close on deliberate downward drag or intentional downward flick
+                      if (info.offset.y > 120 || (info.velocity.y > 500 && info.offset.y > 50)) {
                         setMobileOpen(false);
                       }
                     }}
                     initial={{ y: '100%' }}
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
+                    transition={{ type: 'spring', damping: 32, stiffness: 340, mass: 0.75 }}
                     className={cn(
-                      'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] max-h-[85vh] will-change-transform select-none focus:outline-none',
+                      'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] max-h-[85vh] transform-gpu will-change-transform select-none focus:outline-none overflow-hidden',
                       className
                     )}
                     role="dialog"

@@ -26,7 +26,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     const Comp = asChild ? Slot : 'button';
 
     const baseStyles =
-      'inline-flex items-center justify-center rounded-full aspect-square shrink-0 transition-all duration-150 select-none outline-none border-none ring-0 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none active:scale-95 cursor-pointer';
+      'inline-flex items-center justify-center rounded-full aspect-square shrink-0 transition-[background-color,color,transform,opacity] duration-150 select-none outline-none border-none ring-0 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none active:scale-95 cursor-pointer';
 
     const variants = {
       primary:

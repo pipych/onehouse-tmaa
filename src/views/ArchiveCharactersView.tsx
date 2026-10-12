@@ -16,7 +16,6 @@ export default function ArchiveCharactersPage() {
   const [characters, setCharacters] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
-  const [playerChars, setPlayerChars] = useState<any[]>([]);
   const [seasons, setSeasons] = useState<string[]>(['Сезон 2']);
 
   function isDead(char: any) {
@@ -38,15 +37,6 @@ export default function ArchiveCharactersPage() {
     }
     loadSeasons();
   }, []);
-
-  async function loadPlayerChars(playerId: string) {
-    const { data } = await supabase
-      .from('characters')
-      .select('*')
-      .eq('player_id', playerId)
-      .order('created_at', { ascending: false });
-    if (data) setPlayerChars(data);
-  }
 
   useEffect(() => {
     async function fetchArchivedPlayers() {
@@ -77,7 +67,7 @@ export default function ArchiveCharactersPage() {
     return (
       <div 
         key={char.id}
-        onClick={() => { loadPlayerChars(char.player_id); setSelectedPlayer(char); }}
+        onClick={() => setSelectedPlayer(char)}
         className={`p-4 rounded-[28px] flex items-center space-x-4 cursor-pointer shadow-md active:scale-[0.98] transition-transform w-full cv-card gpu-layer ${dead ? 'bg-[#090b0e] hover:bg-[#14171c] opacity-60 grayscale-[50%]' : 'bg-[#14171c] hover:bg-[#181c23]'}`}
       >
         <div className="w-12 h-12 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0"><img src={char.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>

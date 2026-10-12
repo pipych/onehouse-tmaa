@@ -30,7 +30,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : 'button';
 
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-full transition-all duration-150 select-none outline-none border-none ring-0 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer';
+      'inline-flex items-center justify-center font-medium rounded-full transition-[background-color,color,transform,opacity] duration-150 select-none outline-none border-none ring-0 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] cursor-pointer';
 
     const variants = {
       primary:

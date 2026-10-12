@@ -225,7 +225,7 @@ export const TabsList = React.forwardRef<
       {/* Sliding active capsule background */}
       <div
         className={cn(
-          'absolute rounded-full bg-[#1c222b] transition-all duration-300 ease-out pointer-events-none z-0',
+          'absolute rounded-full bg-[#1c222b] transition-[transform,width,height,opacity] duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] transform-gpu will-change-transform pointer-events-none z-0',
           pillRect.ready ? 'opacity-100' : 'opacity-0'
         )}
         style={{

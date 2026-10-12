@@ -59,7 +59,7 @@ export const MobileActionBtn = React.forwardRef<HTMLButtonElement, MobileActionB
           // Shape & Dimensions
           'w-14 h-14 rounded-full aspect-square',
           'flex items-center justify-center shrink-0',
-          'transition-all duration-150 select-none outline-none ring-0 focus:outline-none focus:ring-0 cursor-pointer',
+          'transition-[transform,background-color,box-shadow] duration-150 select-none outline-none ring-0 focus:outline-none focus:ring-0 cursor-pointer',
           'active:scale-95 disabled:opacity-50 disabled:pointer-events-none',
           variants[variant],
           className

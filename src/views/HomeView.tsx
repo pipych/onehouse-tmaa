@@ -238,8 +238,6 @@ export default function Home() {
 
   const [isUploadingAdminAvatar, setIsUploadingAdminAvatar] = useState(false);
 
-  const [playerCharacters, setPlayerCharacters] = useState<any[]>([]);
-
   const currentSeasonName = `Сезон ${currentSeasonNum}`;
 
 
@@ -1284,30 +1282,7 @@ export default function Home() {
       .order('mc_nickname', { ascending: true });
 
     if (data) setAllPlayers(data);
-
   }
-
-
-
-  async function loadPlayerCharacters(playerId: string) {
-
-    const { data } = await supabase
-
-      .from('characters')
-
-      .select('*')
-
-      .eq('player_id', playerId)
-
-      .eq('season', currentSeasonName)
-
-      .order('created_at', { ascending: false });
-
-    if (data) setPlayerCharacters(data);
-
-  }
-
-
 
   async function loadConstitution(seasonOverride?: string) {
 
@@ -2468,7 +2443,7 @@ export default function Home() {
                       <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Swords size={14} className="text-[#c0ff00]" />Живые ({alive.length})</div>
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {alive.map((player) => (
-                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#14171c] hover:bg-[#181c23] cv-card gpu-layer">
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#14171c] hover:bg-[#181c23] cv-card gpu-layer">
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-black truncate tracking-wide text-white">{player.rp_name}</div>
@@ -2499,7 +2474,7 @@ export default function Home() {
                       <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1 flex items-center gap-1.5"><Skull size={14} />Мёртвые ({dead.length})</div>
                       <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {dead.map((player) => (
-                          <div key={player.id} onClick={() => { setIsEditingProfile(false); loadPlayerCharacters(player.player_id); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#090b0e] hover:bg-[#14171c] grayscale cv-card gpu-layer">
+                          <div key={player.id} onClick={() => { setIsEditingProfile(false); setSelectedCharacter(player); }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#090b0e] hover:bg-[#14171c] grayscale cv-card gpu-layer">
                             <div className="w-12 h-12 rounded-full overflow-hidden bg-[#181c23] flex-shrink-0"><img src={player.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" /></div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-black truncate tracking-wide text-gray-500 line-through">{player.rp_name}</div>
@@ -2520,8 +2495,7 @@ export default function Home() {
                 <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">Minecraft-профили</div>
                 <div className="grid grid-cols-1 gap-3 w-full md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {allPlayers.map((p: any) => (
-                    <div key={p.id} onClick={async () => {
-                      await loadPlayerCharacters(p.id);
+                    <div key={p.id} onClick={() => {
                       const char = players.find(c => c.player_id === p.id);
                       setSelectedProfile(char || { id: p.id, player_id: p.id, rp_name: p.mc_nickname, mc_nickname: p.mc_nickname, avatar_url: p.avatar_url || '', roles: p.roles || [], party: 'Нет партии' } as any);
                     }} className="p-4 rounded-[28px] flex items-center space-x-4 active:scale-[0.98] transition-transform duration-150 cursor-pointer shadow-md w-full bg-[#14171c] hover:bg-[#181c23] cv-card gpu-layer">
@@ -2551,7 +2525,7 @@ export default function Home() {
       </main>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
-      <div className={`md:hidden fixed inset-x-0 bottom-0 z-[100] pointer-events-none transition-all duration-500 ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-24' : 'opacity-100 translate-y-0'}`}>
+      <div className={`md:hidden fixed inset-x-0 bottom-0 z-[100] pointer-events-none transition-[transform,opacity] duration-300 ease-out will-change-transform ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-24' : 'opacity-100 translate-y-0'}`}>
         <MobileTabBar
           activeTab={activeTab}
           onTabChange={handleTabChange}
