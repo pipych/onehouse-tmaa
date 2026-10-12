@@ -317,43 +317,42 @@ async function runTests() {
     console.log('✓ Test 7 Passed: Inline query answered successfully with app card');
 
     // 8. Test New Article Broadcast (POST /publish-article to Topic 1702 with photo & Rich Button)
-    console.log('Test 8: Article Broadcast to Topic 1702 (Photo preview, Title, Rich Button «Читать»)');
+    // 8. Test New Article Broadcast (POST /publish-article to Topic 1702 with photo & Button)
+    console.log('Test 8: Article Broadcast to Topic 1702 (Photo preview, Title, Button «Читать»)');
     sentRequests.length = 0;
-    const testArticle = {
+    const testArticleWithPhoto = {
       id: 'art-777',
       title: 'Великое открытие OneHouse 2026',
-      cover_url: 'https://example.com/cover.webp',
+      cover_url: 'https://example.com/cover.jpg',
       content: 'Текст интереснейшей статьи...',
     };
 
-    // 8a. Successful Rich Message broadcast
+    // 8a. Successful sendPhoto broadcast for article with image
     const pubRes = await worker.fetch(
       new Request('https://worker.test/publish-article', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ post: testArticle }),
+        body: JSON.stringify({ post: testArticleWithPhoto }),
       }),
       mockEnv
     );
     if (pubRes.status !== 200) throw new Error(`/publish-article returned status ${pubRes.status}`);
-    const pubReq = sentRequests.find((r) => r.url.endsWith('/sendRichMessage'));
-    if (!pubReq) throw new Error('Expected /sendRichMessage for article broadcast');
+    const pubReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!pubReq) throw new Error('Expected /sendPhoto for article with image broadcast');
     if (pubReq.body?.chat_id !== -1002997374585) {
       throw new Error(`Expected chat_id -1002997374585, got ${pubReq.body?.chat_id}`);
     }
     if (pubReq.body?.message_thread_id !== 1702) {
       throw new Error(`Expected message_thread_id 1702, got ${pubReq.body?.message_thread_id}`);
     }
-    if (pubReq.body?.link_preview_options?.url !== testArticle.cover_url) {
-      throw new Error('Expected link_preview_options with cover_url');
+    if (pubReq.body?.photo !== testArticleWithPhoto.cover_url) {
+      throw new Error('Expected photo with cover_url');
     }
-    if (!pubReq.body?.rich_message?.html?.includes('startapp=article_art-777')) {
-      throw new Error('Expected direct startapp link in rich_message HTML button');
+    const inlineBtn = pubReq.body?.reply_markup?.inline_keyboard?.[0]?.[0];
+    if (inlineBtn?.text !== 'Читать' || !inlineBtn?.url?.includes('startapp=article_art-777')) {
+      throw new Error('sendPhoto missing button «Читать» with startapp URL');
     }
-    if (!pubReq.body?.rich_message?.html?.includes('Читать')) {
-      throw new Error('Expected «Читать» button in rich_message HTML');
-    }
-    console.log('✓ Test 8a Passed: /publish-article sent Rich Message with photo link preview and «Читать» button to topic 1702');
+    console.log('✓ Test 8a Passed: /publish-article sent photo preview, title caption, and «Читать» button to topic 1702');
 
     // 8b. Test CORS preflight (OPTIONS)
     const optionsRes = await worker.fetch(
@@ -366,71 +365,44 @@ async function runTests() {
     }
     console.log('✓ Test 8b Passed: OPTIONS preflight handled with proper CORS headers');
 
-    // 8c. Test fallback to sendPhoto if sendRichMessage fails
+    // 8c. Test text-only article broadcast (Rich Message)
     sentRequests.length = 0;
-    globalThis.fetch = async (url, options) => {
-      if (typeof url === 'string' && url.includes('api.telegram.org')) {
-        const body = options?.body ? JSON.parse(options.body) : null;
-        sentRequests.push({ url, method: options?.method, body });
-        if (url.endsWith('/sendRichMessage')) {
-          return new Response(JSON.stringify({ ok: false, error_code: 400, description: 'Not supported' }), {
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
-        return new Response(JSON.stringify({ ok: true, result: { message_id: 888 } }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      return originalFetch(url, options);
+    const testArticleNoPhoto = {
+      id: 'art-888',
+      title: 'Текстовый манифест OneHouse',
+      cover_url: '',
+      content: 'Текст без фото...',
     };
-
-    const fallbackRes = await worker.fetch(
+    const textRes = await worker.fetch(
       new Request('https://worker.test/publish-article', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ post: testArticle }),
+        body: JSON.stringify({ post: testArticleNoPhoto }),
       }),
       mockEnv
     );
-    if (fallbackRes.status !== 200) throw new Error(`Fallback returned status ${fallbackRes.status}`);
-    const photoReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
-    if (!photoReq) throw new Error('Expected fallback to /sendPhoto when sendRichMessage fails');
-    if (photoReq.body?.photo !== testArticle.cover_url) {
-      throw new Error('sendPhoto missing cover_url');
+    if (textRes.status !== 200) throw new Error(`Text article broadcast returned ${textRes.status}`);
+    const richReq = sentRequests.find((r) => r.url.endsWith('/sendRichMessage'));
+    if (!richReq) throw new Error('Expected sendRichMessage for text-only article');
+    if (richReq.body?.message_thread_id !== 1702) throw new Error('Expected topic 1702 for text article');
+    if (!richReq.body?.rich_message?.html?.includes('startapp=article_art-888')) {
+      throw new Error('Rich message missing startapp link');
     }
-    if (photoReq.body?.message_thread_id !== 1702) {
-      throw new Error('sendPhoto missing message_thread_id 1702');
-    }
-    const inlineBtn = photoReq.body?.reply_markup?.inline_keyboard?.[0]?.[0];
-    if (inlineBtn?.text !== 'Читать' || !inlineBtn?.url?.includes('startapp=article_art-777')) {
-      throw new Error('sendPhoto missing inline button «Читать» with startapp URL');
-    }
-    console.log('✓ Test 8c Passed: Fallback to sendPhoto works reliably with photo, caption, and «Читать» inline button');
+    console.log('✓ Test 8c Passed: Text-only article broadcasts via Rich Message with Rich Button to topic 1702');
 
     // 8d. Test Webhook direct publication ({ type: 'new_post', post: ... })
     sentRequests.length = 0;
-    globalThis.fetch = async (url, options) => {
-      if (typeof url === 'string' && url.includes('api.telegram.org')) {
-        const body = options?.body ? JSON.parse(options.body) : null;
-        sentRequests.push({ url, method: options?.method, body });
-        return new Response(JSON.stringify({ ok: true, result: { message_id: 999 } }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      return originalFetch(url, options);
-    };
-
     const webhookPostRes = await worker.fetch(
       new Request('https://worker.test/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'new_post', post: testArticle }),
+        body: JSON.stringify({ type: 'new_post', post: testArticleWithPhoto }),
       }),
       mockEnv
     );
     if (webhookPostRes.status !== 200) throw new Error(`Webhook post returned ${webhookPostRes.status}`);
-    const webhookRichReq = sentRequests.find((r) => r.url.endsWith('/sendRichMessage'));
-    if (!webhookRichReq || webhookRichReq.body?.message_thread_id !== 1702) {
+    const webhookPhotoReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!webhookPhotoReq || webhookPhotoReq.body?.message_thread_id !== 1702) {
       throw new Error('Webhook new_post failed to broadcast to topic 1702');
     }
     console.log('✓ Test 8d Passed: POST /webhook with { type: "new_post" } successfully broadcasts to topic 1702');

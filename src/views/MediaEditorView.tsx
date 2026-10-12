@@ -39,7 +39,7 @@ function EditorContent() {
     bold: false, italic: false, strikeThrough: false, h1: false, h2: false, justifyLeft: false, justifyCenter: false
   });
 
-  function convertToWebP(file: File): Promise<Blob> {
+  function convertToJpeg(file: File): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -52,8 +52,14 @@ function EditorContent() {
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
           if (!ctx) return reject(new Error('Canvas ctx error'));
+          ctx.fillStyle = '#090b0e';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0);
-          canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Blob error')), 'image/webp', 0.85);
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('Blob error'))),
+            'image/jpeg',
+            0.9
+          );
         };
       };
     });
@@ -91,9 +97,9 @@ function EditorContent() {
       setIsUploadingPostCover(true);
       const file = event.target.files?.[0];
       if (!file) return;
-      const webpBlob = await convertToWebP(file);
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
-      const { error } = await supabase.storage.from('avatars').upload(fileName, webpBlob, { contentType: 'image/webp' });
+      const jpegBlob = await convertToJpeg(file);
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.jpg`;
+      const { error } = await supabase.storage.from('avatars').upload(fileName, jpegBlob, { contentType: 'image/jpeg' });
       if (error) return alert(error.message);
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
       if (data) setNewPostCoverUrl(data.publicUrl);

@@ -626,51 +626,7 @@ export async function broadcastArticleToTelegram(
     ],
   };
 
-  // Step 1: Attempt sendRichMessage with link_preview_options
-  try {
-    const richPayload: Record<string, unknown> = {
-      chat_id: chatId,
-      message_thread_id: threadId,
-      rich_message: { html: richHtml },
-      reply_markup: { remove_keyboard: true },
-    };
-
-    if (coverUrl) {
-      richPayload.link_preview_options = {
-        url: coverUrl,
-        prefer_large_media: true,
-        show_above_text: true,
-      };
-    }
-
-    const richResult = await callTelegramApi(token, 'sendRichMessage', richPayload);
-    if (richResult.ok) {
-      return { ok: true, message_id: richResult.result?.message_id, result: richResult.result };
-    }
-
-    // Step 2: Attempt with JSON blocks
-    const blocksPayload: Record<string, unknown> = {
-      chat_id: chatId,
-      message_thread_id: threadId,
-      rich_message: { blocks },
-      reply_markup: { remove_keyboard: true },
-    };
-    if (coverUrl) {
-      blocksPayload.link_preview_options = {
-        url: coverUrl,
-        prefer_large_media: true,
-        show_above_text: true,
-      };
-    }
-    const blocksResult = await callTelegramApi(token, 'sendRichMessage', blocksPayload);
-    if (blocksResult.ok) {
-      return { ok: true, message_id: blocksResult.result?.message_id, result: blocksResult.result };
-    }
-  } catch (err) {
-    console.warn('[broadcastArticleToTelegram] sendRichMessage attempt error:', err);
-  }
-
-  // Step 3: Fallback - if image exists, call sendPhoto
+  // Step 1: If an image is provided, use sendPhoto to guarantee the photo is attached and displayed
   if (coverUrl) {
     try {
       const photoResult = await callTelegramApi(token, 'sendPhoto', {
@@ -684,12 +640,42 @@ export async function broadcastArticleToTelegram(
       if (photoResult.ok) {
         return { ok: true, message_id: photoResult.result?.message_id, result: photoResult.result };
       }
+      console.warn('[broadcastArticleToTelegram] sendPhoto failed, falling back to sendRichMessage:', photoResult);
     } catch (photoErr) {
-      console.warn('[broadcastArticleToTelegram] sendPhoto fallback failed:', photoErr);
+      console.warn('[broadcastArticleToTelegram] sendPhoto error:', photoErr);
     }
   }
 
-  // Step 4: Final fallback - sendMessage
+  // Step 2: For text-only articles or fallback, use Telegram Bot API 10.3 Rich Message
+  try {
+    const richPayload: Record<string, unknown> = {
+      chat_id: chatId,
+      message_thread_id: threadId,
+      rich_message: { html: richHtml },
+      reply_markup: { remove_keyboard: true },
+    };
+
+    const richResult = await callTelegramApi(token, 'sendRichMessage', richPayload);
+    if (richResult.ok) {
+      return { ok: true, message_id: richResult.result?.message_id, result: richResult.result };
+    }
+
+    // Step 2b: Attempt with JSON blocks
+    const blocksPayload: Record<string, unknown> = {
+      chat_id: chatId,
+      message_thread_id: threadId,
+      rich_message: { blocks },
+      reply_markup: { remove_keyboard: true },
+    };
+    const blocksResult = await callTelegramApi(token, 'sendRichMessage', blocksPayload);
+    if (blocksResult.ok) {
+      return { ok: true, message_id: blocksResult.result?.message_id, result: blocksResult.result };
+    }
+  } catch (err) {
+    console.warn('[broadcastArticleToTelegram] sendRichMessage attempt error:', err);
+  }
+
+  // Step 3: Final fallback - sendMessage
   const messageResult = await sendTelegramMessage(token, chatId, `<b>${safeTitle}</b>`, {
     parse_mode: 'HTML',
     reply_markup: inlineKeyboardFallback,
