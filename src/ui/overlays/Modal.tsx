@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { OneIcon } from '../components/Icon';
 import { useIsMobile } from '../utils/useIsMobile';
@@ -45,6 +45,7 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [mounted, setMounted] = useState(false);
+  const dragControls = useDragControls();
 
   useEffect(() => {
     setMounted(true);
@@ -96,47 +97,74 @@ export const Modal: React.FC<ModalProps> = ({
             <motion.div
               key="modal-drawer"
               drag="y"
-              dragConstraints={{ top: 0 }}
-              dragElastic={0.2}
+              dragControls={dragControls}
+              dragListener={false}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 0.5 }}
+              dragTransition={{ bounceStiffness: 400, bounceDamping: 35 }}
               onDragEnd={(_, info) => {
-                if (info.offset.y > 60 || info.velocity.y > 250) {
+                if (info.offset.y > 120 || (info.velocity.y > 450 && info.offset.y > 20)) {
                   onClose();
                 }
               }}
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
               className={cn(
-                'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] focus:outline-none max-h-[88vh] select-none',
+                'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] focus:outline-none max-h-[88vh] will-change-transform',
                 className
               )}
               role="dialog"
               aria-modal="true"
             >
-              {/* Top Swipe Indicator (Handle Bar) */}
-              <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-2 shrink-0 touch-none cursor-grab active:cursor-grabbing" />
-
-              {/* Mobile Content Area with pb-28 safe clearance above floating MobileNavbar */}
-              <div className="flex-1 overflow-y-auto no-scrollbar p-6 pt-2 pb-[calc(104px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] space-y-4">
-                {(title || description || headerExtra) && (
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="space-y-1.5 text-left flex-1 min-w-0">
-                      {title && (
-                        <h3 className="text-xl font-bold tracking-tight text-white leading-snug truncate">
-                          {title}
-                        </h3>
-                      )}
-                      {description && (
-                        <p className="text-xs sm:text-sm text-[#8e8e93] leading-relaxed">
-                          {description}
-                        </p>
-                      )}
-                    </div>
-                    {headerExtra && <div className="shrink-0">{headerExtra}</div>}
+              {/* Top Swipe Indicator (Handle Bar Zone - generous touch zone) */}
+              <div
+                onPointerDown={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (!target.closest('button') && !target.closest('input') && !target.closest('a')) {
+                    dragControls.start(e);
+                  }
+                }}
+                className="w-full relative flex items-center justify-center pt-3.5 pb-2 px-6 cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
+              >
+                <div className="w-12 h-1.5 rounded-full bg-white/25 active:bg-white/45 transition-colors pointer-events-none" />
+                {headerExtra && !title && !description && (
+                  <div className="absolute right-5 top-2 pointer-events-auto">
+                    {headerExtra}
                   </div>
                 )}
+              </div>
 
+              {/* Optional Header Row (Title & Description & Extra) */}
+              {(title || description || (headerExtra && (title || description))) && (
+                <div
+                  onPointerDown={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (!target.closest('button') && !target.closest('input') && !target.closest('a')) {
+                      dragControls.start(e);
+                    }
+                  }}
+                  className="px-6 pb-2 shrink-0 flex items-start justify-between gap-3 cursor-grab select-none touch-none"
+                >
+                  <div className="space-y-1 text-left flex-1 min-w-0 pointer-events-none">
+                    {title && (
+                      <h3 className="text-xl font-bold tracking-tight text-white leading-snug truncate">
+                        {title}
+                      </h3>
+                    )}
+                    {description && (
+                      <p className="text-xs sm:text-sm text-[#8e8e93] leading-relaxed">
+                        {description}
+                      </p>
+                    )}
+                  </div>
+                  {headerExtra && <div className="shrink-0 pointer-events-auto">{headerExtra}</div>}
+                </div>
+              )}
+
+              {/* Mobile Content Area with pb-28 safe clearance above floating MobileNavbar */}
+              <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y no-scrollbar p-6 pt-2 pb-[calc(104px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] space-y-4">
                 {/* Body Content */}
                 {children && <div className="text-sm text-[#8e8e93]">{children}</div>}
 

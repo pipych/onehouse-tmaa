@@ -450,7 +450,7 @@ export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
             <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">
               Персонажи игрока ({playerChars.length})
             </div>
-            <div className="flex flex-col gap-2 max-h-56 overflow-y-auto no-scrollbar">
+            <div className="flex flex-col gap-2 w-full">
               {playerChars.map((pc) => {
                 const isCurrent = pc.id === activeItem?.id;
                 const pcDead =

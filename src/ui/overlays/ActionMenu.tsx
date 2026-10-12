@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { OneIcon } from '../components/Icon';
 import { useIsMobile } from '../utils/useIsMobile';
@@ -152,6 +152,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const dragControls = useDragControls();
 
   // Lock body scroll when mobile bottom sheet is open
   useEffect(() => {
@@ -212,43 +213,64 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
                   <motion.div
                     key="action-menu-sheet"
                     drag="y"
-                    dragConstraints={{ top: 0 }}
-                    dragElastic={0.2}
+                    dragControls={dragControls}
+                    dragListener={false}
+                    dragConstraints={{ top: 0, bottom: 0 }}
+                    dragElastic={{ top: 0, bottom: 0.5 }}
+                    dragTransition={{ bounceStiffness: 400, bounceDamping: 35 }}
                     onDragEnd={(_, info) => {
-                      if (info.offset.y > 60 || info.velocity.y > 250) {
+                      if (info.offset.y > 120 || (info.velocity.y > 450 && info.offset.y > 20)) {
                         setMobileOpen(false);
                       }
                     }}
                     initial={{ y: '100%' }}
                     animate={{ y: 0 }}
                     exit={{ y: '100%' }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
                     className={cn(
-                      'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] max-h-[85vh] select-none focus:outline-none',
+                      'fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#14171c] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] max-h-[85vh] will-change-transform select-none focus:outline-none',
                       className
                     )}
                     role="dialog"
                     aria-modal="true"
                   >
-                    {/* Top Swipe Handle */}
-                    <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-2 shrink-0 touch-none cursor-grab active:cursor-grabbing" />
+                    {/* Top Swipe Handle Zone */}
+                    <div
+                      onPointerDown={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (!target.closest('button') && !target.closest('input') && !target.closest('a')) {
+                          dragControls.start(e);
+                        }
+                      }}
+                      className="w-full relative flex items-center justify-center pt-3.5 pb-2 px-6 cursor-grab active:cursor-grabbing touch-none select-none shrink-0"
+                    >
+                      <div className="w-12 h-1.5 rounded-full bg-white/25 active:bg-white/45 transition-colors pointer-events-none" />
+                    </div>
 
                     {/* Header info */}
                     {(title || description) && (
-                      <div className="px-6 pt-2 pb-2 text-left">
+                      <div
+                        onPointerDown={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (!target.closest('button') && !target.closest('input') && !target.closest('a')) {
+                            dragControls.start(e);
+                          }
+                        }}
+                        className="px-6 pt-1 pb-2 text-left cursor-grab select-none touch-none shrink-0"
+                      >
                         {title && (
-                          <h4 className="text-base font-bold text-white tracking-tight">
+                          <h4 className="text-base font-bold text-white tracking-tight pointer-events-none">
                             {title}
                           </h4>
                         )}
                         {description && (
-                          <p className="text-xs text-[#8e8e93] mt-0.5">{description}</p>
+                          <p className="text-xs text-[#8e8e93] mt-0.5 pointer-events-none">{description}</p>
                         )}
                       </div>
                     )}
 
                     {/* Mobile Touch Rows formatted as Small Bento Widgets */}
-                    <div className="p-4 pt-1 flex flex-col gap-2.5 pb-[calc(104px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] overflow-y-auto no-scrollbar">
+                    <div className="p-4 pt-1 flex flex-col gap-2.5 pb-[calc(104px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] overflow-y-auto overscroll-contain touch-pan-y no-scrollbar">
                       {items.map((item, idx) => {
                         if (item.separator) {
                           return <div key={`sep-${idx}`} className="my-1.5 h-px bg-white/5" />;
