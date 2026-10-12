@@ -1734,17 +1734,31 @@ export default function Home() {
 
 
       // Deep link: обработка start_param
+      const urlParams = new URLSearchParams(window.location.search);
+      const rawParam =
+        tg.initDataUnsafe?.start_param ||
+        urlParams.get('startapp') ||
+        urlParams.get('tgWebAppStartParam');
 
-      const startParam = tg.initDataUnsafe?.start_param;
-
-      if (startParam && startParam.startsWith('article_')) {
-
-        const articleId = startParam.replace('article_', '');
-
-        if (articleId) navigate(`/media/${articleId}`);
-
+      if (rawParam && (rawParam.startsWith('article_') || rawParam.startsWith('post_'))) {
+        const articleId = rawParam.replace(/^(article_|post_)/, '');
+        if (articleId) {
+          navigate(`/media/${articleId}`, { replace: true });
+          return;
+        }
       }
     } else {
+      // Проверяем: может это прямой переход по deep link в браузере (напр. ?startapp=article_xxx)
+      const urlParams = new URLSearchParams(window.location.search);
+      const rawParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
+      if (rawParam && (rawParam.startsWith('article_') || rawParam.startsWith('post_'))) {
+        const articleId = rawParam.replace(/^(article_|post_)/, '');
+        if (articleId) {
+          navigate(`/media/${articleId}`, { replace: true });
+          return;
+        }
+      }
+
       // Проверяем: может это вход через OneLaunch с MC-ником
       const mcSearch = window.location.search;
       const mcNickname = new URLSearchParams(mcSearch).get('nickname');

@@ -120,12 +120,25 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
       cover_url: newPostCoverUrl || null, youtube_url: newPostYoutubeUrl || null, created_at: finalDate
     };
 
-    const { error } = editingPostId 
-      ? await supabase.from('posts').update(payload).eq('id', editingPostId)
-      : await supabase.from('posts').insert([payload]);
-
-    if (!error) onSuccess();
-    else alert(error.message);
+    if (editingPostId) {
+      const { error } = await supabase.from('posts').update(payload).eq('id', editingPostId);
+      if (!error) onSuccess();
+      else alert(error.message);
+    } else {
+      const { data: inserted, error } = await supabase.from('posts').insert([payload]).select().single();
+      if (!error && inserted) {
+        try {
+          fetch('https://onehouse-telegram-bot.artemakimov2018.workers.dev/publish-article', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'new_post', post: inserted }),
+          }).catch(() => {});
+        } catch (_) {}
+        onSuccess();
+      } else if (error) {
+        alert(error.message);
+      }
+    }
   }
 
   useEffect(() => {

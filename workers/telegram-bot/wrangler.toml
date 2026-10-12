@@ -1,0 +1,12 @@
+name = "onehouse-telegram-bot"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+DEFAULT_MINI_APP_URL = "https://onelaunch.pp.ua/"
+DEFAULT_BUTTON_MODE = "rich"
+
+[[kv_namespaces]]
+binding = "BOT_STORAGE"
+id = "8154a783cb7241768ca38ca6d1cb37e0"

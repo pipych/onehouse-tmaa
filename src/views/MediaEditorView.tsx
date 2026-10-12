@@ -5,7 +5,7 @@ import { getCurrentSeasonName } from '../lib/season';
 import { useTelegram } from '../hooks/useTelegram';
 import { OneIcon } from '../components/ui/SFSymbol';
 
-const BOT_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw_u1zTK5C44FvRfldEuadVy4vs0MQzCsfutsyZf-roJwsg-oY3gvUZiRn8Jk190lpxtg/exec";
+const BOT_PUBLISH_URL = "https://onehouse-telegram-bot.artemakimov2018.workers.dev/publish-article";
 
 interface Player {
   id: string;
@@ -165,13 +165,15 @@ function EditorContent() {
         const { data: inserted, error } = await supabase.from('posts').insert([postPayload]).select().single();
         if (error) throw error;
         
-        // Telegram notification webhook
+        // Рассылка новой статьи в Telegram (Топик 1702 • Media) через бота OneApp
         try {
-          fetch(BOT_WEBHOOK_URL, {
+          fetch(BOT_PUBLISH_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'new_post', post: inserted }),
-          }).catch(() => {});
+          }).catch((err) => {
+            console.warn('[Telegram Broadcast Error]', err);
+          });
         } catch (_) {}
       }
 
