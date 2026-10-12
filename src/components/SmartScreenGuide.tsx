@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { OneIcon } from './ui/SFSymbol';
 import { Badge } from '../ui/components/Badge';
+import { Modal } from '../ui/overlays/Modal';
+import { Button } from '../ui/components/Button';
 
 interface SmartScreenGuideProps {
   onDownload: () => void;
@@ -12,17 +14,6 @@ const VIRUSTOTAL_URL =
 
 export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuideProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Закрытие модального окна по Escape
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsModalOpen(false);
-    };
-    if (isModalOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen]);
 
   return (
     <section className="w-full max-w-4xl mx-auto flex flex-col gap-16 md:gap-24 pt-4 pb-12 animate-fade-in select-none">
@@ -205,84 +196,64 @@ export default function SmartScreenGuide({ onDownload, status }: SmartScreenGuid
       </div>
 
       {/* МОДАЛЬНОЕ ОКНО «ПОДРОБНЕЕ» (OneWebUI Centered Modal on Desktop / Bottom Sheet on Mobile) */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
-          onClick={() => setIsModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-lg bg-[#14171c] rounded-t-[32px] rounded-b-none md:rounded-[32px] p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] md:pb-7 shadow-2xl flex flex-col gap-5 text-left relative border-none select-none max-h-[88vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        hasCancelAction={true}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#38bdf8]/10 flex items-center justify-center text-[#38bdf8] flex-shrink-0 border-none">
+              <OneIcon name="shield" size={20} />
+            </div>
+            <span className="text-lg sm:text-xl font-black text-white leading-snug">
+              Почему Windows показывает предупреждение?
+            </span>
+          </div>
+        }
+        footer={
+          <Button
+            variant="primary"
+            onClick={() => setIsModalOpen(false)}
+            className="w-full sm:w-auto"
           >
-            {/* Шторка: ручка для свайпа на мобильном */}
-            <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-1 shrink-0 md:hidden" />
-
-            {/* Кнопка закрытия: только на десктопе */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="hidden md:flex absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white transition-colors border-none sf-tap"
-              title="Закрыть"
-            >
-              <OneIcon name="close" size={18} />
-            </button>
-
-            {/* Заголовок */}
-            <div className="flex items-center gap-3 pr-8">
-              <div className="w-10 h-10 rounded-full bg-[#38bdf8]/10 flex items-center justify-center text-[#38bdf8] flex-shrink-0 border-none">
-                <OneIcon name="shield" size={20} />
-              </div>
-              <h3 className="text-lg sm:text-xl font-black text-white leading-snug">
-                Почему Windows показывает предупреждение?
-              </h3>
+            Понятно
+          </Button>
+        }
+      >
+        <div className="space-y-3 text-xs sm:text-sm text-gray-300 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+          <div className="p-4 rounded-2xl bg-[#181c23] space-y-1 border-none">
+            <div className="font-bold text-white flex items-center gap-1.5">
+              <span className="text-[#c0ff00]">●</span> Дорогие сертификаты подписи (EV Code Signing)
             </div>
+            <p className="text-[#8e8e93] text-xs">
+              Корпорация Microsoft требует от разработчиков ежегодную покупку цифровой подписи
+              стоимостью от $500 в год. Для независимых фанатских лаунчеров эта сумма не имеет
+              смысла.
+            </p>
+          </div>
 
-            {/* Содержимое: карточки на приподнятой поверхности #181c23 без обводок */}
-            <div className="space-y-3 text-xs sm:text-sm text-gray-300 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
-              <div className="p-4 rounded-2xl bg-[#181c23] space-y-1 border-none">
-                <div className="font-bold text-white flex items-center gap-1.5">
-                  <span className="text-[#c0ff00]">●</span> Дорогие сертификаты подписи (EV Code Signing)
-                </div>
-                <p className="text-[#8e8e93] text-xs">
-                  Корпорация Microsoft требует от разработчиков ежегодную покупку цифровой подписи
-                  стоимостью от $500 в год. Для независимых фанатских лаунчеров эта сумма не имеет
-                  смысла.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#181c23] space-y-1 border-none">
-                <div className="font-bold text-white flex items-center gap-1.5">
-                  <span className="text-[#38bdf8]">●</span> Репутационный фильтр SmartScreen
-                </div>
-                <p className="text-[#8e8e93] text-xs">
-                  Каждый раз, когда выходит свежее обновление, Microsoft SmartScreen считает его
-                  «незнакомым», пока его не скачают тысячи пользователей. Это автоматическая защита
-                  от любого нового софта.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#181c23] space-y-1 border-none">
-                <div className="font-bold text-white flex items-center gap-1.5">
-                  <span className="text-emerald-400">●</span> Гарантия чистоты и безопасности
-                </div>
-                <p className="text-[#8e8e93] text-xs">
-                  В OneLaunch нет вирусов, рекламных модулей и скрытых майнеров. Вы можете в любой
-                  момент нажать «Проверить на VirusTotal» и убедиться в вердикте 70+ антивирусных лабораторий.
-                </p>
-              </div>
+          <div className="p-4 rounded-2xl bg-[#181c23] space-y-1 border-none">
+            <div className="font-bold text-white flex items-center gap-1.5">
+              <span className="text-[#38bdf8]">●</span> Репутационный фильтр SmartScreen
             </div>
+            <p className="text-[#8e8e93] text-xs">
+              Каждый раз, когда выходит свежее обновление, Microsoft SmartScreen считает его
+              «незнакомым», пока его не скачают тысячи пользователей. Это автоматическая защита
+              от любого нового софта.
+            </p>
+          </div>
 
-            {/* Кнопка закрытия внизу */}
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-6 py-2.5 rounded-full text-xs font-bold bg-[#c0ff00] text-[#090b0e] hover:bg-[#aee600] active:scale-95 transition-all shadow-md border-none sf-tap"
-              >
-                Понятно
-              </button>
+          <div className="p-4 rounded-2xl bg-[#181c23] space-y-1 border-none">
+            <div className="font-bold text-white flex items-center gap-1.5">
+              <span className="text-emerald-400">●</span> Гарантия чистоты и безопасности
             </div>
+            <p className="text-[#8e8e93] text-xs">
+              В OneLaunch нет вирусов, рекламных модулей и скрытых майнеров. Вы можете в любой
+              момент нажать «Проверить на VirusTotal» и убедиться в вердикте 70+ антивирусных лабораторий.
+            </p>
           </div>
         </div>
-      )}
+      </Modal>
     </section>
   );
 }

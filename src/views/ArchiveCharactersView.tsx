@@ -6,6 +6,7 @@ import { getSeasonState, getAllPastSeasons, seasonName } from '../lib/season';
 import Avatar from '../components/Avatar';
 import { ArrowLeft, Users, Search, RefreshCw, X, Skull, Swords } from '../components/ui/SFSymbol';
 import SeasonSelector from '../components/SeasonSelector';
+import { UserProfileOverlay } from '../components/UserProfileOverlay';
 
 export default function ArchiveCharactersPage() {
   const navigate = useNavigate();
@@ -141,66 +142,13 @@ export default function ArchiveCharactersPage() {
         )}
       </div>
 
-      {/* Модальное окно персонажа */}
-      {selectedPlayer && (
-        <>
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] transition-opacity duration-300" onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} />
-          <div className={`fixed inset-x-0 bottom-0 z-[70] w-full max-w-lg mx-auto p-6 pt-3 pb-[calc(96px+var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)))] rounded-t-[32px] rounded-b-none border-none shadow-[0_-12px_48px_rgba(0,0,0,0.85)] text-center space-y-5 overflow-y-auto max-h-[88vh] select-none transition-colors duration-300 md:fixed md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[calc(100%-32px)] md:rounded-[32px] md:max-h-[90vh] md:pb-6 ${isDead(selectedPlayer) ? 'bg-[#090b0e]' : 'bg-[#14171c]'}`}>
-            {/* Шторка: ручка для свайпа на мобильном */}
-            <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-2 shrink-0 md:hidden" />
-
-            <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-[#c0ff00]/10 to-transparent pointer-events-none rounded-t-[32px]" />
-            
-            {/* Крестик: строго скрыт на телефоне, есть только на десктопе */}
-            <button onClick={() => { setSelectedPlayer(null); setPlayerChars([]); }} className="hidden md:flex absolute top-4 right-4 w-9 h-9 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white transition-all border-none sf-tap"><X size={16} /></button>
-
-            <div className={`relative w-24 h-24 rounded-full overflow-hidden bg-[#181c23] mx-auto shadow-lg ${isDead(selectedPlayer) ? 'opacity-60 grayscale' : ''}`}>
-              <img src={selectedPlayer.avatar_url || ''} alt="avatar" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-            </div>
-
-            <div className="space-y-1">
-              <h2 className={`text-2xl font-black tracking-wide break-all px-6 ${isDead(selectedPlayer) ? 'text-[#8e8e93] line-through' : 'text-white'}`}>{selectedPlayer.rp_name}</h2>
-              <p className="text-sm text-[#8e8e93] font-mono tracking-tight break-all">{selectedPlayer.mc_nickname}</p>
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#181c23] rounded-full text-xs font-semibold mt-1 text-[#c0ff00]">
-                <span>🏛️ Партия:</span><span className="font-bold">{selectedPlayer.party || 'Нет партии'}</span>
-              </div>
-              <p className="text-xs text-[#8e8e93] pt-0.5">{selectedPlayer.season}</p>
-            </div>
-
-            <div className="text-left space-y-2 w-full pt-1">
-              <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">Роли</div>
-              <div className="flex flex-wrap gap-2 items-center">
-                {selectedPlayer.roles?.map((role: string, idx: number) => (
-                  <span key={idx} className="inline-flex items-center gap-2 text-xs font-bold py-1.5 px-3.5 rounded-full bg-[#181c23] text-[#8e8e93] border-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#8e8e93] shrink-0" />
-                    <span>{role.toUpperCase()}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Все персонажи игрока */}
-            {playerChars.length > 0 && (
-              <div className="text-left space-y-2 w-full pt-2">
-                <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">Персонажи</div>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {playerChars.map((pc: any) => (
-                    <div key={pc.id} className={`flex items-center gap-3 p-3 rounded-2xl border-none min-h-[54px] ${isDead(pc) ? 'bg-[#090b0e] opacity-60' : 'bg-[#181c23]'}`}>
-                      <div className={`w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#14171c] ${isDead(pc) ? 'grayscale' : ''}`}>
-                        {pc.avatar_url ? <img src={pc.avatar_url} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <Users size={16} className="m-auto text-[#8e8e93]" />}
-                      </div>
-                      <div className="min-w-0 flex-1 text-left">
-                        <div className={`text-sm font-bold truncate ${isDead(pc) ? 'text-[#8e8e93] line-through' : 'text-white'}`}>{pc.rp_name}</div>
-                        <div className="text-[11px] text-[#8e8e93]">{pc.season} · {pc.party || 'Нет партии'}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+      {/* Модальное окно персонажа / профиля */}
+      <UserProfileOverlay
+        open={Boolean(selectedPlayer)}
+        onClose={() => setSelectedPlayer(null)}
+        character={selectedPlayer}
+        onSelectCharacter={(char) => setSelectedPlayer(char)}
+      />
     </div>
   );
 }

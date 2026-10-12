@@ -7,6 +7,9 @@ import {
   Bold, Italic, Strikethrough, Heading1, Heading2, AlignLeft, 
   AlignCenter, RefreshCw 
 } from './ui/SFSymbol';
+import { Modal } from '../ui/overlays/Modal';
+import { Button } from '../ui/components/Button';
+import { Input } from '../ui/components/Input';
 
 interface Player {
   id: string;
@@ -231,17 +234,29 @@ export default function PostEditor({ currentUser, editingPostId, onClose, onSucc
           </div>
         )}
 
-        {isYoutubeModalOpen && (
-          <div className="fixed inset-0 z-[99999] bg-[#090b0e]/95 backdrop-blur-xl flex items-end md:items-center justify-center p-0 md:px-4">
-            <div className="bg-[#14171c] p-6 pt-3 pb-[max(var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px)),28px)] md:pb-6 rounded-t-[32px] rounded-b-none md:rounded-[32px] w-full max-w-md relative flex flex-col gap-5 border-none shadow-2xl">
-              <div className="w-12 h-1 rounded-full bg-white/20 mx-auto mb-1 md:hidden" />
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="hidden md:flex absolute top-5 right-5 w-8 h-8 rounded-full bg-[#181c23] items-center justify-center text-[#8e8e93] hover:text-white border-none sf-tap"><X size={16}/></button>
-              <h3 className="text-xl font-black text-white">Видео с YouTube</h3>
-              <input type="text" placeholder="Ссылка..." value={newPostYoutubeUrl} onChange={e => setNewPostYoutubeUrl(e.target.value)} className="w-full bg-[#181c23] rounded-full px-5 py-3.5 text-white outline-none border-none text-sm placeholder-[#8e8e93]" />
-              <button onClick={() => setIsYoutubeModalOpen(false)} className="w-full bg-[#c0ff00] text-black font-black py-3.5 rounded-full border-none sf-tap active:scale-95 transition-transform">Сохранить</button>
-            </div>
-          </div>
-        )}
+        <Modal
+          open={isYoutubeModalOpen}
+          onClose={() => setIsYoutubeModalOpen(false)}
+          title="Видео с YouTube"
+          hasCancelAction={true}
+          maxWidth="max-w-md"
+          footer={
+            <Button
+              variant="primary"
+              onClick={() => setIsYoutubeModalOpen(false)}
+              className="w-full"
+            >
+              Сохранить
+            </Button>
+          }
+        >
+          <Input
+            placeholder="Вставьте ссылку на YouTube видео..."
+            value={newPostYoutubeUrl}
+            onChange={(e) => setNewPostYoutubeUrl(e.target.value)}
+            surface="card"
+          />
+        </Modal>
       </div>
     </div>
   );

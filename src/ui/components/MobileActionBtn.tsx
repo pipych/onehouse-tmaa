@@ -54,7 +54,7 @@ export const MobileActionBtn = React.forwardRef<HTMLButtonElement, MobileActionB
         className={cn(
           // Visibility & Positioning
           !forceVisible && 'md:hidden',
-          'fixed right-4 z-50',
+          'fixed right-4 z-[90]',
           bottomOffsetClass,
           // Shape & Dimensions
           'w-14 h-14 rounded-full aspect-square',
