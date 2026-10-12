@@ -1733,7 +1733,7 @@ export default function Home() {
 
 
 
-      // Deep link: обработка start_param
+      // Deep link: обработка start_param (только один раз при запуске, чтобы кнопка «Назад» возвращала на главную)
       const urlParams = new URLSearchParams(window.location.search);
       const rawParam =
         tg.initDataUnsafe?.start_param ||
@@ -1742,7 +1742,16 @@ export default function Home() {
 
       if (rawParam && (rawParam.startsWith('article_') || rawParam.startsWith('post_'))) {
         const articleId = rawParam.replace(/^(article_|post_)/, '');
-        if (articleId) {
+        const consumedKey = `consumed_deep_link_${rawParam}`;
+        const isAlreadyOpened = sessionStorage.getItem(consumedKey);
+
+        if (articleId && !isAlreadyOpened) {
+          sessionStorage.setItem(consumedKey, 'true');
+          try {
+            if (window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname || '/');
+            }
+          } catch (_) {}
           navigate(`/media/${articleId}`, { replace: true });
           return;
         }
@@ -1753,7 +1762,16 @@ export default function Home() {
       const rawParam = urlParams.get('startapp') || urlParams.get('tgWebAppStartParam');
       if (rawParam && (rawParam.startsWith('article_') || rawParam.startsWith('post_'))) {
         const articleId = rawParam.replace(/^(article_|post_)/, '');
-        if (articleId) {
+        const consumedKey = `consumed_deep_link_${rawParam}`;
+        const isAlreadyOpened = sessionStorage.getItem(consumedKey);
+
+        if (articleId && !isAlreadyOpened) {
+          sessionStorage.setItem(consumedKey, 'true');
+          try {
+            if (window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname || '/');
+            }
+          } catch (_) {}
           navigate(`/media/${articleId}`, { replace: true });
           return;
         }

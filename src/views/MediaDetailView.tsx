@@ -50,10 +50,23 @@ export default function StandalonePostDetail() {
 
   const canManage = currentUser && post && (post.author_id === currentUser.id || currentUser.roles?.includes('admin'));
 
+  const handleBack = () => {
+    try {
+      if (postId) {
+        sessionStorage.setItem(`consumed_deep_link_article_${postId}`, 'true');
+        sessionStorage.setItem(`consumed_deep_link_post_${postId}`, 'true');
+      }
+      if (window.history.replaceState) {
+        window.history.replaceState({}, '', '/');
+      }
+    } catch (_) {}
+    navigate('/', { replace: true });
+  };
+
   async function handleDeletePost() {
     if (!confirm('Удалить пост?')) return;
     await supabase.from('posts').delete().eq('id', postId);
-    navigate('/');
+    handleBack();
   }
 
   async function loadActivity() {
@@ -91,9 +104,9 @@ export default function StandalonePostDetail() {
   }
 
   useEffect(() => {
-    showBackButton(() => navigate('/'));
+    showBackButton(handleBack);
     return () => hideBackButton();
-  }, [showBackButton, hideBackButton, navigate]);
+  }, [showBackButton, hideBackButton, navigate, postId]);
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
@@ -142,7 +155,7 @@ export default function StandalonePostDetail() {
         {/* Кнопка назад */}
         <div className="w-full mb-6">
           <button 
-            onClick={() => navigate('/')} 
+            onClick={handleBack} 
             className="w-11 h-11 flex items-center justify-center bg-[#14171c] hover:bg-[#181c23] rounded-full text-white transition-all border-none sf-tap"
           >
             <OneIcon name="arrow_back" size={20} />
