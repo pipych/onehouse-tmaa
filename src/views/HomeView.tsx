@@ -1984,6 +1984,7 @@ export default function Home() {
         }}
         character={selectedCharacter}
         profile={selectedProfile}
+        allCharacters={players}
         isAdmin={isAdmin}
         professions={professions}
         roles={customRoles}

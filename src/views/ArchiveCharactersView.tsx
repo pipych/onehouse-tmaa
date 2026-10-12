@@ -147,6 +147,7 @@ export default function ArchiveCharactersPage() {
         open={Boolean(selectedPlayer)}
         onClose={() => setSelectedPlayer(null)}
         character={selectedPlayer}
+        allCharacters={characters}
         onSelectCharacter={(char) => setSelectedPlayer(char)}
       />
     </div>

@@ -12,6 +12,8 @@ export interface UserProfileOverlayProps {
   onClose: () => void;
   character?: any | null;
   profile?: any | null;
+  allCharacters?: any[];
+  initialCharacters?: any[];
   isAdmin?: boolean;
   onSaveProfile?: (updatedData: { rp_name: string; avatar_url: string }) => Promise<void>;
   onKillCharacter?: () => Promise<void>;
@@ -31,11 +33,52 @@ export interface UserProfileOverlayProps {
   ) => Promise<void>;
 }
 
+// In-memory cache for player characters to guarantee instant, 0ms rendering without layout shift
+const playerCharactersCache = new Map<string, any[]>();
+
+function getInitialPlayerCharacters(
+  playerId: string | undefined,
+  character: any | null,
+  allCharacters?: any[],
+  initialCharacters?: any[]
+): any[] {
+  if (!playerId) return [];
+
+  if (initialCharacters && initialCharacters.length > 0) {
+    return initialCharacters;
+  }
+
+  if (playerCharactersCache.has(playerId)) {
+    const cached = playerCharactersCache.get(playerId);
+    if (cached && cached.length > 0) return cached;
+  }
+
+  if (allCharacters && allCharacters.length > 0) {
+    const matched = allCharacters.filter(
+      (c) => (c.player_id === playerId || c.id === playerId)
+    );
+    if (matched.length > 0) {
+      playerCharactersCache.set(playerId, matched);
+      return matched;
+    }
+  }
+
+  if (character && character.id) {
+    const initial = [character];
+    playerCharactersCache.set(playerId, initial);
+    return initial;
+  }
+
+  return [];
+}
+
 export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   open,
   onClose,
   character,
   profile,
+  allCharacters,
+  initialCharacters,
   isAdmin = false,
   onSaveProfile,
   onKillCharacter,
@@ -51,6 +94,7 @@ export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   onUploadAvatar,
 }) => {
   const activeItem = character || profile;
+  const playerId = activeItem?.player_id || activeItem?.id;
 
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false);
@@ -59,9 +103,11 @@ export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Player's characters state
-  const [playerChars, setPlayerChars] = useState<any[]>([]);
-  const [, setLoadingChars] = useState(false);
+  // Synchronously initialize with instant known characters to eliminate delay and layout shift
+  const [playerChars, setPlayerChars] = useState<any[]>(() =>
+    getInitialPlayerCharacters(playerId, character, allCharacters, initialCharacters)
+  );
+  const [loadingChars, setLoadingChars] = useState(false);
 
   // Synchronize edit fields when active item changes or edit mode toggles
   useEffect(() => {
@@ -74,33 +120,46 @@ export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
     }
   }, [activeItem, open]);
 
-  // Load player characters automatically and reliably
-  const playerId = activeItem?.player_id || activeItem?.id;
+  // Load player characters with immediate memory resolution and SWR background revalidation
   useEffect(() => {
     if (!open || !playerId) {
-      setPlayerChars([]);
       return;
     }
 
-    let isMounted = true;
-    setLoadingChars(true);
+    // 1. Instant resolution from cache or props
+    const immediate = getInitialPlayerCharacters(playerId, character, allCharacters, initialCharacters);
+    if (immediate.length > 0) {
+      setPlayerChars(immediate);
+    } else {
+      setLoadingChars(true);
+    }
 
+    let isMounted = true;
+
+    // 2. Background revalidation from Supabase
     supabase
       .from('characters')
       .select('*')
       .eq('player_id', playerId)
       .order('created_at', { ascending: true })
-      .then(({ data, error }) => {
-        if (!error && isMounted && data) {
-          setPlayerChars(data);
+      .then(
+        ({ data, error }) => {
+          if (!isMounted) return;
+          if (!error && data && data.length > 0) {
+            playerCharactersCache.set(playerId, data);
+            setPlayerChars(data);
+          }
+          setLoadingChars(false);
+        },
+        () => {
+          if (isMounted) setLoadingChars(false);
         }
-        if (isMounted) setLoadingChars(false);
-      });
+      );
 
     return () => {
       isMounted = false;
     };
-  }, [open, playerId]);
+  }, [open, playerId, character?.id, allCharacters]);
 
   if (!activeItem) return null;
 
@@ -445,10 +504,13 @@ export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
         )}
 
         {/* Player Characters List (Small Bento Widget items) */}
-        {playerChars.length > 0 && (
-          <div className="space-y-2.5 text-left w-full pt-1">
-            <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1">
-              Персонажи игрока ({playerChars.length})
+        {(playerChars.length > 0 || loadingChars) && (
+          <div className="space-y-2.5 text-left w-full pt-1 transition-all duration-200">
+            <div className="text-xs text-[#8e8e93] uppercase tracking-wider font-semibold pl-1 flex items-center justify-between">
+              <span>Персонажи игрока {playerChars.length > 0 ? `(${playerChars.length})` : ''}</span>
+              {loadingChars && playerChars.length === 0 && (
+                <span className="text-[10px] text-[#8e8e93]/60">Загрузка...</span>
+              )}
             </div>
             <div className="flex flex-col gap-2 w-full">
               {playerChars.map((pc) => {
@@ -508,6 +570,17 @@ export const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                   />
                 );
               })}
+
+              {/* Skeleton placeholder while loading if no characters yet */}
+              {loadingChars && playerChars.length === 0 && (
+                <div className="w-full flex items-center p-3.5 md:p-4 rounded-[20px] md:rounded-[24px] bg-[#181c23] animate-pulse">
+                  <div className="w-11 h-11 md:w-12 h-12 rounded-[16px] bg-white/5 shrink-0" />
+                  <div className="ml-3.5 space-y-2 flex-1 min-w-0">
+                    <div className="w-28 h-4 rounded-full bg-white/10" />
+                    <div className="w-40 h-3 rounded-full bg-white/5" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
