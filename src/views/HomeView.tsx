@@ -2128,34 +2128,38 @@ export default function Home() {
 
 
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-              {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
-              <SquareWidget
-                title="Конституция"
-                subtitle="РП ЗАКОНЫ"
-                icon="menu_book"
-                artworkUrl="/1000024917.png"
-                artworkClassName="opacity-15 group-hover:opacity-25 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]"
-                onClick={() => { setActiveSvodTab('laws'); setActiveDocument('constitution'); handleTabChange('svod'); }}
-                colSpan={1}
-              />
+            <div className="flex flex-col md:flex-row gap-4 w-full items-stretch">
+              {/* Левый блок: 2 квадратных виджета (на мобилке сетка 2 колонки, на ПК компактные как на мобилке по 170px) */}
+              <div className="grid grid-cols-2 gap-4 shrink-0 md:flex md:gap-4">
+                {/* 1. ВИДЖЕТ КОНСТИТУЦИИ */}
+                <SquareWidget
+                  title="Конституция"
+                  subtitle="РП ЗАКОНЫ"
+                  icon="menu_book"
+                  artworkUrl="/1000024917.png"
+                  artworkClassName="opacity-15 group-hover:opacity-25 bg-right-bottom bg-no-repeat bg-[length:90px]"
+                  onClick={() => { setActiveSvodTab('laws'); setActiveDocument('constitution'); handleTabChange('svod'); }}
+                  className="w-full md:w-[170px] md:h-[170px] shrink-0"
+                />
 
-              {/* 2. АРХИВ СЕЗОНОВ */}
-              <SquareWidget
-                title="Архив"
-                subtitle="ПРОШЛЫЕ СЕЗОНЫ"
-                icon="inventory_2"
-                artworkUrl="/ArchiveIcon.webp"
-                artworkClassName="opacity-15 group-hover:opacity-25 bg-right-bottom bg-no-repeat bg-[length:90px] md:bg-[length:180px]"
-                onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
-                colSpan={1}
-              />
+                {/* 2. АРХИВ СЕЗОНОВ */}
+                <SquareWidget
+                  title="Архив"
+                  subtitle="ПРОШЛЫЕ СЕЗОНЫ"
+                  icon="inventory_2"
+                  artworkUrl="/ArchiveIcon.webp"
+                  artworkClassName="opacity-15 group-hover:opacity-25 bg-right-bottom bg-no-repeat bg-[length:90px]"
+                  onClick={() => { setActiveSvodTab('archive'); handleTabChange('svod'); }}
+                  className="w-full md:w-[170px] md:h-[170px] shrink-0"
+                />
+              </div>
 
               {/* 3. ВИДЖЕТ ПОСЛЕДНИХ НОВОСТЕЙ СЕРВЕРА */}
-              <div className="col-span-2 md:col-span-2">
+              <div className="flex-1 min-w-0">
                 <LargeWidget
                   title="Последние публикации"
                   icon="newspaper"
+                  className="h-full"
                   actions={
                     <button
                       onClick={() => handleTabChange('media')}

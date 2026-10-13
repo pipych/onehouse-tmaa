@@ -57,7 +57,7 @@ export const SquareWidget = React.forwardRef<HTMLDivElement, SquareWidgetProps>(
         onClick={onClick}
         className={cn(
           // Container & Compact 1:1 Shape
-          'relative aspect-square w-full p-3.5 sm:p-4 rounded-[22px] sm:rounded-[26px] md:rounded-[28px] overflow-hidden select-none',
+          'relative aspect-square w-full md:max-w-[175px] md:max-h-[175px] p-3.5 sm:p-4 rounded-[22px] sm:rounded-[26px] md:rounded-[28px] overflow-hidden select-none',
           bgClassName,
           'border-none ring-0 outline-none',
           // Flex layout with strictly anchored bottom-left content

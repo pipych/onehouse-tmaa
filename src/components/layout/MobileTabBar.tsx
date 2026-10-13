@@ -91,7 +91,7 @@ export function MobileTabBar({
   return (
     <div
       className={cn(
-        'fixed bottom-2 pb-[var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px))] left-3 right-3 sm:left-4 sm:right-4 z-[100] flex items-center justify-center pointer-events-none select-none transition-all duration-300',
+        'fixed bottom-2.5 sm:bottom-3 pb-[var(--tma-raw-bottom-inset,env(safe-area-inset-bottom,0px))] left-4 right-4 z-[100] flex items-center justify-center pointer-events-none select-none transition-all duration-300',
         className
       )}
     >
@@ -113,7 +113,7 @@ export function MobileTabBar({
               width: `${pillRect.width}px`,
             }}
           >
-            <div className="w-full h-full rounded-full bg-[#252c37]" />
+            <div className="w-full h-full rounded-full bg-[#1c222b]" />
           </div>
 
           {/* Main navigation tabs (flex-1 evenly divided) */}
