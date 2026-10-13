@@ -1873,8 +1873,8 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative flex flex-col">
-      {/* Десктопная верхняя панель навигации */}
+    <div className="min-h-screen text-white pb-32 md:pb-8 antialiased selection:bg-[#c0ff00] selection:text-black transition-colors duration-300 w-full max-w-full relative flex flex-col md:flex-row">
+      {/* Десктопная панель навигации слева */}
       <DesktopNavbar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -1884,6 +1884,8 @@ export default function Home() {
         onAdminClick={() => navigate('/admin')}
         onProfileClick={() => { setIsEditingProfile(false); setSelectedCharacter(dbUser); }}
       />
+
+      <div className="flex-1 min-w-0 flex flex-col w-full relative">
 
       <div className="fixed inset-0 bg-[#090b0e] -z-10 md:hidden" />
 
@@ -2527,6 +2529,7 @@ export default function Home() {
 
 
       </main>
+      </div>
 
       {/* МОБИЛЬНЫЙ ТАББАР */}
       <div className={`md:hidden fixed inset-x-0 bottom-0 z-[100] pointer-events-none transition-[transform,opacity] duration-300 ease-out will-change-transform ${showToolbar || isCreatingPost ? 'opacity-0 translate-y-24' : 'opacity-100 translate-y-0'}`}>

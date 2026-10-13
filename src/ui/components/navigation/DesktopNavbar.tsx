@@ -180,7 +180,7 @@ export const DesktopNavbar: React.FC<DesktopNavbarProps> = ({
               height: `${pillRect.height}px`,
             }}
           >
-            <div className="w-full h-full rounded-full bg-[#252c37]" />
+            <div className="w-full h-full rounded-full bg-[#1c222b]" />
           </div>
 
           {/* Вкладки: иконка и текст выровнены строго по левой стороне */}

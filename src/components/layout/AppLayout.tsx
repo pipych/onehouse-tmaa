@@ -26,8 +26,8 @@ export function AppLayout({
   hideNavigation = false,
 }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#090b0e] text-white flex flex-col relative overflow-x-hidden antialiased selection:bg-[#c0ff00] selection:text-black">
-      {/* Десктопная верхняя панель навигации */}
+    <div className="min-h-screen bg-[#090b0e] text-white flex flex-col md:flex-row relative overflow-x-hidden antialiased selection:bg-[#c0ff00] selection:text-black">
+      {/* Десктопная панель навигации слева */}
       {!hideNavigation && (
         <DesktopNavbar
           activeTab={activeTab}
@@ -41,9 +41,11 @@ export function AppLayout({
       )}
 
       {/* Контентная область */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-tma-safe md:pt-6 pb-28 md:pb-12 transition-all">
-        {children}
-      </main>
+      <div className="flex-1 min-w-0 flex flex-col w-full">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-tma-safe md:pt-8 pb-28 md:pb-12 transition-all">
+          {children}
+        </main>
+      </div>
 
       {/* Мобильный плавающий нижний таббар */}
       {!hideNavigation && (
