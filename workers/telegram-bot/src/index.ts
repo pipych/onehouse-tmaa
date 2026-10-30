@@ -13,6 +13,8 @@
  * - Web dashboard at GET /
  */
 
+import { ZAPOVEDI_IMAGE_BASE64 } from './assets/zapovedi';
+
 export interface BotKVNamespace {
   get(key: string): Promise<string | null>;
   put(key: string, value: string): Promise<void>;
@@ -35,6 +37,33 @@ const DIRECT_APP_URL = `https://t.me/${BOT_USERNAME}/oneapp`;
 const CUSTOM_EMOJI_ID = "5361841630502495253";
 const ONEDASH_URL = "https://panel.onehouse.pp.ua";
 const ONELAUNCH_DOWNLOAD_URL = "https://onelaunch.pp.ua/download";
+
+export interface BotLinkItem {
+  id: string;
+  keywords: string[];
+  title: string;
+  description: string;
+  imagePath: string; // e.g. '/assets/zapovedi.jpg'
+  customEmojiId: string; // '5415591277901164365'
+  buttonEmoji: string; // '💎'
+  buttonText: string; // 'Прочитать'
+  startParam: string; // 'commandments'
+}
+
+export const BOT_LINKS: Record<string, BotLinkItem> = {
+  zapovedi: {
+    id: 'zapovedi',
+    keywords: ['заповеди', 'заповедь', 'правила', 'commandments', 'rules'],
+    title: 'Заповеди',
+    description:
+      'Заповеди — это внутриигровые и рп правила, нарушение которых будет приводить к дисбалансу игры и разрушение рп состовляющей, правила прописаные в них косаются абсолютно всех будь то админы или обычные игроки. Прочитать их можно ниже:',
+    imagePath: '/assets/zapovedi.jpg',
+    customEmojiId: '5415591277901164365',
+    buttonEmoji: '💎',
+    buttonText: 'Прочитать',
+    startParam: 'commandments',
+  },
+};
 
 // Target group & forum topic configuration:
 // - Group: OneHouse 3 (https://t.me/c/4314730996/12 & /15)
@@ -447,17 +476,31 @@ export async function deleteStoredValue(env: Env, key: string): Promise<void> {
 /**
  * Check if commands are allowed in this chat and topic
  * - Private chats: always allowed
- * - Group/supergroup chats: ONLY allowed in target group 4314730996 (OneHouse 3) on topic 12
- * - Topic 15 is reserved for media articles broadcast feed
+ * - Group/supergroup chats: Target group OneHouse 3 allows /link in ALL topics/threads.
+ *   Other commands (/app, /all, /start, /help) are restricted to topic 12 (SERVER_LINKS_TOPIC_ID).
+ * - Unauthorized groups or non-target groups are completely ignored.
  */
-export function isCommandAllowedInChat(chat: TelegramChat, threadId?: number): boolean {
+export function isCommandAllowedInChat(
+  chat: TelegramChat,
+  threadId?: number,
+  commandText?: string
+): boolean {
   if (chat.type === 'private') {
     return true;
   }
   if (chat.type === 'group' || chat.type === 'supergroup') {
     const isTargetGroup =
       chat.id === TARGET_GROUP_CHAT_ID || String(chat.id).includes(TARGET_GROUP_RAW_ID);
-    if (isTargetGroup && threadId === SERVER_LINKS_TOPIC_ID) {
+    if (!isTargetGroup) {
+      return false;
+    }
+    // /link command is allowed across ALL topics/threads of the target group OneHouse 3
+    const isLinkCommand = commandText ? commandText.trim().startsWith('/link') : false;
+    if (isLinkCommand) {
+      return true;
+    }
+    // Other commands (/app, /all, /start, /help) are restricted to topic 12
+    if (threadId === SERVER_LINKS_TOPIC_ID) {
       return true;
     }
   }
@@ -698,6 +741,7 @@ export async function setupBotCommands(token: string) {
     commands: [
       { command: 'app', description: '🚀 Запустить OneApp' },
       { command: 'all', description: '💎 Все сервисы OneHouse (OneApp, OneDash, OneLaunch)' },
+      { command: 'link', description: '🔗 Ссылки и материалы (например, /link заповеди)' },
       { command: 'start', description: 'ℹ️ Главное меню и приветствие' },
       { command: 'help', description: '❓ Справка по возможностям бота' },
     ],
@@ -720,7 +764,11 @@ export async function setupMenuButton(token: string, miniAppUrl: string) {
 /**
  * Handle incoming Telegram Update
  */
-export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Promise<Response> {
+export async function handleTelegramUpdate(
+  update: TelegramUpdate,
+  env: Env,
+  request?: Request
+): Promise<Response> {
   const token = getBotToken(env);
   const miniAppUrl = getMiniAppUrl(env);
 
@@ -803,10 +851,10 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
   const userName = message.from?.first_name || 'друг';
 
   // 1. Forum Topic & Group restrictions:
-  // In group chats (OneHouse 3), only topic 12 is authorized for system commands (/app, /all, /start, /help).
-  // Topic 15 is reserved for media publications broadcast feed.
-  // Non-topic group chats or unauthorized topics/groups are ignored.
-  if (!isCommandAllowedInChat(message.chat, threadId)) {
+  // In group chats (OneHouse 3), /link is allowed across ALL topics/threads.
+  // System commands (/app, /all, /start, /help) remain restricted to topic 12.
+  // Unauthorized groups or topics are ignored.
+  if (!isCommandAllowedInChat(message.chat, threadId, text)) {
     return new Response(JSON.stringify({ ok: true, status: 'ignored_unauthorized_chat_or_topic' }), {
       headers: { 'Content-Type': 'application/json' },
     });
@@ -846,6 +894,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
       `📌 <b>Команды бота:</b>\n` +
       `• /app — открыть OneApp\n` +
       `• /all — все сервисы OneHouse (OneApp, OneDash, OneLaunch)\n` +
+      `• /link [раздел] — материалы и ссылки (например, /link заповеди)\n` +
       `• /help — подробная справка\n\n` +
       `🔗 Прямая ссылка OneApp: <a href="${DIRECT_APP_URL}">${DIRECT_APP_URL}</a>`;
 
@@ -927,6 +976,124 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
     });
   }
 
+  // Command: /link
+  if (text.startsWith('/link')) {
+    const arg = text.replace(/^\/link(@\w+)?/i, '').trim().toLowerCase();
+
+    // 1. If no argument provided, send usage help
+    if (!arg) {
+      const availableKeywords = Object.values(BOT_LINKS)
+        .map((item) => `• <code>/link ${item.keywords[0]}</code> — ${escapeHtml(item.title)}`)
+        .join('\n');
+      const helpHtml =
+        `🔗 <b>Быстрые ссылки на материалы:</b>\n\n` +
+        `Используйте команду с нужным разделом:\n${availableKeywords}\n\n` +
+        `<i>Пример: <code>/link заповеди</code></i>`;
+
+      await handleBotCommandResponse(
+        env,
+        token,
+        chatId,
+        'link_help',
+        message.message_id,
+        threadId,
+        () =>
+          sendTelegramMessage(token, chatId, helpHtml, {
+            parse_mode: 'HTML',
+            reply_markup: { remove_keyboard: true },
+            message_thread_id: threadId,
+          })
+      );
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 2. Find matching link from BOT_LINKS
+    const link = Object.values(BOT_LINKS).find((item) =>
+      item.keywords.some((k) => k.toLowerCase() === arg)
+    );
+
+    // If not found, notify user with available options
+    if (!link) {
+      const availableList = Object.values(BOT_LINKS)
+        .map((item) => `• <code>/link ${item.keywords[0]}</code> — ${escapeHtml(item.title)}`)
+        .join('\n');
+      const notFoundHtml =
+        `⚠️ <b>Раздел «${escapeHtml(arg)}» не найден.</b>\n\n` +
+        `Доступные разделы:\n${availableList}`;
+
+      await handleBotCommandResponse(
+        env,
+        token,
+        chatId,
+        'link_not_found',
+        message.message_id,
+        threadId,
+        () =>
+          sendTelegramMessage(token, chatId, notFoundHtml, {
+            parse_mode: 'HTML',
+            reply_markup: { remove_keyboard: true },
+            message_thread_id: threadId,
+          })
+      );
+
+      return new Response(JSON.stringify({ ok: true, status: 'link_not_found' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Link found: prepare post with photo, caption, and deep link button
+    const photoUrl = request
+      ? new URL(link.imagePath, request.url).href
+      : `https://onelaunch.pp.ua${link.imagePath}`;
+    const directAppUrl = `${DIRECT_APP_URL}?startapp=${link.startParam}`;
+    const captionHtml =
+      `<b><tg-emoji emoji-id="${link.customEmojiId}">${link.buttonEmoji}</tg-emoji> ${escapeHtml(link.title)}</b>\n\n` +
+      `${escapeHtml(link.description)}`;
+    const inlineKeyboard: InlineKeyboardMarkup = {
+      inline_keyboard: [[{ text: `${link.buttonEmoji} ${link.buttonText}`, url: directAppUrl }]],
+    };
+
+    await handleBotCommandResponse(
+      env,
+      token,
+      chatId,
+      `link_${link.id}`,
+      message.message_id,
+      threadId,
+      async () => {
+        const photoPayload: Record<string, unknown> = {
+          chat_id: chatId,
+          photo: photoUrl,
+          caption: captionHtml,
+          parse_mode: 'HTML',
+          reply_markup: inlineKeyboard,
+        };
+        if (threadId) {
+          photoPayload.message_thread_id = threadId;
+        }
+
+        const photoResult = await callTelegramApi(token, 'sendPhoto', photoPayload);
+        if (photoResult.ok) {
+          return photoResult;
+        }
+
+        console.warn('[handleTelegramUpdate] sendPhoto failed, falling back to sendMessage:', photoResult);
+        return sendTelegramMessage(token, chatId, captionHtml, {
+          parse_mode: 'HTML',
+          reply_markup: inlineKeyboard,
+          message_thread_id: threadId,
+        });
+      }
+    );
+
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // Command: /keyboard (deprecated - clean up and remove bottom keyboard)
   if (text.startsWith('/keyboard')) {
     await handleBotCommandResponse(
@@ -964,7 +1131,8 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
       `   • 🟢 <b>OneApp</b> (зеленая кнопка)\n` +
       `   • ⚪ <b>OneDash</b> (обычная белая кнопка)\n` +
       `   • 🔵 <b>OneLaunch</b> (синяя кнопка)\n` +
-      `3. <b>Menu Button</b> — кнопка «OneApp» в левом нижнем углу экрана возле поля ввода.\n\n` +
+      `3. <b>/link [раздел]</b> — полезные материалы с иллюстрациями и ссылками (например, <code>/link заповеди</code>)\n` +
+      `4. <b>Menu Button</b> — кнопка «OneApp» в левом нижнем углу экрана возле поля ввода.\n\n` +
       `🌐 <b>Сервисы экосистемы:</b>\n` +
       `• OneApp: ${DIRECT_APP_URL}\n` +
       `• OneDash: ${ONEDASH_URL}\n` +
@@ -1128,6 +1296,27 @@ export default {
       });
     }
 
+    // Assets: GET /assets/zapovedi.jpg or GET /images/zapovedi.jpg
+    if (
+      method === 'GET' &&
+      (url.pathname === '/assets/zapovedi.jpg' || url.pathname === '/images/zapovedi.jpg')
+    ) {
+      const binaryString = atob(ZAPOVEDI_IMAGE_BASE64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return new Response(bytes, {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/jpeg',
+          'Cache-Control': 'public, max-age=31536000',
+          ...corsHeaders,
+        },
+      });
+    }
+
     // 1. Dashboard: GET /
     if (method === 'GET' && (url.pathname === '/' || url.pathname === '')) {
       return new Response(renderDashboardHtml(url.origin, token, miniAppUrl), {
@@ -1247,7 +1436,7 @@ export default {
 
       try {
         const update = (await request.json()) as TelegramUpdate;
-        return await handleTelegramUpdate(update, env);
+        return await handleTelegramUpdate(update, env, request);
       } catch (err: any) {
         console.error('[Webhook Processing Error]:', err);
         return new Response(

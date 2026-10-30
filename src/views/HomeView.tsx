@@ -1732,6 +1732,21 @@ export default function Home() {
           navigate(`/media/${articleId}`, { replace: true });
           return;
         }
+      } else if (rawParam === 'commandments' || rawParam === 'zapovedi' || rawParam === 'rules') {
+        const consumedKey = `consumed_deep_link_${rawParam}`;
+        const isAlreadyOpened = sessionStorage.getItem(consumedKey);
+
+        if (!isAlreadyOpened) {
+          sessionStorage.setItem(consumedKey, 'true');
+          setActiveTab('svod');
+          setActiveSvodTab('laws');
+          setActiveDocument('commandments');
+          try {
+            if (window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname || '/');
+            }
+          } catch (_) {}
+        }
       }
     } else {
       // Проверяем: может это прямой переход по deep link в браузере (напр. ?startapp=article_xxx)
@@ -1751,6 +1766,21 @@ export default function Home() {
           } catch (_) {}
           navigate(`/media/${articleId}`, { replace: true });
           return;
+        }
+      } else if (rawParam === 'commandments' || rawParam === 'zapovedi' || rawParam === 'rules') {
+        const consumedKey = `consumed_deep_link_${rawParam}`;
+        const isAlreadyOpened = sessionStorage.getItem(consumedKey);
+
+        if (!isAlreadyOpened) {
+          sessionStorage.setItem(consumedKey, 'true');
+          setActiveTab('svod');
+          setActiveSvodTab('laws');
+          setActiveDocument('commandments');
+          try {
+            if (window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname || '/');
+            }
+          } catch (_) {}
         }
       }
 

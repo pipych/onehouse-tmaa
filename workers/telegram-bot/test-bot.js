@@ -434,6 +434,241 @@ async function runTests() {
     }
     console.log('✓ Test 8d Passed: POST /webhook with { type: "new_post" } successfully broadcasts to topic 15');
 
+    // 9. Test /link command & assets
+    console.log('Test 9: /link command & asset serving');
+
+    // 9a: GET /assets/zapovedi.jpg returns 200 with Content-Type: image/jpeg
+    const assetRes = await worker.fetch(new Request('https://worker.test/assets/zapovedi.jpg'), mockEnv);
+    if (assetRes.status !== 200) throw new Error(`GET /assets/zapovedi.jpg returned status ${assetRes.status}`);
+    if (assetRes.headers.get('Content-Type') !== 'image/jpeg') {
+      throw new Error(`Expected image/jpeg Content-Type, got ${assetRes.headers.get('Content-Type')}`);
+    }
+    const assetBytes = await assetRes.arrayBuffer();
+    if (assetBytes.byteLength === 0) throw new Error('Expected non-empty image binary response');
+    console.log('✓ Test 9a Passed: GET /assets/zapovedi.jpg returns 200 with image/jpeg binary data');
+
+    // 9b: POST /webhook with /link sends usage help and deletes user message
+    sentRequests.length = 0;
+    const linkHelpRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1008,
+          message: {
+            message_id: 90,
+            chat: { id: 777, type: 'private' },
+            from: { id: 777, is_bot: false, first_name: 'TestUser' },
+            text: '/link',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkHelpRes.status !== 200) throw new Error(`/link help returned ${linkHelpRes.status}`);
+    const linkHelpReq = sentRequests.find((r) => r.url.endsWith('/sendMessage'));
+    if (!linkHelpReq || !linkHelpReq.body?.text?.includes('/link заповеди')) {
+      throw new Error('Expected /sendMessage with /link usage instructions and available sections');
+    }
+    const deleteHelpUserMsg = sentRequests.find(
+      (r) => r.url.endsWith('/deleteMessage') && r.body?.message_id === 90
+    );
+    if (!deleteHelpUserMsg) throw new Error('Expected user command message (id 90) to be deleted');
+    console.log('✓ Test 9b Passed: /link without arguments sends usage help and deletes user message');
+
+    // 9c: POST /webhook with /link заповеди in Topic 12:
+    // sends sendPhoto with photo URL, caption containing description and custom emoji, button with startapp=commandments,
+    // deletes previous bot message and user message.
+    sentRequests.length = 0;
+    const linkZapovediRes1 = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1009,
+          message: {
+            message_id: 91,
+            message_thread_id: 12,
+            chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
+            from: { id: 777, is_bot: false, first_name: 'TopicUser' },
+            text: '/link заповеди',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkZapovediRes1.status !== 200) throw new Error(`/link заповеди (1) returned ${linkZapovediRes1.status}`);
+    const photoReq1 = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!photoReq1) throw new Error('Expected /sendPhoto call for /link заповеди');
+    if (photoReq1.body?.message_thread_id !== 12) {
+      throw new Error(`Expected message_thread_id 12, got ${photoReq1.body?.message_thread_id}`);
+    }
+    if (!photoReq1.body?.photo?.includes('/assets/zapovedi.jpg')) {
+      throw new Error(`Expected photo URL with /assets/zapovedi.jpg, got ${photoReq1.body?.photo}`);
+    }
+    if (!photoReq1.body?.caption?.includes('5415591277901164365') || !photoReq1.body?.caption?.includes('Заповеди')) {
+      throw new Error('Expected caption containing custom emoji and Заповеди');
+    }
+    const zapovediBtn = photoReq1.body?.reply_markup?.inline_keyboard?.[0]?.[0];
+    if (!zapovediBtn?.url?.includes('startapp=commandments')) {
+      throw new Error(`Expected button with startapp=commandments, got ${zapovediBtn?.url}`);
+    }
+    const deleteUserMsg91 = sentRequests.find(
+      (r) => r.url.endsWith('/deleteMessage') && r.body?.message_id === 91
+    );
+    if (!deleteUserMsg91) throw new Error('Expected user message 91 to be deleted');
+
+    // Repeated call in Topic 12 to verify previous bot message deletion
+    const firstBotMsgId = photoReq1.responseMessageId;
+    sentRequests.length = 0;
+    const linkZapovediRes2 = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1010,
+          message: {
+            message_id: 92,
+            message_thread_id: 12,
+            chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
+            from: { id: 777, is_bot: false, first_name: 'TopicUser' },
+            text: '/link заповеди',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkZapovediRes2.status !== 200) throw new Error(`/link заповеди (2) returned ${linkZapovediRes2.status}`);
+    const deletedPrevBotMsg = sentRequests.find(
+      (r) => r.url.endsWith('/deleteMessage') && r.body?.message_id === firstBotMsgId
+    );
+    if (!deletedPrevBotMsg) {
+      throw new Error(`Expected previous bot message (${firstBotMsgId}) to be deleted on repeated /link заповеди`);
+    }
+    const deleteUserMsg92 = sentRequests.find(
+      (r) => r.url.endsWith('/deleteMessage') && r.body?.message_id === 92
+    );
+    if (!deleteUserMsg92) throw new Error('Expected user message 92 to be deleted');
+    console.log('✓ Test 9c Passed: /link заповеди in Topic 12 sent photo, caption, button with startapp=commandments and deleted previous bot message & user message');
+
+    // 9d: POST /webhook with /link неизвестно returns not found error with suggestions
+    sentRequests.length = 0;
+    const notFoundRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1011,
+          message: {
+            message_id: 93,
+            chat: { id: 777, type: 'private' },
+            from: { id: 777, is_bot: false, first_name: 'TestUser' },
+            text: '/link неизвестно',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (notFoundRes.status !== 200) throw new Error(`/link неизвестно returned ${notFoundRes.status}`);
+    const notFoundReq = sentRequests.find((r) => r.url.endsWith('/sendMessage'));
+    if (!notFoundReq || !notFoundReq.body?.text?.includes('не найден')) {
+      throw new Error('Expected /sendMessage indicating section not found');
+    }
+    if (!notFoundReq.body?.text?.includes('/link заповеди')) {
+      throw new Error('Expected available suggestions in not found message');
+    }
+    const deleteUserMsg93 = sentRequests.find(
+      (r) => r.url.endsWith('/deleteMessage') && r.body?.message_id === 93
+    );
+    if (!deleteUserMsg93) throw new Error('Expected user message 93 to be deleted');
+    console.log('✓ Test 9d Passed: /link с неизвестным разделом возвращает ошибку и список доступных ссылок');
+
+    // 9e: POST /webhook with /link заповеди in Topic 15 (MUST succeed and send photo to topic 15)
+    sentRequests.length = 0;
+    const linkZapovediResTopic15 = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1012,
+          message: {
+            message_id: 94,
+            message_thread_id: 15,
+            chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
+            from: { id: 777, is_bot: false, first_name: 'TopicUser' },
+            text: '/link заповеди',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkZapovediResTopic15.status !== 200) {
+      throw new Error(`/link заповеди in topic 15 returned ${linkZapovediResTopic15.status}`);
+    }
+    const photoReqTopic15 = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!photoReqTopic15) throw new Error('Expected /sendPhoto call for /link заповеди in topic 15');
+    if (photoReqTopic15.body?.message_thread_id !== 15) {
+      throw new Error(`Expected message_thread_id 15, got ${photoReqTopic15.body?.message_thread_id}`);
+    }
+    console.log('✓ Test 9e Passed: /link заповеди in Topic 15 succeeded and sent photo to topic 15');
+
+    // 9f: POST /webhook with /link заповеди in another topic (topic 999) (MUST succeed)
+    sentRequests.length = 0;
+    const linkZapovediResTopic999 = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1013,
+          message: {
+            message_id: 95,
+            message_thread_id: 999,
+            chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
+            from: { id: 777, is_bot: false, first_name: 'TopicUser' },
+            text: '/link заповеди',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkZapovediResTopic999.status !== 200) {
+      throw new Error(`/link заповеди in topic 999 returned ${linkZapovediResTopic999.status}`);
+    }
+    const photoReqTopic999 = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!photoReqTopic999) throw new Error('Expected /sendPhoto call for /link заповеди in topic 999');
+    if (photoReqTopic999.body?.message_thread_id !== 999) {
+      throw new Error(`Expected message_thread_id 999, got ${photoReqTopic999.body?.message_thread_id}`);
+    }
+    console.log('✓ Test 9f Passed: /link заповеди in topic 999 succeeded and sent photo to topic 999');
+
+    // 9g: POST /webhook with /link заповеди in old group (-1002997374585) (MUST be ignored)
+    sentRequests.length = 0;
+    const linkOldGroupRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1014,
+          message: {
+            message_id: 96,
+            message_thread_id: 15,
+            chat: { id: -1002997374585, type: 'supergroup', title: 'Old OneHouse 2 Group' },
+            from: { id: 777, is_bot: false, first_name: 'TopicUser' },
+            text: '/link заповеди',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    const linkOldGroupJson = await linkOldGroupRes.json();
+    if (linkOldGroupJson.status !== 'ignored_unauthorized_chat_or_topic') {
+      throw new Error(`Old OneHouse 2 group must be ignored for /link, got: ${JSON.stringify(linkOldGroupJson)}`);
+    }
+    if (sentRequests.length > 0) {
+      throw new Error(`Old OneHouse 2 group should not send any requests for /link, sent: ${sentRequests.length}`);
+    }
+    console.log('✓ Test 9g Passed: /link in old group (-1002997374585) is completely ignored with ignored_unauthorized_chat_or_topic');
+
     console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY! Everything conforms to requirements.');
   } finally {
     globalThis.fetch = originalFetch;
