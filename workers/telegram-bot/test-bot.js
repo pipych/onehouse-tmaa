@@ -159,13 +159,13 @@ async function runTests() {
     }
     console.log('✓ Test 4 Passed: Only identical bot messages are deleted, different commands remain untouched');
 
-    // 5. Test Group & Forum Topics Authorization (https://t.me/c/2997374585/35 & /1702)
-    console.log('Test 5: Forum Topics: Topic 35 allowed, Topic 1702 ignored, other groups ignored');
-    const targetGroupId = -1002997374585;
+    // 5. Test Group & Forum Topics Authorization (OneHouse 3: https://t.me/c/4314730996/12 & /15)
+    console.log('Test 5: Forum Topics: Topic 12 allowed, Topic 15 ignored for commands, old group and other groups ignored');
+    const targetGroupId = -1004314730996;
 
-    // 5a. Topic 35 in Target Group (ALLOWED, message_thread_id must be 35)
+    // 5a. Topic 12 in Target Group (ALLOWED, message_thread_id must be 12)
     sentRequests.length = 0;
-    const topic35Res = await worker.fetch(
+    const topic12Res = await worker.fetch(
       new Request('https://worker.test/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +173,7 @@ async function runTests() {
           update_id: 1005,
           message: {
             message_id: 80,
-            message_thread_id: 35,
+            message_thread_id: 12,
             chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
             from: { id: 777, is_bot: false, first_name: 'TopicUser' },
             text: '/all',
@@ -182,16 +182,16 @@ async function runTests() {
       }),
       mockEnv
     );
-    if (topic35Res.status !== 200) throw new Error(`Topic 35 returned status ${topic35Res.status}`);
-    const topic35Req = sentRequests.find((r) => r.url.endsWith('/sendRichMessage'));
-    if (!topic35Req || topic35Req.body?.message_thread_id !== 35) {
-      throw new Error(`Expected message_thread_id 35 on topic 35 response, got: ${JSON.stringify(topic35Req?.body)}`);
+    if (topic12Res.status !== 200) throw new Error(`Topic 12 returned status ${topic12Res.status}`);
+    const topic12Req = sentRequests.find((r) => r.url.endsWith('/sendRichMessage'));
+    if (!topic12Req || topic12Req.body?.message_thread_id !== 12) {
+      throw new Error(`Expected message_thread_id 12 on topic 12 response, got: ${JSON.stringify(topic12Req?.body)}`);
     }
-    console.log('✓ Test 5a Passed: Target Group topic 35 successfully handled with message_thread_id: 35');
+    console.log('✓ Test 5a Passed: Target Group topic 12 successfully handled with message_thread_id: 12');
 
-    // 5b. Topic 1702 in Target Group (IGNORED - reserved for future features)
+    // 5b. Topic 15 in Target Group (IGNORED for commands - reserved for media broadcast)
     sentRequests.length = 0;
-    const topic1702Res = await worker.fetch(
+    const topic15Res = await worker.fetch(
       new Request('https://worker.test/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -199,7 +199,7 @@ async function runTests() {
           update_id: 1006,
           message: {
             message_id: 81,
-            message_thread_id: 1702,
+            message_thread_id: 15,
             chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
             from: { id: 777, is_bot: false, first_name: 'TopicUser' },
             text: '/all',
@@ -208,14 +208,14 @@ async function runTests() {
       }),
       mockEnv
     );
-    const topic1702Json = await topic1702Res.json();
-    if (topic1702Json.status !== 'ignored_unauthorized_chat_or_topic') {
-      throw new Error(`Topic 1702 should be ignored, got: ${JSON.stringify(topic1702Json)}`);
+    const topic15Json = await topic15Res.json();
+    if (topic15Json.status !== 'ignored_unauthorized_chat_or_topic') {
+      throw new Error(`Topic 15 should be ignored, got: ${JSON.stringify(topic15Json)}`);
     }
     if (sentRequests.length > 0) {
-      throw new Error(`Topic 1702 should not send any requests, sent: ${sentRequests.length}`);
+      throw new Error(`Topic 15 should not send any requests, sent: ${sentRequests.length}`);
     }
-    console.log('✓ Test 5b Passed: Topic 1702 is ignored (reserved for future features)');
+    console.log('✓ Test 5b Passed: Topic 15 commands are ignored (reserved for media broadcast)');
 
     // 5c. General or unknown topic in Target Group (IGNORED)
     sentRequests.length = 0;
@@ -242,7 +242,7 @@ async function runTests() {
     }
     console.log('✓ Test 5c Passed: Unauthorized group topics are ignored');
 
-    // 5d. Non-command group message in Topic 35 (IGNORED)
+    // 5d. Non-command group message in Topic 12 (IGNORED)
     sentRequests.length = 0;
     const nonCommandRes = await worker.fetch(
       new Request('https://worker.test/webhook', {
@@ -252,7 +252,7 @@ async function runTests() {
           update_id: 1008,
           message: {
             message_id: 83,
-            message_thread_id: 35,
+            message_thread_id: 12,
             chat: { id: targetGroupId, type: 'supergroup', title: 'Target Forum' },
             from: { id: 777, is_bot: false, first_name: 'TopicUser' },
             text: 'Привет всем в чате!',
@@ -263,9 +263,37 @@ async function runTests() {
     );
     const nonCommandJson = await nonCommandRes.json();
     if (nonCommandJson.status !== 'ignored_non_command_group_message') {
-      throw new Error(`Non-command in topic 35 should be ignored: ${JSON.stringify(nonCommandJson)}`);
+      throw new Error(`Non-command in topic 12 should be ignored: ${JSON.stringify(nonCommandJson)}`);
     }
-    console.log('✓ Test 5d Passed: Non-command chatter in topic 35 does not trigger the bot');
+    console.log('✓ Test 5d Passed: Non-command chatter in topic 12 does not trigger the bot');
+
+    // 5e. Old OneHouse 2 Group (-1002997374585) must be completely disabled / ignored
+    sentRequests.length = 0;
+    const oldGroupRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1009,
+          message: {
+            message_id: 84,
+            message_thread_id: 12,
+            chat: { id: -1002997374585, type: 'supergroup', title: 'Old OneHouse 2 Group' },
+            from: { id: 777, is_bot: false, first_name: 'TopicUser' },
+            text: '/all',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    const oldGroupJson = await oldGroupRes.json();
+    if (oldGroupJson.status !== 'ignored_unauthorized_chat_or_topic') {
+      throw new Error(`Old OneHouse 2 group must be ignored, got: ${JSON.stringify(oldGroupJson)}`);
+    }
+    if (sentRequests.length > 0) {
+      throw new Error(`Old OneHouse 2 group should not send any requests, sent: ${sentRequests.length}`);
+    }
+    console.log('✓ Test 5e Passed: Old OneHouse 2 group (-1002997374585) is completely ignored');
 
     // 6. Test callback_query handling
     console.log('Test 6: POST /webhook with callback_query');
@@ -316,9 +344,8 @@ async function runTests() {
     }
     console.log('✓ Test 7 Passed: Inline query answered successfully with app card');
 
-    // 8. Test New Article Broadcast (POST /publish-article to Topic 1702 with photo & Rich Button)
-    // 8. Test New Article Broadcast (POST /publish-article to Topic 1702 with photo & Button)
-    console.log('Test 8: Article Broadcast to Topic 1702 (Photo preview, Title, Button «Читать»)');
+    // 8. Test New Article Broadcast (POST /publish-article to Topic 15 with photo & Rich Button)
+    console.log('Test 8: Article Broadcast to Topic 15 (Photo preview, Title, Button «Читать»)');
     sentRequests.length = 0;
     const testArticleWithPhoto = {
       id: 'art-777',
@@ -339,11 +366,11 @@ async function runTests() {
     if (pubRes.status !== 200) throw new Error(`/publish-article returned status ${pubRes.status}`);
     const pubReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
     if (!pubReq) throw new Error('Expected /sendPhoto for article with image broadcast');
-    if (pubReq.body?.chat_id !== -1002997374585) {
-      throw new Error(`Expected chat_id -1002997374585, got ${pubReq.body?.chat_id}`);
+    if (pubReq.body?.chat_id !== -1004314730996) {
+      throw new Error(`Expected chat_id -1004314730996, got ${pubReq.body?.chat_id}`);
     }
-    if (pubReq.body?.message_thread_id !== 1702) {
-      throw new Error(`Expected message_thread_id 1702, got ${pubReq.body?.message_thread_id}`);
+    if (pubReq.body?.message_thread_id !== 15) {
+      throw new Error(`Expected message_thread_id 15, got ${pubReq.body?.message_thread_id}`);
     }
     if (pubReq.body?.photo !== testArticleWithPhoto.cover_url) {
       throw new Error('Expected photo with cover_url');
@@ -352,7 +379,7 @@ async function runTests() {
     if (inlineBtn?.text !== 'Читать' || !inlineBtn?.url?.includes('startapp=article_art-777')) {
       throw new Error('sendPhoto missing button «Читать» with startapp URL');
     }
-    console.log('✓ Test 8a Passed: /publish-article sent photo preview, title caption, and «Читать» button to topic 1702');
+    console.log('✓ Test 8a Passed: /publish-article sent photo preview, title caption, and «Читать» button to topic 15');
 
     // 8b. Test CORS preflight (OPTIONS)
     const optionsRes = await worker.fetch(
@@ -384,11 +411,11 @@ async function runTests() {
     if (textRes.status !== 200) throw new Error(`Text article broadcast returned ${textRes.status}`);
     const richReq = sentRequests.find((r) => r.url.endsWith('/sendRichMessage'));
     if (!richReq) throw new Error('Expected sendRichMessage for text-only article');
-    if (richReq.body?.message_thread_id !== 1702) throw new Error('Expected topic 1702 for text article');
+    if (richReq.body?.message_thread_id !== 15) throw new Error('Expected topic 15 for text article');
     if (!richReq.body?.rich_message?.html?.includes('startapp=article_art-888')) {
       throw new Error('Rich message missing startapp link');
     }
-    console.log('✓ Test 8c Passed: Text-only article broadcasts via Rich Message with Rich Button to topic 1702');
+    console.log('✓ Test 8c Passed: Text-only article broadcasts via Rich Message with Rich Button to topic 15');
 
     // 8d. Test Webhook direct publication ({ type: 'new_post', post: ... })
     sentRequests.length = 0;
@@ -402,10 +429,10 @@ async function runTests() {
     );
     if (webhookPostRes.status !== 200) throw new Error(`Webhook post returned ${webhookPostRes.status}`);
     const webhookPhotoReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
-    if (!webhookPhotoReq || webhookPhotoReq.body?.message_thread_id !== 1702) {
-      throw new Error('Webhook new_post failed to broadcast to topic 1702');
+    if (!webhookPhotoReq || webhookPhotoReq.body?.message_thread_id !== 15) {
+      throw new Error('Webhook new_post failed to broadcast to topic 15');
     }
-    console.log('✓ Test 8d Passed: POST /webhook with { type: "new_post" } successfully broadcasts to topic 1702');
+    console.log('✓ Test 8d Passed: POST /webhook with { type: "new_post" } successfully broadcasts to topic 15');
 
     console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY! Everything conforms to requirements.');
   } finally {

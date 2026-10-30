@@ -37,13 +37,13 @@ const ONEDASH_URL = "https://panel.onehouse.pp.ua";
 const ONELAUNCH_DOWNLOAD_URL = "https://onelaunch.pp.ua/download";
 
 // Target group & forum topic configuration:
-// - Group: https://t.me/c/2997374585/35 & /1702
-// - Topic 35: server and links commands (/app, /all, /start, /help)
-// - Topic 1702: media articles broadcast feed (/media/:id)
-export const TARGET_GROUP_RAW_ID = "2997374585";
-export const TARGET_GROUP_CHAT_ID = -1002997374585;
-export const SERVER_LINKS_TOPIC_ID = 35;
-export const MEDIA_ARTICLES_TOPIC_ID = 1702;
+// - Group: OneHouse 3 (https://t.me/c/4314730996/12 & /15)
+// - Topic 12: system commands (/app, /all, /start, /help)
+// - Topic 15: media publications broadcast feed (/media/:id)
+export const TARGET_GROUP_RAW_ID = "4314730996";
+export const TARGET_GROUP_CHAT_ID = -1004314730996;
+export const SERVER_LINKS_TOPIC_ID = 12;
+export const MEDIA_ARTICLES_TOPIC_ID = 15;
 export const FUTURE_FEATURE_TOPIC_ID = MEDIA_ARTICLES_TOPIC_ID;
 
 export function escapeHtml(str: string): string {
@@ -447,8 +447,8 @@ export async function deleteStoredValue(env: Env, key: string): Promise<void> {
 /**
  * Check if commands are allowed in this chat and topic
  * - Private chats: always allowed
- * - Group/supergroup chats: ONLY allowed in target group 2997374585 on topic 35
- * - Topic 1702 is reserved for future features ("пока ничего не надо")
+ * - Group/supergroup chats: ONLY allowed in target group 4314730996 (OneHouse 3) on topic 12
+ * - Topic 15 is reserved for media articles broadcast feed
  */
 export function isCommandAllowedInChat(chat: TelegramChat, threadId?: number): boolean {
   if (chat.type === 'private') {
@@ -565,7 +565,7 @@ export async function handleBotCommandResponse(
 }
 
 /**
- * Broadcast New Media Article to Telegram Forum Topic (1702)
+ * Broadcast New Media Article to Telegram Forum Topic (15)
  * Features:
  * - Direct link to article page in OneApp: https://t.me/onehserver_bot/oneapp?startapp=article_<id>
  * - Photo preview (cover_url)
@@ -803,9 +803,9 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
   const userName = message.from?.first_name || 'друг';
 
   // 1. Forum Topic & Group restrictions:
-  // In group chats, only topic 35 is authorized for server & link commands.
-  // Topic 1702 is reserved for future features ("пока ничего не надо").
-  // Non-topic group chats or unauthorized topics are ignored.
+  // In group chats (OneHouse 3), only topic 12 is authorized for system commands (/app, /all, /start, /help).
+  // Topic 15 is reserved for media publications broadcast feed.
+  // Non-topic group chats or unauthorized topics/groups are ignored.
   if (!isCommandAllowedInChat(message.chat, threadId)) {
     return new Response(JSON.stringify({ ok: true, status: 'ignored_unauthorized_chat_or_topic' }), {
       headers: { 'Content-Type': 'application/json' },
@@ -1095,7 +1095,7 @@ function renderDashboardHtml(workerUrl: string, botToken: string, miniAppUrl: st
     <div class="endpoints">
       <p style="margin-bottom: 6px;"><b>Доступные эндпоинты:</b></p>
       <p>• <code>POST /webhook</code> — обработка вебхуков Telegram (сообщения, callback_query, inline_query)</p>
-      <p>• <code>POST /publish-article</code> — рассылка новой статьи с фотопревью и рич-кнопкой «Читать» в топик 1702</p>
+      <p>• <code>POST /publish-article</code> — рассылка новой статьи с фотопревью и рич-кнопкой «Читать» в топик 15</p>
       <p>• <code>GET /set-webhook</code> — автоматическая привязка вебхука</p>
       <p>• <code>GET /get-webhook</code> — информация о текущем вебхуке</p>
       <p>• <code>GET /delete-webhook</code> — удаление вебхука</p>
