@@ -681,6 +681,360 @@ async function runTests() {
     }
     console.log('✓ Test 9g Passed: /link in old group (-1002997374585) is completely ignored with ignored_unauthorized_chat_or_topic');
 
+    // -----------------------------------------------------------------------------------------
+    // Test 10: In-Bot Admin Content Management for /link and Bot Messages with KV persistence
+    // -----------------------------------------------------------------------------------------
+    console.log('Test 10: In-Bot Admin Content Management for /link and Bot Messages (KV persistence)');
+
+    // 10a: Non-admin calling /admin or /setlink receives 403 / "Доступ запрещен"
+    sentRequests.length = 0;
+    const nonAdmin1Res = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1200,
+          message: {
+            message_id: 301,
+            chat: { id: 99999, type: 'private' },
+            from: { id: 99999, is_bot: false, first_name: 'Attacker' },
+            text: '/admin',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (nonAdmin1Res.status !== 403) {
+      throw new Error(`Expected non-admin /admin to return 403, got ${nonAdmin1Res.status}`);
+    }
+    const nonAdmin1Msg = sentRequests.find((r) => r.url.endsWith('/sendMessage'));
+    if (!nonAdmin1Msg || !nonAdmin1Msg.body?.text?.includes('Доступ запрещен')) {
+      throw new Error(`Expected "Доступ запрещен" message for non-admin calling /admin, got: ${nonAdmin1Msg?.body?.text}`);
+    }
+
+    sentRequests.length = 0;
+    const nonAdmin2Res = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1201,
+          message: {
+            message_id: 302,
+            chat: { id: 99999, type: 'private' },
+            from: { id: 99999, is_bot: false, first_name: 'Attacker' },
+            text: '/setlink zapovedi Взломанный текст',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (nonAdmin2Res.status !== 403) {
+      throw new Error(`Expected non-admin /setlink to return 403, got ${nonAdmin2Res.status}`);
+    }
+    const nonAdmin2Msg = sentRequests.find((r) => r.url.endsWith('/sendMessage'));
+    if (!nonAdmin2Msg || !nonAdmin2Msg.body?.text?.includes('Доступ запрещен')) {
+      throw new Error(`Expected "Доступ запрещен" message for non-admin calling /setlink, got: ${nonAdmin2Msg?.body?.text}`);
+    }
+    console.log('✓ Test 10a Passed: Non-admin calling /admin or /setlink receives 403 and "Доступ запрещен"');
+
+    // 10b: Admin (id 654479769) calling /setlink zapovedi Обновленный текст пяти заповедей successfully updates KV
+    sentRequests.length = 0;
+    const adminSetlinkRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1202,
+          message: {
+            message_id: 303,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            text: '/setlink zapovedi Обновленный текст пяти заповедей',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (adminSetlinkRes.status !== 200) {
+      throw new Error(`Expected admin /setlink to return 200, got ${adminSetlinkRes.status}`);
+    }
+    const adminSetlinkMsg = sentRequests.find((r) => r.url.endsWith('/sendMessage'));
+    if (!adminSetlinkMsg || !adminSetlinkMsg.body?.text?.includes('успешно обновлен')) {
+      throw new Error(`Expected success update message, got: ${adminSetlinkMsg?.body?.text}`);
+    }
+    console.log('✓ Test 10b Passed: Admin (id 654479769) successfully updated link text via /setlink and persisted in KV');
+
+    // 10c: Subsequent /link zapovedi outputs the updated text
+    sentRequests.length = 0;
+    const linkAfterSetRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1203,
+          message: {
+            message_id: 304,
+            chat: { id: 777, type: 'private' },
+            from: { id: 777, is_bot: false, first_name: 'Player' },
+            text: '/link zapovedi',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkAfterSetRes.status !== 200) {
+      throw new Error(`Expected /link zapovedi to return 200, got ${linkAfterSetRes.status}`);
+    }
+    const linkUpdatedPhotoReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!linkUpdatedPhotoReq || !linkUpdatedPhotoReq.body?.caption?.includes('Обновленный текст пяти заповедей')) {
+      throw new Error(`Expected caption to contain 'Обновленный текст пяти заповедей', got: ${linkUpdatedPhotoReq?.body?.caption}`);
+    }
+    console.log('✓ Test 10c Passed: Subsequent /link zapovedi immediately outputs updated text from KV');
+
+    // 10d: Sending photo with caption /setlink zapovedi updates imagePath to file_id
+    sentRequests.length = 0;
+    const adminPhotoRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1204,
+          message: {
+            message_id: 305,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            caption: '/setlink zapovedi',
+            photo: [
+              { file_id: 'thumb_pic_123', width: 90, height: 90 },
+              { file_id: 'tg_file_id_custom_cover_999', width: 1280, height: 720 },
+            ],
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (adminPhotoRes.status !== 200) {
+      throw new Error(`Expected photo /setlink to return 200, got ${adminPhotoRes.status}`);
+    }
+
+    // Verify /link zapovedi now passes tg_file_id_custom_cover_999 directly to sendPhoto
+    sentRequests.length = 0;
+    await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1205,
+          message: {
+            message_id: 306,
+            chat: { id: 777, type: 'private' },
+            from: { id: 777, is_bot: false, first_name: 'Player' },
+            text: '/link zapovedi',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    const photoWithFileIdReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!photoWithFileIdReq || photoWithFileIdReq.body?.photo !== 'tg_file_id_custom_cover_999') {
+      throw new Error(`Expected photo to be file_id 'tg_file_id_custom_cover_999', got: ${photoWithFileIdReq?.body?.photo}`);
+    }
+    console.log('✓ Test 10d Passed: Sending photo with caption /setlink zapovedi updated imagePath to file_id');
+
+    // 10e: /addlink rules2 Правила сервера adds new link and /link rules2 works
+    sentRequests.length = 0;
+    const addlinkRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1206,
+          message: {
+            message_id: 307,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            text: '/addlink rules2 Правила сервера',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (addlinkRes.status !== 200) {
+      throw new Error(`Expected /addlink to return 200, got ${addlinkRes.status}`);
+    }
+
+    // Now test /link rules2
+    sentRequests.length = 0;
+    const linkRules2Res = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1207,
+          message: {
+            message_id: 308,
+            chat: { id: 777, type: 'private' },
+            from: { id: 777, is_bot: false, first_name: 'Player' },
+            text: '/link rules2',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (linkRules2Res.status !== 200) {
+      throw new Error(`Expected /link rules2 to return 200, got ${linkRules2Res.status}`);
+    }
+    const rules2PhotoReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!rules2PhotoReq || !rules2PhotoReq.body?.caption?.includes('Правила сервера')) {
+      throw new Error(`Expected /link rules2 caption to include 'Правила сервера', got: ${rules2PhotoReq?.body?.caption}`);
+    }
+    console.log('✓ Test 10e Passed: /addlink rules2 created new link and /link rules2 serves it');
+
+    // 10f: /resetlink zapovedi restores default text
+    sentRequests.length = 0;
+    const resetRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1208,
+          message: {
+            message_id: 309,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            text: '/resetlink zapovedi',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (resetRes.status !== 200) {
+      throw new Error(`Expected /resetlink to return 200, got ${resetRes.status}`);
+    }
+
+    // Verify /link zapovedi is back to defaults
+    sentRequests.length = 0;
+    await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1209,
+          message: {
+            message_id: 310,
+            chat: { id: 777, type: 'private' },
+            from: { id: 777, is_bot: false, first_name: 'Player' },
+            text: '/link заповеди',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    const restoredReq = sentRequests.find((r) => r.url.endsWith('/sendPhoto'));
+    if (!restoredReq || !restoredReq.body?.caption?.includes('Заповеди — это ВНЕИГРОВЫЕ правила')) {
+      throw new Error(`Expected default commandments description, got: ${restoredReq?.body?.caption}`);
+    }
+    if (!restoredReq.body?.photo?.includes('/assets/zapovedi.jpg')) {
+      throw new Error(`Expected default imagePath /assets/zapovedi.jpg, got: ${restoredReq?.body?.photo}`);
+    }
+    console.log('✓ Test 10f Passed: /resetlink zapovedi restored code default text and image');
+
+    // 10g: Interactive callback panel flow: admin clicks admin:settext:zapovedi, sends next message
+    sentRequests.length = 0;
+    const callbackSettextRes = await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1210,
+          callback_query: {
+            id: 'cq_admin_1',
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            message: { message_id: 400, chat: { id: 654479769, type: 'private' } },
+            data: 'admin:settext:zapovedi',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    if (callbackSettextRes.status !== 200) {
+      throw new Error(`Expected admin callback to return 200, got ${callbackSettextRes.status}`);
+    }
+
+    // Now admin sends message with new text
+    sentRequests.length = 0;
+    await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1211,
+          message: {
+            message_id: 401,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            text: 'Текст через интерактивную админ-панель',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    const interactiveUpdateMsg = sentRequests.find((r) => r.url.endsWith('/sendMessage'));
+    if (!interactiveUpdateMsg || !interactiveUpdateMsg.body?.text?.includes('успешно обновлен')) {
+      throw new Error(`Expected confirmation message for interactive update, got: ${interactiveUpdateMsg?.body?.text}`);
+    }
+
+    // Reset back so state is clean
+    await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1212,
+          message: {
+            message_id: 402,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            text: '/resetlink zapovedi',
+          },
+        }),
+      }),
+      mockEnv
+    );
+    console.log('✓ Test 10g Passed: Interactive callback query and conversational state works seamlessly');
+
+    // Also attach a mock BOT_STORAGE to verify KV namespace binding explicitly
+    const kvStoreMap = new Map();
+    const envWithKV = {
+      ...mockEnv,
+      BOT_STORAGE: {
+        async get(k) { return kvStoreMap.has(k) ? kvStoreMap.get(k) : null; },
+        async put(k, v) { kvStoreMap.set(k, v); },
+        async delete(k) { kvStoreMap.delete(k); },
+      },
+    };
+    await worker.fetch(
+      new Request('https://worker.test/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_id: 1213,
+          message: {
+            message_id: 501,
+            chat: { id: 654479769, type: 'private' },
+            from: { id: 654479769, is_bot: false, first_name: 'SuperAdmin' },
+            text: '/setlink zapovedi KV Namespace Specific Text',
+          },
+        }),
+      }),
+      envWithKV
+    );
+    if (!kvStoreMap.has('bot_link:zapovedi') || !kvStoreMap.get('bot_link:zapovedi').includes('KV Namespace Specific Text')) {
+      throw new Error('Expected BOT_STORAGE KV namespace to contain bot_link:zapovedi');
+    }
+    console.log('✓ Test 10h Passed: BOT_STORAGE KV namespace binding explicitly verified');
+
     console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY! Everything conforms to requirements.');
   } finally {
     globalThis.fetch = originalFetch;

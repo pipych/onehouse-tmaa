@@ -29,6 +29,21 @@ export interface Env {
   WEBHOOK_SECRET?: string;
   DEFAULT_BUTTON_MODE?: 'rich' | 'inline' | 'both';
   BOT_STORAGE?: BotKVNamespace;
+  ADMIN_IDS?: string;
+}
+
+export const DEFAULT_ADMIN_IDS = [654479769];
+
+export function isAdminUser(userId?: number, env?: Env): boolean {
+  if (!userId) return false;
+  if (DEFAULT_ADMIN_IDS.includes(userId)) return true;
+  if (env?.ADMIN_IDS) {
+    const parsedIds = env.ADMIN_IDS.split(/[,;\s]+/)
+      .map((id) => parseInt(id.trim(), 10))
+      .filter((id) => !isNaN(id));
+    if (parsedIds.includes(userId)) return true;
+  }
+  return false;
 }
 
 const FALLBACK_MINI_APP_URL = "https://onelaunch.pp.ua/";
@@ -112,12 +127,22 @@ export interface TelegramChat {
   last_name?: string;
 }
 
+export interface TelegramPhotoSize {
+  file_id: string;
+  file_unique_id: string;
+  width: number;
+  height: number;
+  file_size?: number;
+}
+
 export interface TelegramMessage {
   message_id: number;
   from?: TelegramUser;
   chat: TelegramChat;
   date: number;
   text?: string;
+  caption?: string;
+  photo?: TelegramPhotoSize[];
   message_thread_id?: number;
   is_topic_message?: boolean;
   web_app_data?: {
@@ -476,6 +501,183 @@ export async function deleteStoredValue(env: Env, key: string): Promise<void> {
 }
 
 /**
+ * Dynamic Link Storage (KV persistence with in-memory fallback)
+ * - bot_link:<linkId>
+ * - bot_links_custom_keys
+ * - admin_state:<userId>
+ */
+export async function getDynamicLink(env: Env, linkId: string): Promise<BotLinkItem | null> {
+  const normalizedId = linkId.trim().toLowerCase();
+  const rawOverride = await getStoredValue(env, `bot_link:${normalizedId}`);
+  const defaultLink = BOT_LINKS[normalizedId];
+  if (rawOverride) {
+    try {
+      const parsed = JSON.parse(rawOverride) as BotLinkItem;
+      if (defaultLink) {
+        return { ...defaultLink, ...parsed };
+      }
+      return parsed;
+    } catch (err) {
+      console.warn(`[getDynamicLink] Failed to parse override for ${normalizedId}:`, err);
+    }
+  }
+  return defaultLink ? { ...defaultLink } : null;
+}
+
+export async function getAllDynamicLinks(env: Env): Promise<Record<string, BotLinkItem>> {
+  const result: Record<string, BotLinkItem> = {};
+
+  // 1. Base code defaults
+  for (const [id, defaultItem] of Object.entries(BOT_LINKS)) {
+    result[id] = { ...defaultItem };
+  }
+
+  // 2. Custom link IDs
+  let customKeys: string[] = [];
+  const rawCustomKeys = await getStoredValue(env, 'bot_links_custom_keys');
+  if (rawCustomKeys) {
+    try {
+      customKeys = JSON.parse(rawCustomKeys);
+    } catch (err) {
+      console.warn('[getAllDynamicLinks] Failed to parse bot_links_custom_keys:', err);
+    }
+  }
+
+  // 3. Apply overrides
+  const allKeys = Array.from(new Set([...Object.keys(BOT_LINKS), ...customKeys]));
+  for (const key of allKeys) {
+    const rawOverride = await getStoredValue(env, `bot_link:${key}`);
+    if (rawOverride) {
+      try {
+        const parsed = JSON.parse(rawOverride) as BotLinkItem;
+        if (result[key]) {
+          result[key] = { ...result[key], ...parsed };
+        } else {
+          result[key] = parsed;
+        }
+      } catch (err) {
+        console.warn(`[getAllDynamicLinks] Failed to parse override for ${key}:`, err);
+      }
+    }
+  }
+
+  return result;
+}
+
+export async function saveDynamicLink(env: Env, link: BotLinkItem): Promise<void> {
+  const key = link.id.trim().toLowerCase();
+  await setStoredValue(env, `bot_link:${key}`, JSON.stringify(link));
+
+  // If this is a dynamic link not in static BOT_LINKS, register key in bot_links_custom_keys
+  if (!BOT_LINKS[key]) {
+    let customKeys: string[] = [];
+    const rawCustomKeys = await getStoredValue(env, 'bot_links_custom_keys');
+    if (rawCustomKeys) {
+      try {
+        customKeys = JSON.parse(rawCustomKeys);
+      } catch {
+        customKeys = [];
+      }
+    }
+    if (!customKeys.includes(key)) {
+      customKeys.push(key);
+      await setStoredValue(env, 'bot_links_custom_keys', JSON.stringify(customKeys));
+    }
+  }
+}
+
+export async function resetDynamicLink(env: Env, linkId: string): Promise<void> {
+  const key = linkId.trim().toLowerCase();
+  await deleteStoredValue(env, `bot_link:${key}`);
+
+  if (!BOT_LINKS[key]) {
+    let customKeys: string[] = [];
+    const rawCustomKeys = await getStoredValue(env, 'bot_links_custom_keys');
+    if (rawCustomKeys) {
+      try {
+        customKeys = JSON.parse(rawCustomKeys);
+      } catch {
+        customKeys = [];
+      }
+    }
+    const filtered = customKeys.filter((k) => k !== key);
+    await setStoredValue(env, 'bot_links_custom_keys', JSON.stringify(filtered));
+  }
+}
+
+export interface AdminConversationState {
+  action: 'waiting_text' | 'waiting_photo' | 'waiting_link_id';
+  linkId: string;
+}
+
+export async function getAdminState(env: Env, userId: number): Promise<AdminConversationState | null> {
+  const raw = await getStoredValue(env, `admin_state:${userId}`);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AdminConversationState;
+  } catch {
+    return null;
+  }
+}
+
+export async function setAdminState(
+  env: Env,
+  userId: number,
+  state: AdminConversationState
+): Promise<void> {
+  await setStoredValue(env, `admin_state:${userId}`, JSON.stringify(state));
+}
+
+export async function clearAdminState(env: Env, userId: number): Promise<void> {
+  await deleteStoredValue(env, `admin_state:${userId}`);
+}
+
+export async function getAdminPanelKeyboard(env: Env): Promise<InlineKeyboardMarkup> {
+  const allLinks = await getAllDynamicLinks(env);
+  const rows: InlineKeyboardButton[][] = [];
+
+  for (const link of Object.values(allLinks)) {
+    rows.push([
+      {
+        text: `📌 ${link.title} (/link ${link.id})`,
+        callback_data: `admin:link:${link.id}`,
+      },
+    ]);
+  }
+
+  rows.push([
+    {
+      text: '➕ Добавить раздел',
+      callback_data: 'admin:addlink',
+    },
+    {
+      text: '❌ Закрыть',
+      callback_data: 'admin:cancel',
+    },
+  ]);
+
+  return { inline_keyboard: rows };
+}
+
+export function getLinkDetailKeyboard(linkId: string): InlineKeyboardMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: '✏️ Изменить текст', callback_data: `admin:settext:${linkId}` },
+        { text: '🖼 Изменить фото', callback_data: `admin:setphoto:${linkId}` },
+      ],
+      [
+        { text: '👁 Предпросмотр', callback_data: `admin:preview:${linkId}` },
+        { text: '🔄 Сбросить к дефолту', callback_data: `admin:reset:${linkId}` },
+      ],
+      [
+        { text: '« Назад к списку', callback_data: 'admin:list' },
+      ],
+    ],
+  };
+}
+
+/**
  * Check if commands are allowed in this chat and topic
  * - Private chats: always allowed
  * - Group/supergroup chats: Target group OneHouse 3 allows /link in ALL topics/threads.
@@ -499,6 +701,13 @@ export function isCommandAllowedInChat(
     // /link command is allowed across ALL topics/threads of the target group OneHouse 3
     const isLinkCommand = commandText ? commandText.trim().startsWith('/link') : false;
     if (isLinkCommand) {
+      return true;
+    }
+    // Admin commands also allowed across all topics of target group
+    const isAdminCmd = commandText
+      ? /^\/(admin|editlink|setlink|resetlink|addlink)(\s|$)/i.test(commandText.trim())
+      : false;
+    if (isAdminCmd) {
       return true;
     }
     // Other commands (/app, /all, /start, /help) are restricted to topic 12
@@ -744,6 +953,7 @@ export async function setupBotCommands(token: string) {
       { command: 'app', description: '🚀 Запустить OneApp' },
       { command: 'all', description: '💎 Все сервисы OneHouse (OneApp, OneDash, OneLaunch)' },
       { command: 'link', description: '🔗 Ссылки и материалы (например, /link заповеди)' },
+      { command: 'admin', description: '⚙️ Управление разделами /link (админ)' },
       { command: 'start', description: 'ℹ️ Главное меню и приветствие' },
       { command: 'help', description: '❓ Справка по возможностям бота' },
     ],
@@ -819,6 +1029,7 @@ export async function handleTelegramUpdate(
   if (update.callback_query) {
     const query = update.callback_query;
     const data = query.data || '';
+    const userId = query.from?.id;
 
     if (data === 'open_app' || data === 'app') {
       await callTelegramApi(token, 'answerCallbackQuery', {
@@ -828,6 +1039,231 @@ export async function handleTelegramUpdate(
       return new Response(JSON.stringify({ ok: true, status: 'callback_handled' }), {
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Admin interactive callbacks
+    if (data.startsWith('admin:')) {
+      if (!isAdminUser(userId, env)) {
+        await callTelegramApi(token, 'answerCallbackQuery', {
+          callback_query_id: query.id,
+          text: '⛔ Доступ запрещен',
+          show_alert: true,
+        });
+        return new Response(JSON.stringify({ ok: false, error: 'Доступ запрещен' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const adminChatId = query.message?.chat.id || userId;
+      const adminMsgId = query.message?.message_id;
+
+      if (data === 'admin:list') {
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id });
+        const keyboard = await getAdminPanelKeyboard(env);
+        if (adminMsgId && query.message?.chat.id) {
+          await callTelegramApi(token, 'editMessageText', {
+            chat_id: adminChatId,
+            message_id: adminMsgId,
+            text: '⚙️ <b>Панель управления разделами /link</b>\n\nВыберите раздел для редактирования или создайте новый:',
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          });
+        } else if (adminChatId) {
+          await sendTelegramMessage(
+            token,
+            adminChatId,
+            '⚙️ <b>Панель управления разделами /link</b>\n\nВыберите раздел для редактирования или создайте новый:',
+            { parse_mode: 'HTML', reply_markup: keyboard }
+          );
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_list' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data.startsWith('admin:link:')) {
+        const linkId = data.slice('admin:link:'.length);
+        const link = await getDynamicLink(env, linkId);
+        if (!link) {
+          await callTelegramApi(token, 'answerCallbackQuery', {
+            callback_query_id: query.id,
+            text: 'Раздел не найден',
+            show_alert: true,
+          });
+          return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id });
+        const detailHtml =
+          `⚙️ <b>Раздел: ${escapeHtml(link.title)}</b> (<code>${escapeHtml(link.id)}</code>)\n\n` +
+          `🔑 Ключи: <code>${link.keywords.join(', ')}</code>\n` +
+          `🖼 Обложка: <code>${escapeHtml(link.imagePath)}</code>\n` +
+          `🔘 Кнопка: ${escapeHtml(link.buttonText)} (${link.buttonEmoji || '💎'}, startapp: <code>${link.startParam}</code>)\n\n` +
+          `📝 <b>Текущий текст:</b>\n${escapeHtml(link.description)}`;
+
+        if (adminMsgId && query.message?.chat.id) {
+          await callTelegramApi(token, 'editMessageText', {
+            chat_id: adminChatId,
+            message_id: adminMsgId,
+            text: detailHtml,
+            parse_mode: 'HTML',
+            reply_markup: getLinkDetailKeyboard(link.id),
+          });
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_link_detail' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data.startsWith('admin:settext:')) {
+        const linkId = data.slice('admin:settext:'.length);
+        const link = await getDynamicLink(env, linkId);
+        if (userId) {
+          await setAdminState(env, userId, { action: 'waiting_text', linkId });
+        }
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id });
+        if (adminChatId) {
+          await sendTelegramMessage(
+            token,
+            adminChatId,
+            `✏️ <b>Редактирование текста «${escapeHtml(link?.title || linkId)}»</b>\n\nОтправьте в чат новый текст описания (или /cancel для отмены):`,
+            { parse_mode: 'HTML' }
+          );
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_settext_prompt' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data.startsWith('admin:setphoto:')) {
+        const linkId = data.slice('admin:setphoto:'.length);
+        const link = await getDynamicLink(env, linkId);
+        if (userId) {
+          await setAdminState(env, userId, { action: 'waiting_photo', linkId });
+        }
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id });
+        if (adminChatId) {
+          await sendTelegramMessage(
+            token,
+            adminChatId,
+            `🖼 <b>Изменение обложки для «${escapeHtml(link?.title || linkId)}»</b>\n\nОтправьте в чат фотографию как изображение (или /cancel для отмены):`,
+            { parse_mode: 'HTML' }
+          );
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_setphoto_prompt' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data.startsWith('admin:preview:')) {
+        const linkId = data.slice('admin:preview:'.length);
+        const link = await getDynamicLink(env, linkId);
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id, text: 'Предпросмотр отправлен' });
+        if (link && adminChatId) {
+          let photoUrl = link.imagePath;
+          if (link.imagePath.startsWith('/')) {
+            photoUrl = request
+              ? new URL(link.imagePath, request.url).href
+              : `https://onelaunch.pp.ua${link.imagePath}`;
+          }
+          const captionHtml = `<b>${escapeHtml(link.title)}</b>\n\n${escapeHtml(link.description)}`;
+          const inlineKeyboard: InlineKeyboardMarkup = {
+            inline_keyboard: [
+              [
+                {
+                  text: link.buttonText,
+                  url: `${DIRECT_APP_URL}?startapp=${link.startParam}`,
+                  icon_custom_emoji_id: link.customEmojiId,
+                },
+              ],
+            ],
+          };
+
+          const photoPayload: Record<string, unknown> = {
+            chat_id: adminChatId,
+            photo: photoUrl,
+            caption: captionHtml,
+            parse_mode: 'HTML',
+            reply_markup: inlineKeyboard,
+          };
+          const photoRes = await callTelegramApi(token, 'sendPhoto', photoPayload);
+          if (!photoRes.ok) {
+            await sendTelegramMessage(token, adminChatId, captionHtml, {
+              parse_mode: 'HTML',
+              reply_markup: inlineKeyboard,
+            });
+          }
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_preview_sent' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data.startsWith('admin:reset:')) {
+        const linkId = data.slice('admin:reset:'.length);
+        await resetDynamicLink(env, linkId);
+        await callTelegramApi(token, 'answerCallbackQuery', {
+          callback_query_id: query.id,
+          text: '🔄 Раздел сброшен к исходным настройкам!',
+          show_alert: true,
+        });
+        const link = await getDynamicLink(env, linkId);
+        if (link && adminMsgId && query.message?.chat.id) {
+          const detailHtml =
+            `⚙️ <b>Раздел: ${escapeHtml(link.title)}</b> (<code>${escapeHtml(link.id)}</code>)\n\n` +
+            `🔑 Ключи: <code>${link.keywords.join(', ')}</code>\n` +
+            `🖼 Обложка: <code>${escapeHtml(link.imagePath)}</code>\n` +
+            `🔘 Кнопка: ${escapeHtml(link.buttonText)} (${link.buttonEmoji || '💎'}, startapp: <code>${link.startParam}</code>)\n\n` +
+            `📝 <b>Текущий текст:</b>\n${escapeHtml(link.description)}`;
+          await callTelegramApi(token, 'editMessageText', {
+            chat_id: adminChatId,
+            message_id: adminMsgId,
+            text: detailHtml,
+            parse_mode: 'HTML',
+            reply_markup: getLinkDetailKeyboard(link.id),
+          });
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_reset_done' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data === 'admin:cancel') {
+        if (userId) {
+          await clearAdminState(env, userId);
+        }
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id, text: 'Панель закрыта' });
+        if (adminMsgId && query.message?.chat.id) {
+          await callTelegramApi(token, 'editMessageText', {
+            chat_id: adminChatId,
+            message_id: adminMsgId,
+            text: '❌ Панель управления закрыта.',
+            parse_mode: 'HTML',
+          });
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_cancelled' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (data === 'admin:addlink') {
+        if (userId) {
+          await setAdminState(env, userId, { action: 'waiting_link_id', linkId: '' });
+        }
+        await callTelegramApi(token, 'answerCallbackQuery', { callback_query_id: query.id });
+        if (adminChatId) {
+          await sendTelegramMessage(
+            token,
+            adminChatId,
+            `➕ <b>Создание нового раздела /link</b>\n\nОтправьте в чат ключ и название через пробел:\n<code>&lt;ключ&gt; &lt;название&gt;</code>\n<i>Пример: <code>rules2 Правила сервера</code></i>\n\nИли отправьте /cancel для отмены.`,
+            { parse_mode: 'HTML' }
+          );
+        }
+        return new Response(JSON.stringify({ ok: true, status: 'admin_addlink_prompt' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     await callTelegramApi(token, 'answerCallbackQuery', {
@@ -849,17 +1285,145 @@ export async function handleTelegramUpdate(
 
   const chatId = message.chat.id;
   const threadId = message.message_thread_id;
-  const text = (message.text || '').trim();
+  const text = (message.text || message.caption || '').trim();
   const userName = message.from?.first_name || 'друг';
+  const userId = message.from?.id;
 
   // 1. Forum Topic & Group restrictions:
-  // In group chats (OneHouse 3), /link is allowed across ALL topics/threads.
+  // In group chats (OneHouse 3), /link and admin commands are allowed across ALL topics/threads.
   // System commands (/app, /all, /start, /help) remain restricted to topic 12.
   // Unauthorized groups or topics are ignored.
   if (!isCommandAllowedInChat(message.chat, threadId, text)) {
     return new Response(JSON.stringify({ ok: true, status: 'ignored_unauthorized_chat_or_topic' }), {
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // Handle active Admin Conversation State (text input, photo upload, etc.)
+  if (userId && isAdminUser(userId, env)) {
+    const adminState = await getAdminState(env, userId);
+    if (adminState) {
+      if (text.toLowerCase() === '/cancel') {
+        await clearAdminState(env, userId);
+        await sendTelegramMessage(token, chatId, '❌ Действие отменено.', {
+          parse_mode: 'HTML',
+          message_thread_id: threadId,
+        });
+        return new Response(JSON.stringify({ ok: true, status: 'admin_state_cancelled' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (adminState.action === 'waiting_text') {
+        const link = await getDynamicLink(env, adminState.linkId);
+        if (!link) {
+          await clearAdminState(env, userId);
+          await sendTelegramMessage(token, chatId, `⚠️ Раздел «${escapeHtml(adminState.linkId)}» не найден.`, {
+            parse_mode: 'HTML',
+            message_thread_id: threadId,
+          });
+          return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+        }
+        link.description = text;
+        await saveDynamicLink(env, link);
+        await clearAdminState(env, userId);
+        await sendTelegramMessage(
+          token,
+          chatId,
+          `✅ Текст раздела <b>${escapeHtml(link.title)}</b> успешно обновлен! Проверьте: <code>/link ${link.id}</code>`,
+          {
+            parse_mode: 'HTML',
+            reply_markup: getLinkDetailKeyboard(link.id),
+            message_thread_id: threadId,
+          }
+        );
+        return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (adminState.action === 'waiting_photo') {
+        if (message.photo && message.photo.length > 0) {
+          const fileId = message.photo[message.photo.length - 1].file_id;
+          const link = await getDynamicLink(env, adminState.linkId);
+          if (!link) {
+            await clearAdminState(env, userId);
+            await sendTelegramMessage(token, chatId, `⚠️ Раздел «${escapeHtml(adminState.linkId)}» не найден.`, {
+              parse_mode: 'HTML',
+              message_thread_id: threadId,
+            });
+            return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+          }
+          link.imagePath = fileId;
+          await saveDynamicLink(env, link);
+          await clearAdminState(env, userId);
+          await sendTelegramMessage(
+            token,
+            chatId,
+            `✅ Обложка раздела <b>${escapeHtml(link.title)}</b> успешно обновлена! Проверьте: <code>/link ${link.id}</code>`,
+            {
+              parse_mode: 'HTML',
+              reply_markup: getLinkDetailKeyboard(link.id),
+              message_thread_id: threadId,
+            }
+          );
+          return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+        } else {
+          await sendTelegramMessage(
+            token,
+            chatId,
+            `⚠️ Пожалуйста, отправьте фотографию (как фото, не документ/файл), или /cancel для отмены.`,
+            {
+              parse_mode: 'HTML',
+              message_thread_id: threadId,
+            }
+          );
+          return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+        }
+      }
+
+      if (adminState.action === 'waiting_link_id') {
+        const parts = text.split(/\s+/);
+        const key = parts[0]?.toLowerCase().replace(/[^a-z0-9_-]/gi, '');
+        const title = parts.slice(1).join(' ').trim();
+        if (!key || !title) {
+          await sendTelegramMessage(
+            token,
+            chatId,
+            `⚠️ Пожалуйста, укажите ключ и название через пробел (например: <code>discord Сервер Discord</code>), или /cancel для отмены:`,
+            {
+              parse_mode: 'HTML',
+              message_thread_id: threadId,
+            }
+          );
+          return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        const newLink: BotLinkItem = {
+          id: key,
+          keywords: [key],
+          title,
+          description: `Описание раздела ${title}`,
+          imagePath: '/assets/zapovedi.jpg',
+          customEmojiId: CUSTOM_EMOJI_ID,
+          buttonEmoji: '🔗',
+          buttonText: 'Открыть',
+          startParam: key,
+        };
+        await saveDynamicLink(env, newLink);
+        await clearAdminState(env, userId);
+        await sendTelegramMessage(
+          token,
+          chatId,
+          `✅ Раздел <b>${escapeHtml(newLink.title)}</b> (<code>${escapeHtml(key)}</code>) успешно создан!\n\n` +
+          `Теперь вы можете настроить текст и фото через панель:`,
+          {
+            parse_mode: 'HTML',
+            reply_markup: getLinkDetailKeyboard(key),
+            message_thread_id: threadId,
+          }
+        );
+        return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+      }
+    }
   }
 
   // 2. In groups, ignore any messages that are NOT bot commands
@@ -886,6 +1450,256 @@ export async function handleTelegramUpdate(
     return new Response(JSON.stringify({ ok: true }), {
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // Command: /admin or /editlink
+  if (text.startsWith('/admin') || text.startsWith('/editlink')) {
+    if (!isAdminUser(userId, env)) {
+      await sendTelegramMessage(token, chatId, '⛔ <b>Доступ запрещен.</b> У вас нет прав администратора.', {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Доступ запрещен' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const panelHtml =
+      `⚙️ <b>Панель управления разделами /link</b>\n\n` +
+      `Здесь вы можете редактировать тексты, описания и обложки разделов без изменения кода:\n` +
+      `• Нажмите на нужный раздел для настройки\n` +
+      `• Или используйте прямые команды:\n` +
+      `  <code>/setlink &lt;раздел&gt; &lt;новый текст&gt;</code>\n` +
+      `  <code>/addlink &lt;ключ&gt; &lt;название&gt;</code>\n` +
+      `  <code>/resetlink &lt;раздел&gt;</code>`;
+    const keyboard = await getAdminPanelKeyboard(env);
+    await handleBotCommandResponse(
+      env,
+      token,
+      chatId,
+      'admin_panel',
+      message.message_id,
+      threadId,
+      () =>
+        sendTelegramMessage(token, chatId, panelHtml, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+          message_thread_id: threadId,
+        })
+    );
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Command: /setlink
+  if (text.startsWith('/setlink')) {
+    if (!isAdminUser(userId, env)) {
+      await sendTelegramMessage(token, chatId, '⛔ <b>Доступ запрещен.</b> У вас нет прав администратора.', {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Доступ запрещен' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const match = text.match(/^\/setlink(?:@\w+)?(?:\s+(\S+))?(?:\s+([\s\S]+))?$/i);
+    const linkKey = match?.[1]?.toLowerCase();
+    const newDescription = match?.[2]?.trim();
+    const hasPhoto = Boolean(message.photo && message.photo.length > 0);
+
+    if (hasPhoto) {
+      if (!linkKey) {
+        await sendTelegramMessage(
+          token,
+          chatId,
+          '⚠️ Пожалуйста, укажите раздел в подписи к фото:\n<code>/setlink &lt;раздел&gt;</code>',
+          { parse_mode: 'HTML', message_thread_id: threadId }
+        );
+        return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+      }
+
+      const allLinks = await getAllDynamicLinks(env);
+      const link = Object.values(allLinks).find(
+        (item) => item.id.toLowerCase() === linkKey || item.keywords.some((k) => k.toLowerCase() === linkKey)
+      );
+
+      if (!link) {
+        await sendTelegramMessage(token, chatId, `⚠️ Раздел «${escapeHtml(linkKey)}» не найден.`, {
+          parse_mode: 'HTML',
+          message_thread_id: threadId,
+        });
+        return new Response(JSON.stringify({ ok: true, status: 'link_not_found' }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const photoFileId = message.photo![message.photo!.length - 1].file_id;
+      link.imagePath = photoFileId;
+      if (newDescription) {
+        link.description = newDescription;
+      }
+      await saveDynamicLink(env, link);
+
+      await sendTelegramMessage(
+        token,
+        chatId,
+        `✅ Обложка раздела <b>${escapeHtml(link.title)}</b> успешно обновлена! Проверьте: <code>/link ${link.id}</code>`,
+        {
+          parse_mode: 'HTML',
+          reply_markup: getLinkDetailKeyboard(link.id),
+          message_thread_id: threadId,
+        }
+      );
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (!linkKey || !newDescription) {
+      await sendTelegramMessage(
+        token,
+        chatId,
+        '⚠️ Использование:\n<code>/setlink &lt;раздел&gt; &lt;новый текст&gt;</code>\nИли отправьте фото с подписью: <code>/setlink &lt;раздел&gt;</code>',
+        { parse_mode: 'HTML', message_thread_id: threadId }
+      );
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const allLinks = await getAllDynamicLinks(env);
+    const link = Object.values(allLinks).find(
+      (item) => item.id.toLowerCase() === linkKey || item.keywords.some((k) => k.toLowerCase() === linkKey)
+    );
+
+    if (!link) {
+      await sendTelegramMessage(token, chatId, `⚠️ Раздел «${escapeHtml(linkKey)}» не найден.`, {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: true, status: 'link_not_found' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    link.description = newDescription;
+    await saveDynamicLink(env, link);
+
+    await sendTelegramMessage(
+      token,
+      chatId,
+      `✅ Текст раздела <b>${escapeHtml(link.title)}</b> успешно обновлен! Проверьте: <code>/link ${link.id}</code>`,
+      {
+        parse_mode: 'HTML',
+        reply_markup: getLinkDetailKeyboard(link.id),
+        message_thread_id: threadId,
+      }
+    );
+    return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // Command: /resetlink
+  if (text.startsWith('/resetlink')) {
+    if (!isAdminUser(userId, env)) {
+      await sendTelegramMessage(token, chatId, '⛔ <b>Доступ запрещен.</b> У вас нет прав администратора.', {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Доступ запрещен' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const arg = text.replace(/^\/resetlink(?:@\w+)?/i, '').trim().toLowerCase();
+    if (!arg) {
+      await sendTelegramMessage(token, chatId, '⚠️ Использование: <code>/resetlink &lt;раздел&gt;</code>', {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const allLinks = await getAllDynamicLinks(env);
+    const link = Object.values(allLinks).find(
+      (item) => item.id.toLowerCase() === arg || item.keywords.some((k) => k.toLowerCase() === arg)
+    );
+
+    if (!link) {
+      await sendTelegramMessage(token, chatId, `⚠️ Раздел «${escapeHtml(arg)}» не найден.`, {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: true, status: 'link_not_found' }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    await resetDynamicLink(env, link.id);
+    await sendTelegramMessage(
+      token,
+      chatId,
+      `🔄 Раздел <b>${escapeHtml(link.title)}</b> сброшен к исходным настройкам.`,
+      {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      }
+    );
+    return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // Command: /addlink
+  if (text.startsWith('/addlink')) {
+    if (!isAdminUser(userId, env)) {
+      await sendTelegramMessage(token, chatId, '⛔ <b>Доступ запрещен.</b> У вас нет прав администратора.', {
+        parse_mode: 'HTML',
+        message_thread_id: threadId,
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Доступ запрещен' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const match = text.match(/^\/addlink(?:@\w+)?\s+(\S+)(?:\s+([\s\S]+))?$/i);
+    const key = match?.[1]?.trim().toLowerCase().replace(/[^a-z0-9_-]/gi, '');
+    const title = match?.[2]?.trim();
+
+    if (!key || !title) {
+      await sendTelegramMessage(
+        token,
+        chatId,
+        '⚠️ Использование: <code>/addlink &lt;ключ&gt; &lt;название&gt;</code>\n<i>Пример: <code>/addlink rules2 Правила сервера</code></i>',
+        { parse_mode: 'HTML', message_thread_id: threadId }
+      );
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const newLink: BotLinkItem = {
+      id: key,
+      keywords: [key],
+      title,
+      description: `Описание раздела ${title}`,
+      imagePath: '/assets/zapovedi.jpg',
+      customEmojiId: CUSTOM_EMOJI_ID,
+      buttonEmoji: '🔗',
+      buttonText: 'Открыть',
+      startParam: key,
+    };
+    await saveDynamicLink(env, newLink);
+
+    await sendTelegramMessage(
+      token,
+      chatId,
+      `✅ Раздел <b>${escapeHtml(newLink.title)}</b> (<code>${escapeHtml(key)}</code>) успешно добавлен!\n` +
+      `Используйте <code>/setlink ${escapeHtml(key)} &lt;текст&gt;</code> для изменения описания.`,
+      {
+        parse_mode: 'HTML',
+        reply_markup: getLinkDetailKeyboard(key),
+        message_thread_id: threadId,
+      }
+    );
+    return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
   }
 
   // Command: /start
@@ -981,10 +1795,11 @@ export async function handleTelegramUpdate(
   // Command: /link
   if (text.startsWith('/link')) {
     const arg = text.replace(/^\/link(@\w+)?/i, '').trim().toLowerCase();
+    const allLinks = await getAllDynamicLinks(env);
 
     // 1. If no argument provided, send usage help
     if (!arg) {
-      const availableKeywords = Object.values(BOT_LINKS)
+      const availableKeywords = Object.values(allLinks)
         .map((item) => `• <code>/link ${item.keywords[0]}</code> — ${escapeHtml(item.title)}`)
         .join('\n');
       const helpHtml =
@@ -1012,14 +1827,15 @@ export async function handleTelegramUpdate(
       });
     }
 
-    // 2. Find matching link from BOT_LINKS
-    const link = Object.values(BOT_LINKS).find((item) =>
+    // 2. Find matching link from allLinks (dynamic KV + static defaults)
+    const link = Object.values(allLinks).find((item) =>
+      item.id.toLowerCase() === arg ||
       item.keywords.some((k) => k.toLowerCase() === arg)
     );
 
     // If not found, notify user with available options
     if (!link) {
-      const availableList = Object.values(BOT_LINKS)
+      const availableList = Object.values(allLinks)
         .map((item) => `• <code>/link ${item.keywords[0]}</code> — ${escapeHtml(item.title)}`)
         .join('\n');
       const notFoundHtml =
@@ -1047,9 +1863,12 @@ export async function handleTelegramUpdate(
     }
 
     // 3. Link found: prepare post with photo, caption, and deep link button
-    const photoUrl = request
-      ? new URL(link.imagePath, request.url).href
-      : `https://onelaunch.pp.ua${link.imagePath}`;
+    let photoUrl = link.imagePath;
+    if (link.imagePath.startsWith('/')) {
+      photoUrl = request
+        ? new URL(link.imagePath, request.url).href
+        : `https://onelaunch.pp.ua${link.imagePath}`;
+    }
     const directAppUrl = `${DIRECT_APP_URL}?startapp=${link.startParam}`;
     const captionHtml =
       `<b>${escapeHtml(link.title)}</b>\n\n` +
@@ -1142,7 +1961,8 @@ export async function handleTelegramUpdate(
       `   • ⚪ <b>OneDash</b> (обычная белая кнопка)\n` +
       `   • 🔵 <b>OneLaunch</b> (синяя кнопка)\n` +
       `3. <b>/link [раздел]</b> — полезные материалы с иллюстрациями и ссылками (например, <code>/link заповеди</code>)\n` +
-      `4. <b>Menu Button</b> — кнопка «OneApp» в левом нижнем углу экрана возле поля ввода.\n\n` +
+      `4. <b>/admin</b> (или /editlink) — управление разделами /link (для администраторов)\n` +
+      `5. <b>Menu Button</b> — кнопка «OneApp» в левом нижнем углу экрана возле поля ввода.\n\n` +
       `🌐 <b>Сервисы экосистемы:</b>\n` +
       `• OneApp: ${DIRECT_APP_URL}\n` +
       `• OneDash: ${ONEDASH_URL}\n` +
