@@ -506,12 +506,24 @@ async function runTests() {
     if (!photoReq1.body?.photo?.includes('/assets/zapovedi.jpg')) {
       throw new Error(`Expected photo URL with /assets/zapovedi.jpg, got ${photoReq1.body?.photo}`);
     }
-    if (!photoReq1.body?.caption?.includes('5415591277901164365') || !photoReq1.body?.caption?.includes('Заповеди')) {
-      throw new Error('Expected caption containing custom emoji and Заповеди');
+    if (!photoReq1.body?.caption?.startsWith('<b>Заповеди</b>')) {
+      throw new Error(`Expected caption to start with <b>Заповеди</b>, got: ${photoReq1.body?.caption}`);
+    }
+    if (photoReq1.body?.caption?.includes('<tg-emoji>')) {
+      throw new Error('Expected caption NOT to contain <tg-emoji>');
+    }
+    if (!photoReq1.body?.caption?.includes('ВНЕИГРОВЫЕ') || !photoReq1.body?.caption?.includes('в течение игры')) {
+      throw new Error('Expected caption to contain updated polished text');
     }
     const zapovediBtn = photoReq1.body?.reply_markup?.inline_keyboard?.[0]?.[0];
     if (!zapovediBtn?.url?.includes('startapp=commandments')) {
       throw new Error(`Expected button with startapp=commandments, got ${zapovediBtn?.url}`);
+    }
+    if (zapovediBtn?.icon_custom_emoji_id !== '5415591277901164365') {
+      throw new Error(`Expected button icon_custom_emoji_id to be '5415591277901164365', got ${zapovediBtn?.icon_custom_emoji_id}`);
+    }
+    if (zapovediBtn?.text !== 'Прочитать') {
+      throw new Error(`Expected button text to be 'Прочитать', got ${zapovediBtn?.text}`);
     }
     const deleteUserMsg91 = sentRequests.find(
       (r) => r.url.endsWith('/deleteMessage') && r.body?.message_id === 91

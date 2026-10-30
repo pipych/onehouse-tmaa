@@ -56,7 +56,7 @@ export const BOT_LINKS: Record<string, BotLinkItem> = {
     keywords: ['заповеди', 'заповедь', 'правила', 'commandments', 'rules'],
     title: 'Заповеди',
     description:
-      'Заповеди — это внутриигровые и рп правила, нарушение которых будет приводить к дисбалансу игры и разрушение рп состовляющей, правила прописаные в них косаются абсолютно всех будь то админы или обычные игроки. Прочитать их можно ниже:',
+      'Заповеди — это ВНЕИГРОВЫЕ правила, нарушение которых приводит к дисбалансу игры и разрушению РП-составляющей. Правила, прописанные в них, касаются абсолютно всех, будь то админы или обычные игроки. Заповеди МОГУТ переписываться и изменяться в течение игры, но это НИКОГДА не происходит ради личной выгоды админов.\n\nПрочитать их можно ниже:',
     imagePath: '/assets/zapovedi.jpg',
     customEmojiId: '5415591277901164365',
     buttonEmoji: '💎',
@@ -168,6 +168,7 @@ export interface InlineKeyboardButton {
   url?: string;
   callback_data?: string;
   switch_inline_query?: string;
+  icon_custom_emoji_id?: string;
 }
 
 export interface InlineKeyboardMarkup {
@@ -181,6 +182,7 @@ export interface RichMessageButton {
   web_app?: { url: string };
   url?: string;
   callback_data?: string;
+  icon_custom_emoji_id?: string;
 }
 
 export interface InputRichBlockButtons {
@@ -1050,10 +1052,18 @@ export async function handleTelegramUpdate(
       : `https://onelaunch.pp.ua${link.imagePath}`;
     const directAppUrl = `${DIRECT_APP_URL}?startapp=${link.startParam}`;
     const captionHtml =
-      `<b><tg-emoji emoji-id="${link.customEmojiId}">${link.buttonEmoji}</tg-emoji> ${escapeHtml(link.title)}</b>\n\n` +
+      `<b>${escapeHtml(link.title)}</b>\n\n` +
       `${escapeHtml(link.description)}`;
     const inlineKeyboard: InlineKeyboardMarkup = {
-      inline_keyboard: [[{ text: `${link.buttonEmoji} ${link.buttonText}`, url: directAppUrl }]],
+      inline_keyboard: [
+        [
+          {
+            text: link.buttonText,
+            url: directAppUrl,
+            icon_custom_emoji_id: link.customEmojiId,
+          },
+        ],
+      ],
     };
 
     await handleBotCommandResponse(
