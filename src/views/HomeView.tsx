@@ -2042,7 +2042,16 @@ export default function Home() {
 
             <div className="flex flex-col items-center justify-center text-center gap-6 pt-4 pb-12 w-full select-none animate-fade-in flex-grow">
 
-              <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain opacity-80" />
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-40 h-40 object-contain opacity-80 pointer-events-none"
+              >
+                <source src="/OneAppLogo.webm" type="video/webm" />
+                <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain opacity-80" />
+              </video>
 
               <div className="space-y-2">
 
@@ -2122,7 +2131,16 @@ export default function Home() {
 
               )}
 
-              <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-40 h-40 object-contain pointer-events-none"
+              >
+                <source src="/OneAppLogo.webm" type="video/webm" />
+                <img src="/OneAppLogo.gif" alt="OneApp Logo" className="w-40 h-40 object-contain" />
+              </video>
 
               {/* Приветствие / Счётчик сезона */}
 
