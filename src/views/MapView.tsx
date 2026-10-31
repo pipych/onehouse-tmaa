@@ -20,12 +20,12 @@ export default function MapView() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-[#090b0e] z-50 overflow-hidden flex flex-col">
-      {/* Кнопка назад сверху слева с учётом безопасной зоны Telegram / Notch */}
+      {/* Кнопка назад сверху слева: опущена ниже интерфейса Telegram (safe-area + tma padding) */}
       <div 
         className="absolute z-50 pointer-events-auto"
         style={{
-          top: 'max(env(safe-area-inset-top, 0px) + 12px, 16px)',
-          left: 'max(env(safe-area-inset-left, 0px) + 12px, 16px)',
+          top: 'max(calc(var(--tma-top-padding) + 10px), 72px)',
+          left: 'max(env(safe-area-inset-left, 0px) + 16px, 16px)',
         }}
       >
         <button

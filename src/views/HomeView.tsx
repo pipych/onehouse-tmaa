@@ -2251,11 +2251,11 @@ export default function Home() {
                 onClick={() => navigate('/map')}
                 className="relative w-full h-[170px] md:h-[180px] p-5 md:p-6 rounded-[28px] md:rounded-[32px] overflow-hidden select-none bg-[#14171c] group cursor-pointer transition-all duration-200 active:scale-[0.99] hover:bg-[#181c22] flex flex-col justify-between"
               >
-                {/* Интерактивный предпросмотр BlueMap (без возможности перемещения, чисто живая картинка) */}
-                <iframe
-                  src="https://map.onehouse.pp.ua/#world:-56:60:-235:123:0:0:0:1:flat"
-                  className="absolute -inset-4 w-[calc(100%+32px)] h-[calc(100%+32px)] border-0 pointer-events-none select-none scale-105 origin-center"
-                  title="Онлайн-карта сервера"
+                {/* Статический оптимизированный предпросмотр карты без элементов интерфейса сайта */}
+                <img
+                  src="/map-preview.webp"
+                  alt="Предпросмотр карты сервера"
+                  className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
 
