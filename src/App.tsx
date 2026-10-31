@@ -16,6 +16,7 @@ const ArchiveCharactersView = lazy(() => import('./views/ArchiveCharactersView')
 const ArchiveMediaView = lazy(() => import('./views/ArchiveMediaView'));
 const ArchiveMapView = lazy(() => import('./views/ArchiveMapView'));
 const OneLaunchView = lazy(() => import('./views/OneLaunchView'));
+const MapView = lazy(() => import('./views/MapView'));
 
 const LoadingFallback = () => (
   <div className="min-h-screen bg-[#090b0e] flex items-center justify-center">
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/archive/characters" element={<ArchiveCharactersView />} />
             <Route path="/archive/media" element={<ArchiveMediaView />} />
             <Route path="/archive/map" element={<ArchiveMapView />} />
+            <Route path="/map" element={<MapView />} />
             <Route path="/download" element={<OneLaunchView />} />
             <Route path="/onelaunch" element={<Navigate to="/download" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />

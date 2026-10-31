@@ -23,6 +23,7 @@ import { SquareWidget } from '../ui/components/widgets/SquareWidget';
 import { LargeWidget } from '../ui/components/widgets/LargeWidget';
 import { UserProfileOverlay } from '../components/UserProfileOverlay';
 import { MobileActionBtn } from '../ui/components/MobileActionBtn';
+import { Icon } from '../ui/components/Icon';
 
 import { isGuest } from '../lib/guests';
 
@@ -2241,6 +2242,49 @@ export default function Home() {
                     ))}
                   </div>
                 </LargeWidget>
+              </div>
+            </div>
+
+            {/* 4. ВИДЖЕТ ОНЛАЙН-КАРТЫ СЕРВЕРА */}
+            <div className="w-full">
+              <div 
+                onClick={() => navigate('/map')}
+                className="relative w-full h-[170px] md:h-[180px] p-5 md:p-6 rounded-[28px] md:rounded-[32px] overflow-hidden select-none bg-[#14171c] group cursor-pointer transition-all duration-200 active:scale-[0.99] hover:bg-[#181c22] flex flex-col justify-between"
+              >
+                {/* Интерактивный предпросмотр BlueMap (без возможности перемещения, чисто живая картинка) */}
+                <iframe
+                  src="https://map.onehouse.pp.ua/#world:-56:60:-235:123:0:0:0:1:flat"
+                  className="absolute -inset-4 w-[calc(100%+32px)] h-[calc(100%+32px)] border-0 pointer-events-none select-none scale-105 origin-center"
+                  title="Онлайн-карта сервера"
+                  loading="lazy"
+                />
+
+                {/* Градиенты для читаемости текста поверх карты */}
+                <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#14171c]/90 via-[#14171c]/40 to-transparent pointer-events-none z-10" />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#14171c]/60 to-transparent pointer-events-none z-10" />
+
+                {/* Заголовок по правилам вебкита One design system */}
+                <div className="flex items-center justify-between relative z-20 w-full min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
+                    <Icon
+                      name="map"
+                      size={18}
+                      className="text-[#c0ff00] shrink-0"
+                      fill={true}
+                    />
+                    <span className="text-white font-bold text-xs sm:text-sm tracking-wider uppercase truncate">
+                      Карта
+                    </span>
+                  </div>
+                </div>
+
+                {/* Кнопка-пилл справа снизу с иконкой глаза и подписью Открыть */}
+                <div className="flex justify-end relative z-20 w-full mt-auto">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#181c23]/90 hover:bg-[#1c222b] text-white text-xs font-bold backdrop-blur-md border border-white/10 transition-all shadow-lg group-hover:border-[#c0ff00]/30 group-hover:text-[#c0ff00]">
+                    <Icon name="visibility" size={16} className="text-[#c0ff00]" fill={true} />
+                    <span>Открыть</span>
+                  </div>
+                </div>
               </div>
             </div>
 
